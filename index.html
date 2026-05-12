@@ -101,7 +101,7 @@
     <!-- Main Score Area -->
     <main id="main-court" class="flex-1 flex flex-col landscape:flex-row relative">
         <!-- Team A -->
-        <div id="area-a" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center tap-area border-zinc-800 landscape:border-r portrait:border-b relative w-full" onclick="addPoint('A')">
+        <div id="area-a" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center tap-area relative w-full" onclick="addPoint('A')">
             <div id="to-indicator-a" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer" onclick="requestTimeout('A'); event.stopPropagation();" title="タイムアウトを取る">
                 <!-- Timeouts drawn here -->
             </div>
@@ -343,8 +343,6 @@
             
             if (state.isCourtSwapped) {
                 court.style.flexDirection = isLandscape ? 'row-reverse' : 'column-reverse';
-                areaA.classList.remove('landscape:border-r', 'portrait:border-b');
-                areaB.classList.add('landscape:border-r', 'portrait:border-b');
                 
                 if (!isLandscape) {
                     areaA.style.flexDirection = 'column-reverse';
@@ -355,8 +353,6 @@
                 }
             } else {
                 court.style.flexDirection = isLandscape ? 'row' : 'column';
-                areaB.classList.remove('landscape:border-r', 'portrait:border-b');
-                areaA.classList.add('landscape:border-r', 'portrait:border-b');
 
                 if (!isLandscape) {
                     areaA.style.flexDirection = 'column';
