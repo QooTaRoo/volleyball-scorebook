@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VB Score">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1a1a'/%3E%3Ctext y='75' x='10' font-family='Arial' font-size='70' fill='yellow'%3EVB%3C/text%3E%3C/svg%3E">
+    <title>バレーボール・スコア記録</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&display=swap');
+
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --color-a: #eab308;
+            --color-b: #ffffff;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Roboto Mono', monospace;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .score-display {
+            font-size: 28vh;
+            line-height: 0.85;
+            font-variant-numeric: tabular-nums;
+            text-align: center;
+            width: 100%;
+        }
+
+        @media (orientation: landscape) {
+            .score-display {
+                font-size: 50vh;
+            }
+        }
+
+        .tap-area {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .team-name {
+            font-size: 2rem;
+            text-transform: uppercase;
+        }
+
+        .timeline-container {
+            scrollbar-width: thin;
+            scrollbar-color: #555 #222;
+        }
+
+        * {
+            touch-action: manipulation;
+        }
+
+        .color-box {
+            color: #000;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .color-box.t-box {
+            border-radius: 50%;
+        }
+        /* Color picker input styling */
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col">
+
+    <!-- Header / Nav -->
+    <header class="h-12 flex items-center justify-between px-4 bg-zinc-900 border-b border-zinc-800 z-50">
+        <button onclick="toggleSettings()" class="text-zinc-400">⚙️</button>
+        <div id="match-info" class="text-xs text-zinc-500 font-bold tracking-widest flex items-center gap-2">
+            <span>第<span id="current-set-num">1</span>セット</span>
+            <span>|</span>
+            <span>⏱️ <span id="match-duration">0</span>分</span>
+        </div>
+        <button onclick="toggleHistory()" class="text-zinc-400">📋</button>
+    </header>
+
+    <!-- Main Score Area -->
+    <main id="main-court" class="flex-1 flex flex-col landscape:flex-row relative">
+        <!-- Team A -->
+        <div id="area-a" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center tap-area border-zinc-800 landscape:border-r portrait:border-b relative w-full" onclick="addPoint('A')">
+            <div id="to-indicator-a" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer" onclick="requestTimeout('A'); event.stopPropagation();" title="タイムアウトを取る">
+                <!-- Timeouts drawn here -->
+            </div>
+            <div class="flex items-center justify-center gap-4 mb-2 w-full px-4">
+                <div class="w-12 h-10 invisible shrink-0"></div>
+                <div id="name-a" class="team-name truncate text-center" style="color: var(--color-a);">TEAM A</div>
+                <div id="sets-a" class="w-12 h-10 flex items-center justify-center text-xl font-bold bg-zinc-800/80 rounded text-zinc-400 shrink-0">0</div>
+            </div>
+            <div id="score-a" class="score-display font-bold" style="color: var(--color-a);">00</div>
+        </div>
+
+        <!-- Team B -->
+        <div id="area-b" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center tap-area relative w-full" onclick="addPoint('B')">
+            <div id="to-indicator-b" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer" onclick="requestTimeout('B'); event.stopPropagation();" title="タイムアウトを取る">
+                <!-- Timeouts drawn here -->
+            </div>
+            <div class="flex items-center justify-center gap-4 mb-2 w-full px-4">
+                <div class="w-12 h-10 invisible shrink-0"></div>
+                <div id="name-b" class="team-name truncate text-center" style="color: var(--color-b);">TEAM B</div>
+                <div id="sets-b" class="w-12 h-10 flex items-center justify-center text-xl font-bold bg-zinc-800/80 rounded text-zinc-400 shrink-0">0</div>
+            </div>
+            <div id="score-b" class="score-display font-bold" style="color: var(--color-b);">00</div>
+        </div>
+
+        <!-- Float Controls -->
+        <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-40">
+            <div class="pointer-events-auto flex landscape:flex-col portrait:flex-row gap-8">
+                <button onclick="undo()" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="1つ戻す">↩️</button>
+                <button onclick="swapCourts()" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="コートチェンジ">↔️</button>
+                <button onclick="showCurrentTimeline()" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="タイムライン">📊</button>
+                <button onclick="toggleResetMenu()" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="終了 / リセット">🔄</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/90 z-[100] hidden p-6 overflow-y-auto">
+        <div class="max-w-md mx-auto">
+            <h2 class="text-2xl font-bold mb-6 border-b border-zinc-700 pb-2 text-yellow-400">設定</h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-zinc-500 mb-1">チーム名 & カラー</label>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <input type="text" id="input-name-a" class="bg-zinc-800 border-none p-2 text-white" placeholder="Team A">
+                        <input type="text" id="input-name-b" class="bg-zinc-800 border-none p-2 text-white" placeholder="Team B">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="input-color-a" class="w-10 h-10 bg-zinc-800 border-none cursor-pointer">
+                            <span class="text-xs text-zinc-400">チームA 色</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="input-color-b" class="w-10 h-10 bg-zinc-800 border-none cursor-pointer">
+                            <span class="text-xs text-zinc-400">チームB 色</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-zinc-500 mb-1">試合形式</label>
+                    <select id="input-sets-format" class="w-full bg-zinc-800 border-none p-2 text-white">
+                        <option value="1">1セットマッチ</option>
+                        <option value="3" selected>3セットマッチ</option>
+                        <option value="5">5セットマッチ</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-zinc-500 mb-1">1セットのタイムアウト可能回数</label>
+                    <input type="number" id="input-max-timeouts" class="w-full bg-zinc-800 border-none p-2 text-white" value="2" min="0" max="10">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-zinc-500 mb-1">1セットの目標点数</label>
+                    <input type="number" id="input-target-points" class="w-full bg-zinc-800 border-none p-2 text-white" value="25">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-zinc-500 mb-1">最終セットの目標点数</label>
+                    <input type="number" id="input-final-set-target" class="w-full bg-zinc-800 border-none p-2 text-white" value="15">
+                </div>
+
+                <div class="flex gap-4 pt-6">
+                    <button onclick="applySettings()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3 rounded">設定を保存</button>
+                    <button onclick="toggleSettings()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Modal -->
+    <div id="reset-modal" class="fixed inset-0 bg-black/90 z-[150] hidden p-6 flex flex-col items-center justify-center">
+        <div class="max-w-sm w-full bg-zinc-900 border border-zinc-800 p-6 rounded-lg text-center shadow-2xl">
+            <h2 class="text-xl font-bold mb-6 text-white">試合メニュー</h2>
+            <div class="space-y-4">
+                <button onclick="finishAndStartNewMatch()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 rounded shadow-lg text-sm">
+                    試合を終了・記録して新しく始める
+                </button>
+                <button onclick="startNewMatch()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded shadow-lg text-sm">
+                    記録せずにリセットする (最初から)
+                </button>
+                <button onclick="toggleResetMenu()" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-4 rounded shadow-lg text-sm mt-4">
+                    キャンセル
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline Modal -->
+    <div id="timeline-modal" class="fixed inset-0 bg-[#1a1a1a] z-[100] hidden p-4 overflow-hidden flex flex-col">
+        <div class="flex justify-between items-center mb-4 shrink-0">
+            <h2 class="text-2xl font-bold text-white">タイムライン</h2>
+            <div class="flex gap-2">
+                <button onclick="shareTimelineAsImage('timeline-content')" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm text-white font-bold">📤 画像で共有</button>
+                <button onclick="toggleTimeline()" class="bg-zinc-700 px-4 py-2 rounded text-sm text-white">閉じる</button>
+            </div>
+        </div>
+        <div id="timeline-content" class="flex-1 overflow-y-auto timeline-container text-white px-2 bg-[#1a1a1a]">
+            <!-- Timeline rendering here -->
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="fixed inset-0 bg-black/95 z-[100] hidden p-4 overflow-hidden flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-yellow-400">試合履歴</h2>
+            <button onclick="toggleHistory()" class="bg-zinc-700 px-4 py-2 rounded text-sm">閉じる</button>
+        </div>
+        <div id="history-list" class="flex-1 overflow-y-auto">
+            <!-- History items here -->
+        </div>
+        <button onclick="clearHistory()" class="mt-4 text-xs text-red-500">すべての履歴を削除</button>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-yellow-400 text-black px-6 py-2 rounded-full font-bold shadow-2xl opacity-0 transition-opacity pointer-events-none z-[200]">
+        セットポイント！
+    </div>
+
+    <script>
+        // --- State ---
+        let state = {
+            teamA: "TEAM A",
+            teamB: "TEAM B",
+            colorA: "#eab308",
+            colorB: "#ffffff",
+            scoreA: 0,
+            scoreB: 0,
+            setsA: 0,
+            setsB: 0,
+            toA: 0,
+            toB: 0,
+            currentSet: 1,
+            maxSets: 3,
+            targetPoints: 25,
+            finalSetTarget: 15,
+            maxTimeouts: 2,
+            isCourtSwapped: false,
+            actionLog: [], // { type, team, scoreA, scoreB, set }
+            matchComplete: false,
+            setHistory: [], // [{ set: 1, winner: 'A', scoreA: 25, scoreB: 23, log: [...] }]
+            matchStartTime: Date.now()
+        };
+
+        const STORAGE_KEY = 'volleyball_score_state';
+        const HISTORY_KEY = 'volleyball_match_history';
+
+        // --- Init ---
+        function init() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                state = JSON.parse(saved);
+                if (!state.colorA) state.colorA = "#eab308";
+                if (!state.colorB) state.colorB = "#ffffff";
+                if (state.maxTimeouts === undefined) state.maxTimeouts = 2;
+                if (!state.matchStartTime) state.matchStartTime = Date.now();
+                updateUI();
+            } else {
+                applySettings(true); // Default init
+            }
+            
+            // Sync settings input values with state
+            document.getElementById('input-max-timeouts').value = state.maxTimeouts;
+
+            registerPWA();
+            keepScreenOn();
+            startTimer();
+        }
+
+        let timerInterval;
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer();
+        }
+        function updateTimer() {
+            if (state.matchComplete || !state.matchStartTime) return;
+            const diffMs = Date.now() - state.matchStartTime;
+            const mins = Math.floor(diffMs / 60000);
+            document.getElementById('match-duration').textContent = mins;
+        }
+
+        // --- UI Updates ---
+        function updateUI() {
+            document.documentElement.style.setProperty('--color-a', state.colorA);
+            document.documentElement.style.setProperty('--color-b', state.colorB);
+
+            // Names
+            document.getElementById('name-a').textContent = state.teamA;
+            document.getElementById('name-b').textContent = state.teamB;
+            document.getElementById('input-name-a').value = state.teamA;
+            document.getElementById('input-name-b').value = state.teamB;
+            document.getElementById('input-color-a').value = state.colorA;
+            document.getElementById('input-color-b').value = state.colorB;
+            document.getElementById('input-max-timeouts').value = state.maxTimeouts;
+
+            // Scores
+            document.getElementById('score-a').textContent = String(state.scoreA).padStart(2, '0');
+            document.getElementById('score-b').textContent = String(state.scoreB).padStart(2, '0');
+            
+            // Sets
+            document.getElementById('sets-a').textContent = state.setsA;
+            document.getElementById('sets-b').textContent = state.setsB;
+            
+            // Timeouts Indicators
+            renderTimeouts('A');
+            renderTimeouts('B');
+
+            // Header Info
+            document.getElementById('current-set-num').textContent = state.currentSet;
+
+            // Court Swap
+            const court = document.getElementById('main-court');
+            const areaA = document.getElementById('area-a');
+            const areaB = document.getElementById('area-b');
+            const isLandscape = window.innerWidth > window.innerHeight;
+            
+            if (state.isCourtSwapped) {
+                court.style.flexDirection = isLandscape ? 'row-reverse' : 'column-reverse';
+                areaA.classList.remove('landscape:border-r', 'portrait:border-b');
+                areaB.classList.add('landscape:border-r', 'portrait:border-b');
+                
+                if (!isLandscape) {
+                    areaA.style.flexDirection = 'column-reverse';
+                    areaB.style.flexDirection = 'column';
+                } else {
+                    areaA.style.flexDirection = 'column';
+                    areaB.style.flexDirection = 'column';
+                }
+            } else {
+                court.style.flexDirection = isLandscape ? 'row' : 'column';
+                areaB.classList.remove('landscape:border-r', 'portrait:border-b');
+                areaA.classList.add('landscape:border-r', 'portrait:border-b');
+
+                if (!isLandscape) {
+                    areaA.style.flexDirection = 'column';
+                    areaB.style.flexDirection = 'column-reverse';
+                } else {
+                    areaA.style.flexDirection = 'column';
+                    areaB.style.flexDirection = 'column';
+                }
+            }
+
+            saveState();
+        }
+
+        function renderTimeouts(team) {
+            const container = document.getElementById(team === 'A' ? 'to-indicator-a' : 'to-indicator-b');
+            const max = state.maxTimeouts || 2;
+            const used = team === 'A' ? state.toA : state.toB;
+            const remain = Math.max(0, max - used);
+            const color = team === 'A' ? state.colorA : state.colorB;
+            
+            let html = '';
+            for (let i = 0; i < max; i++) {
+                if (i < remain) {
+                    // まだ使える（色が塗られた四角）
+                    html += `<div class="w-6 h-4 sm:w-8 sm:h-5 rounded-sm shadow-md transition-all" style="background-color: ${color};"></div>`;
+                } else {
+                    // 使用済み（枠だけの空の四角）
+                    html += `<div class="w-6 h-4 sm:w-8 sm:h-5 rounded-sm bg-zinc-800/50 border border-zinc-700 transition-all opacity-40"></div>`;
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function getCurrentTarget() {
+            return state.currentSet === state.maxSets ? state.finalSetTarget : state.targetPoints;
+        }
+
+        // --- Game Logic ---
+        function addPoint(team) {
+            if (state.matchComplete) return;
+
+            vibrate(50);
+            
+            state.actionLog.push({
+                type: 'point',
+                team: team,
+                scoreA: state.scoreA,
+                scoreB: state.scoreB,
+                set: state.currentSet
+            });
+
+            if (team === 'A') state.scoreA++;
+            else state.scoreB++;
+
+            checkSetEnd();
+            updateUI();
+        }
+
+        function checkSetEnd() {
+            const target = getCurrentTarget();
+            const a = state.scoreA;
+            const b = state.scoreB;
+
+            if ((a >= target || b >= target) && Math.abs(a - b) >= 2) {
+                const winner = a > b ? 'A' : 'B';
+                finishSet(winner);
+            } else if (a === target - 1 || b === target - 1) {
+                showToast("セットポイント！");
+            }
+        }
+
+        function finishSet(winner) {
+            if (winner === 'A') state.setsA++;
+            else state.setsB++;
+
+            state.setHistory.push({
+                set: state.currentSet,
+                winner: winner,
+                scoreA: state.scoreA,
+                scoreB: state.scoreB,
+                log: [...state.actionLog.filter(l => l.set === state.currentSet)]
+            });
+
+            const matchWinnerNeeded = Math.ceil(state.maxSets / 2);
+            if (state.setsA === matchWinnerNeeded || state.setsB === matchWinnerNeeded) {
+                finishMatch(winner === 'A' ? state.teamA : state.teamB);
+            } else {
+                alert(`第${state.currentSet}セット終了！ 勝者: ${winner === 'A' ? state.teamA : state.teamB}`);
+                state.currentSet++;
+                state.scoreA = 0;
+                state.scoreB = 0;
+                state.toA = 0;
+                state.toB = 0;
+                swapCourts();
+            }
+        }
+
+        function finishMatch(winnerName) {
+            const matchHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            matchHistory.unshift({
+                date: new Date().toLocaleString(),
+                teamA: state.teamA,
+                teamB: state.teamB,
+                colorA: state.colorA,
+                colorB: state.colorB,
+                setsA: state.setsA,
+                setsB: state.setsB,
+                setHistory: JSON.parse(JSON.stringify(state.setHistory)),
+                maxSets: state.maxSets,
+                durationMinutes: Math.floor((Date.now() - state.matchStartTime) / 60000)
+            });
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(matchHistory));
+
+            alert(`試合終了！ 勝者: ${winnerName}\n\n[OK]を押すとスコアをリセットして次の試合を開始します。`);
+
+            state.scoreA = 0;
+            state.scoreB = 0;
+            state.setsA = 0;
+            state.setsB = 0;
+            state.toA = 0;
+            state.toB = 0;
+            state.currentSet = 1;
+            state.actionLog = [];
+            state.setHistory = [];
+            state.matchComplete = false;
+            state.matchStartTime = Date.now();
+            updateTimer();
+
+            updateUI();
+        }
+
+        function undo() {
+            if (state.actionLog.length === 0) return;
+            vibrate(30);
+            
+            const last = state.actionLog.pop();
+            if (last.type === 'point') {
+                if (last.team === 'A') state.scoreA--;
+                else state.scoreB--;
+            } else if (last.type === 'timeout') {
+                if (last.team === 'A') state.toA--;
+                else state.toB--;
+            }
+            updateUI();
+        }
+
+        function swapCourts() {
+            state.isCourtSwapped = !state.isCourtSwapped;
+            updateUI();
+        }
+
+        function requestTimeout(team) {
+            if (state.matchComplete) return;
+            
+            const teamName = team === 'A' ? state.teamA : state.teamB;
+            const currentTo = team === 'A' ? state.toA : state.toB;
+            const max = state.maxTimeouts || 2;
+            
+            if (currentTo >= max) {
+                if(!confirm(`${teamName} は既に${max}回タイムアウトを取っています。追加しますか？`)) return;
+            } else {
+                if(!confirm(`${teamName} のタイムアウトを取りますか？`)) return;
+            }
+
+            vibrate(50);
+            state.actionLog.push({
+                type: 'timeout',
+                team: team,
+                scoreA: state.scoreA,
+                scoreB: state.scoreB,
+                set: state.currentSet
+            });
+            if (team === 'A') state.toA++;
+            else state.toB++;
+            updateUI();
+        }
+
+        // --- Settings ---
+        function applySettings(isInit = false) {
+            state.teamA = document.getElementById('input-name-a').value || "TEAM A";
+            state.teamB = document.getElementById('input-name-b').value || "TEAM B";
+            state.colorA = document.getElementById('input-color-a').value || "#eab308";
+            state.colorB = document.getElementById('input-color-b').value || "#ffffff";
+            state.maxSets = parseInt(document.getElementById('input-sets-format').value);
+            state.targetPoints = parseInt(document.getElementById('input-target-points').value);
+            state.finalSetTarget = parseInt(document.getElementById('input-final-set-target').value);
+            state.maxTimeouts = parseInt(document.getElementById('input-max-timeouts').value);
+            
+            if (isInit) {
+                state.scoreA = 0;
+                state.scoreB = 0;
+                state.setsA = 0;
+                state.setsB = 0;
+                state.toA = 0;
+                state.toB = 0;
+                state.currentSet = 1;
+                state.actionLog = [];
+                state.setHistory = [];
+                state.matchComplete = false;
+                state.matchStartTime = Date.now();
+                updateTimer();
+            } else {
+                toggleSettings();
+            }
+            updateUI();
+        }
+
+        function resetStateForNewMatch() {
+            state.scoreA = 0;
+            state.scoreB = 0;
+            state.setsA = 0;
+            state.setsB = 0;
+            state.toA = 0;
+            state.toB = 0;
+            state.currentSet = 1;
+            state.actionLog = [];
+            state.setHistory = [];
+            state.matchComplete = false;
+            state.matchStartTime = Date.now();
+            if (typeof updateTimer === 'function') updateTimer();
+
+            // 入力欄の最新設定も反映する
+            state.teamA = document.getElementById('input-name-a').value || "TEAM A";
+            state.teamB = document.getElementById('input-name-b').value || "TEAM B";
+            state.colorA = document.getElementById('input-color-a').value || "#eab308";
+            state.colorB = document.getElementById('input-color-b').value || "#ffffff";
+            state.maxSets = parseInt(document.getElementById('input-sets-format').value);
+            state.targetPoints = parseInt(document.getElementById('input-target-points').value);
+            state.finalSetTarget = parseInt(document.getElementById('input-final-set-target').value);
+            state.maxTimeouts = parseInt(document.getElementById('input-max-timeouts').value);
+
+            document.getElementById('settings-modal').classList.add('hidden');
+            updateUI();
+        }
+
+        function finishAndStartNewMatch() {
+            toggleResetMenu();
+
+            // 進行中のセットがあれば記録する
+            if (state.scoreA > 0 || state.scoreB > 0 || state.actionLog.length > 0) {
+                let currentSetWinner = 'Draw';
+                if (state.scoreA > state.scoreB) currentSetWinner = 'A';
+                else if (state.scoreB > state.scoreA) currentSetWinner = 'B';
+                
+                state.setHistory.push({
+                    set: state.currentSet,
+                    winner: currentSetWinner,
+                    scoreA: state.scoreA,
+                    scoreB: state.scoreB,
+                    log: [...state.actionLog.filter(l => l.set === state.currentSet)]
+                });
+                
+                if (currentSetWinner === 'A') state.setsA++;
+                else if (currentSetWinner === 'B') state.setsB++;
+            }
+
+            // 何もデータがない（全く進んでいない）場合は記録しない
+            const hasData = state.setHistory.length > 0 || state.setsA > 0 || state.setsB > 0;
+            if (hasData) {
+                const matchHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+                matchHistory.unshift({
+                    date: new Date().toLocaleString(),
+                    teamA: state.teamA,
+                    teamB: state.teamB,
+                    colorA: state.colorA,
+                    colorB: state.colorB,
+                    setsA: state.setsA,
+                    setsB: state.setsB,
+                    setHistory: JSON.parse(JSON.stringify(state.setHistory)),
+                    maxSets: state.maxSets,
+                    durationMinutes: Math.floor((Date.now() - state.matchStartTime) / 60000)
+                });
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(matchHistory));
+                showToast("試合を記録しました");
+            } else {
+                showToast("スコアがないため記録しませんでした");
+            }
+
+            resetStateForNewMatch();
+        }
+
+        function startNewMatch() {
+            toggleResetMenu();
+            resetStateForNewMatch();
+        }
+
+        // --- Timeline View ---
+        function renderTimeline(setLog, teamA, teamB, colorA, colorB, currentScoreA, currentScoreB, setInProgress) {
+            const container = document.createElement('div');
+            container.className = "py-4 border-b border-zinc-800/50 mb-4";
+
+            let aScore = 0;
+            let bScore = 0;
+            let aTO = 0;
+            let bTO = 0;
+            
+            const columns = [];
+            
+            setLog.forEach(action => {
+                if (action.type === 'point') {
+                    if (action.team === 'A') aScore++;
+                    else bScore++;
+                    columns.push({
+                        type: 'point',
+                        team: action.team,
+                        val: action.team === 'A' ? aScore : bScore
+                    });
+                } else if (action.type === 'timeout') {
+                    if (action.team === 'A') aTO++;
+                    else bTO++;
+                    columns.push({
+                        type: 'timeout',
+                        team: action.team,
+                        val: action.team === 'A' ? aTO : bTO
+                    });
+                }
+            });
+
+            const finalA = setInProgress ? currentScoreA : aScore;
+            const finalB = setInProgress ? currentScoreB : bScore;
+
+            let htmlA = `<div class="flex items-center" style="min-width: max-content;">`;
+            let htmlB = `<div class="flex items-center mt-1.5" style="min-width: max-content;">`;
+
+            // Final score box (leftmost)
+            htmlA += `<div class="w-12 h-10 flex items-center justify-center font-bold text-xl rounded mr-4 color-box" style="background: ${colorA};">${finalA}</div>`;
+            htmlB += `<div class="w-12 h-10 flex items-center justify-center font-bold text-xl rounded mr-4 color-box" style="background: ${colorB};">${finalB}</div>`;
+
+            // Timeline items
+            columns.forEach(col => {
+                if (col.type === 'point') {
+                    if (col.team === 'A') {
+                        htmlA += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm" style="background: ${colorA};">${col.val}</div>`;
+                        htmlB += `<div class="w-7 h-7 mx-0.5"></div>`;
+                    } else {
+                        htmlA += `<div class="w-7 h-7 mx-0.5"></div>`;
+                        htmlB += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm" style="background: ${colorB};">${col.val}</div>`;
+                    }
+                } else if (col.type === 'timeout') {
+                    if (col.team === 'A') {
+                        htmlA += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[11px]" style="background: ${colorA}; border: 1.5px solid #000;">T${col.val}</div>`;
+                        htmlB += `<div class="w-7 h-7 mx-0.5"></div>`;
+                    } else {
+                        htmlA += `<div class="w-7 h-7 mx-0.5"></div>`;
+                        htmlB += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[11px]" style="background: ${colorB}; border: 1.5px solid #000;">T${col.val}</div>`;
+                    }
+                }
+            });
+
+            htmlA += `</div>`;
+            htmlB += `</div>`;
+
+            container.innerHTML = `<div class="overflow-x-auto pb-2 timeline-container">${htmlA}${htmlB}</div>`;
+            return container;
+        }
+
+        function showCurrentTimeline() {
+            const content = document.getElementById('timeline-content');
+            content.innerHTML = "";
+            
+            const allSets = [...state.setHistory];
+            if (!state.matchComplete) {
+                allSets.push({
+                    set: state.currentSet,
+                    scoreA: state.scoreA,
+                    scoreB: state.scoreB,
+                    log: state.actionLog.filter(l => l.set === state.currentSet)
+                });
+            }
+
+            const matchScoreHeader = document.createElement('div');
+            matchScoreHeader.className = "flex items-center justify-center gap-4 mb-8 text-xl font-bold bg-[#1a1a1a] sticky top-0 py-4 z-10";
+            matchScoreHeader.innerHTML = `
+                <span style="color: ${state.colorA}">${state.teamA}</span>
+                <span class="bg-zinc-800 px-3 py-1 rounded text-white">${state.setsA}</span>
+                <span class="text-zinc-500">-</span>
+                <span class="bg-zinc-800 px-3 py-1 rounded text-white">${state.setsB}</span>
+                <span style="color: ${state.colorB}">${state.teamB}</span>
+            `;
+            content.appendChild(matchScoreHeader);
+
+            allSets.forEach(setData => {
+                const isCurrent = setData.set === state.currentSet && !state.matchComplete;
+
+                const setHeader = document.createElement('div');
+                setHeader.className = "text-xs font-bold text-zinc-400";
+                setHeader.textContent = `第${setData.set}セット`;
+                content.appendChild(setHeader);
+
+                content.appendChild(renderTimeline(
+                    setData.log, 
+                    state.teamA, state.teamB, 
+                    state.colorA, state.colorB, 
+                    isCurrent ? state.scoreA : setData.scoreA, 
+                    isCurrent ? state.scoreB : setData.scoreB,
+                    isCurrent
+                ));
+            });
+
+            toggleTimeline();
+        }
+
+        // --- History ---
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = "";
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+
+            if (history.length === 0) {
+                list.innerHTML = "<div class='text-zinc-600 py-10 text-center'>試合履歴がありません。</div>";
+                return;
+            }
+
+            history.forEach((m, idx) => {
+                const item = document.createElement('div');
+                item.className = "bg-zinc-900 border border-zinc-800 p-4 mb-4 rounded";
+                item.id = `history-item-${idx}`;
+                const cA = m.colorA || '#eab308';
+                const cB = m.colorB || '#ffffff';
+                item.innerHTML = `
+                    <div class="flex justify-between text-xs text-zinc-500 mb-2">
+                        <span>${m.date}</span>
+                        <div class="flex gap-2">
+                            <span>⏱️ ${m.durationMinutes !== undefined ? m.durationMinutes : 0}分</span>
+                            <span>${m.maxSets}セットマッチ</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="text-xl font-bold" style="color: ${cA}">${m.teamA} <span class="text-zinc-500 text-sm ml-2">${m.setsA}</span></div>
+                        <div class="text-zinc-600 px-2">vs</div>
+                        <div class="text-xl font-bold text-right" style="color: ${cB}"><span class="text-zinc-500 text-sm mr-2">${m.setsB}</span> ${m.teamB}</div>
+                    </div>
+                    <div id="history-timeline-${idx}" class="hidden mt-4 border-t border-zinc-800 pt-4 bg-[#1a1a1a] px-2 pb-2"></div>
+                    <div class="flex gap-2 mt-2" data-html2canvas-ignore>
+                        <button onclick="toggleHistoryTimeline(${idx})" class="flex-1 bg-zinc-800 py-2 text-xs rounded">詳細 / タイムラインを表示</button>
+                        <button onclick="shareTimelineAsImage('history-item-${idx}')" id="share-btn-${idx}" class="hidden bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs rounded font-bold">📤 画像で共有</button>
+                    </div>
+                `;
+                list.appendChild(item);
+                
+                const tlContainer = item.querySelector(`#history-timeline-${idx}`);
+                m.setHistory.forEach(setData => {
+                    const h = document.createElement('div');
+                    h.className = "text-[10px] font-bold text-zinc-500 mt-2 mb-1";
+                    h.textContent = `第${setData.set}セット`;
+                    tlContainer.appendChild(h);
+                    tlContainer.appendChild(renderTimeline(setData.log, m.teamA, m.teamB, cA, cB, setData.scoreA, setData.scoreB, false));
+                });
+            });
+        }
+
+        function toggleHistoryTimeline(idx) {
+            const el = document.getElementById(`history-timeline-${idx}`);
+            const btn = document.getElementById(`share-btn-${idx}`);
+            el.classList.toggle('hidden');
+            if (btn) btn.classList.toggle('hidden');
+        }
+
+        function clearHistory() {
+            if (confirm("すべての履歴を削除しますか？")) {
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
+            }
+        }
+
+        // --- Utils ---
+        function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); }
+        function toggleResetMenu() { document.getElementById('reset-modal').classList.toggle('hidden'); }
+        function toggleTimeline() { document.getElementById('timeline-modal').classList.toggle('hidden'); }
+        function toggleHistory() { 
+            document.getElementById('history-modal').classList.toggle('hidden'); 
+            if (!document.getElementById('history-modal').classList.contains('hidden')) renderHistory();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.opacity = "1";
+            setTimeout(() => t.style.opacity = "0", 2000);
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function vibrate(ms) {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        }
+
+        async function keepScreenOn() {
+            if ('wakeLock' in navigator) {
+                try {
+                    await navigator.wakeLock.request('screen');
+                } catch (err) {}
+            }
+        }
+
+        // --- PWA Support ---
+        function registerPWA() {
+            const manifest = {
+                "name": "Volleyball Scorebook",
+                "short_name": "VB Score",
+                "start_url": ".",
+                "display": "standalone",
+                "background_color": "#1a1a1a",
+                "theme_color": "#1a1a1a",
+                "icons": [
+                    {
+                        "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1a1a'/%3E%3Ctext y='75' x='10' font-family='Arial' font-size='70' fill='yellow'%3EVB%3C/text%3E%3C/svg%3E",
+                        "sizes": "192x192",
+                        "type": "image/svg+xml"
+                    }
+                ]
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+            const manifestURL = URL.createObjectURL(manifestBlob);
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestURL;
+            document.head.appendChild(link);
+
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    self.addEventListener('install', e => self.skipWaiting());
+                    self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
+                `;
+                const swBlob = new Blob([swCode], {type: 'application/javascript'});
+                const swURL = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swURL).catch(console.error);
+            }
+        }
+
+        async function shareTimelineAsImage(containerId) {
+            if (typeof html2canvas === 'undefined') {
+                alert("画像化ライブラリの読み込みに失敗しました。");
+                return;
+            }
+
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const timelineContainers = container.querySelectorAll('.timeline-container');
+            const originalStyles = [];
+            let maxWidth = container.offsetWidth;
+
+            // 各行をスクロールではなく全体幅に広げる
+            timelineContainers.forEach((tc) => {
+                originalStyles.push({
+                    el: tc,
+                    overflowX: tc.style.overflowX,
+                    width: tc.style.width
+                });
+                tc.style.overflowX = 'visible';
+                tc.style.width = 'max-content';
+                if (tc.scrollWidth > maxWidth) maxWidth = tc.scrollWidth;
+            });
+
+            const origContainerStyle = {
+                width: container.style.width,
+                overflowY: container.style.overflowY,
+                overflowX: container.style.overflowX,
+                height: container.style.height
+            };
+            
+            // 親コンテナも広げる
+            container.style.width = maxWidth + 40 + 'px';
+            container.style.height = 'max-content';
+            container.style.overflowY = 'visible';
+            container.style.overflowX = 'visible';
+
+            try {
+                // 少し待ってから描画（スタイルの反映待ち）
+                await new Promise(r => setTimeout(r, 100));
+                
+                const canvas = await html2canvas(container, {
+                    backgroundColor: '#1a1a1a',
+                    scale: 2,
+                    windowWidth: maxWidth + 40
+                });
+
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], 'timeline.png', { type: 'image/png' });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                title: 'バレーボール スコア・タイムライン',
+                                files: [file]
+                            });
+                        } catch (err) {
+                            if (err.name !== 'AbortError') alert("共有に失敗しました: " + err.message);
+                        }
+                    } else {
+                        // Web Share API非対応またはPC等の場合はダウンロード
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'timeline.png';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }
+                });
+            } catch (err) {
+                alert("画像の生成に失敗しました: " + err.message);
+            } finally {
+                // スタイルを元に戻す
+                container.style.width = origContainerStyle.width;
+                container.style.height = origContainerStyle.height;
+                container.style.overflowY = origContainerStyle.overflowY;
+                container.style.overflowX = origContainerStyle.overflowX;
+                originalStyles.forEach(orig => {
+                    orig.el.style.overflowX = orig.overflowX;
+                    orig.el.style.width = orig.width;
+                });
+            }
+        }
+
+        window.addEventListener('resize', updateUI);
+        init();
+    </script>
+</body>
+</html>
