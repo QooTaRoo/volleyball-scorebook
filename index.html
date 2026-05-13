@@ -2021,17 +2021,22 @@
             } else {
                 // Stage 2: Player Selection
                 const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
-                // 12時方向(-90度)を0番目(posOrder[0])にするためのオフセット計算
-                // 60度ずつのセクター判定 (+30はセクターの中央に合わせるため)
                 const normalizedAngle = (angleDeg + 90 + 30 + 360) % 360;
                 const pIdx = Math.floor(normalizedAngle / 60) % 6;
                 
-                const posOrder = [3, 2, 1, 6, 5, 4]; // 12時から時計回り
+                const posOrder = [3, 2, 1, 6, 5, 4];
                 const posNum = posOrder[pIdx];
                 
                 const teamToPick = radialState.currentOption === 'error' ? (radialState.team === 'A' ? 'B' : 'A') : radialState.team;
                 const lineup = teamToPick === 'A' ? state.lineupA : state.lineupB;
                 const playerId = lineup[posNum - 1];
+
+                // 中心に近い場合は「不明/特定なし」として扱う
+                if (dist < 40) {
+                    radialState.currentPlayerId = null;
+                    highlightPlayer(null); // 全ハイライト解除
+                    return;
+                }
 
                 if (radialState.currentPlayerId !== playerId) {
                     radialState.currentPlayerId = playerId;
@@ -2079,22 +2084,27 @@
                 
                 const playerId = lineup[posNum - 1];
                 const player = members.find(m => m.id === playerId);
-                const num = player ? player.number : posNum;
+                
+                // 名前があれば名前を優先（ただし長すぎる場合はカット）
+                let displayStr = player ? player.number : posNum;
+                if (player && player.name && player.name !== String(player.number)) {
+                    displayStr = player.name.substring(0, 4); // 4文字に制限
+                }
 
                 const opt = document.createElement('div');
                 opt.id = `radial-player-opt-${posNum}`;
-                opt.className = 'radial-player-opt absolute flex items-center justify-center w-14 h-14 rounded-full bg-zinc-800 border border-white/20 text-white font-black text-xl shadow-lg transition-all';
+                opt.className = 'radial-player-opt absolute flex flex-col items-center justify-center w-14 h-14 rounded-full bg-zinc-800 border border-white/20 text-white font-black text-xs shadow-lg transition-all overflow-hidden';
                 opt.style.left = '50%';
                 opt.style.top = '50%';
                 opt.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
-                opt.innerHTML = `<span>${num}</span><span class="absolute -bottom-1 text-[8px] opacity-60">P${posNum}</span>`;
+                opt.innerHTML = `<span class="leading-none text-[10px]">${displayStr}</span><span class="absolute bottom-0.5 text-[7px] opacity-40">P${posNum}</span>`;
                 list.appendChild(opt);
             });
         }
 
         function highlightPlayer(posNum) {
             document.querySelectorAll('.radial-player-opt').forEach(opt => {
-                const isMatch = opt.id === `radial-player-opt-${posNum}`;
+                const isMatch = posNum !== null && opt.id === `radial-player-opt-${posNum}`;
                 opt.style.backgroundColor = isMatch ? '#eab308' : '';
                 opt.style.color = isMatch ? '#000' : '';
                 opt.style.transform = opt.style.transform.replace(' scale(1.2)', '') + (isMatch ? ' scale(1.2)' : '');
