@@ -40,10 +40,8 @@
             pointer-events: none;
         }
 
-        @media (orientation: landscape) {
-            .score-display {
-                font-size: 50vh;
-            }
+        .is-landscape .score-display {
+            font-size: 50vh;
         }
 
         .tap-area {
@@ -112,7 +110,7 @@
     </header>
 
     <!-- Main Score Area -->
-    <main id="main-court" class="flex-1 flex flex-col landscape:flex-row relative">
+    <main id="main-court" class="flex-1 flex flex-col relative">
         <!-- Team A -->
         <div id="area-a" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center tap-area relative w-full">
             <div id="to-indicator-a" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer relative z-50 p-2 -m-2 select-none" onclick="event.stopPropagation(); requestTimeout('A');" title="タイムアウトを取る">
@@ -246,6 +244,15 @@
                 <div>
                     <label class="block text-xs font-bold text-zinc-500 mb-1">最終セットの目標点数</label>
                     <input type="number" id="input-final-set-target" class="w-full bg-zinc-800 border-none p-2 text-white" value="15">
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-zinc-500 uppercase tracking-widest">画面レイアウト</label>
+                    <select id="input-orientation-mode" class="w-full bg-zinc-800 border-none p-3 text-white rounded-xl font-bold shadow-inner focus:ring-2 focus:ring-yellow-400 outline-none">
+                        <option value="auto">自動判別（標準）</option>
+                        <option value="portrait">縦画面に固定 (Portrait)</option>
+                        <option value="landscape">横画面に固定 (Landscape)</option>
+                    </select>
                 </div>
 
                 <div class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-white/5 mt-4">
@@ -498,6 +505,7 @@
             targetPoints: 25,
             finalSetTarget: 15,
             showAdvancedMode: false,
+            orientationMode: 'auto', // 'auto', 'portrait', 'landscape'
             maxTimeouts: 2,
             isCourtSwapped: false,
             actionLog: [], // { type, team, scoreA, scoreB, set }
@@ -590,6 +598,7 @@
             document.getElementById('input-sets-format').value = state.maxSets;
             document.getElementById('input-target-points').value = state.targetPoints;
             document.getElementById('input-final-set-target').value = state.finalSetTarget;
+            document.getElementById('input-orientation-mode').value = state.orientationMode;
 
             // Scores
             document.getElementById('score-a').textContent = String(state.scoreA).padStart(2, '0');
@@ -605,6 +614,12 @@
 
             // Header Info
             document.getElementById('current-set-num').textContent = state.currentSet;
+
+            // Orientation
+            let isLandscape = window.innerWidth > window.innerHeight;
+            if (state.orientationMode === 'portrait') isLandscape = false;
+            if (state.orientationMode === 'landscape') isLandscape = true;
+            document.body.classList.toggle('is-landscape', isLandscape);
 
             // Court Swap
             const court = document.getElementById('main-court');
@@ -964,6 +979,7 @@
             state.targetPoints = parseInt(document.getElementById('input-target-points').value);
             state.finalSetTarget = parseInt(document.getElementById('input-final-set-target').value);
             state.showAdvancedMode = document.getElementById('input-advanced-mode').checked;
+            state.orientationMode = document.getElementById('input-orientation-mode').value;
             
             document.getElementById('settings-modal').classList.add('hidden');
             updateUI();
