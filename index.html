@@ -265,7 +265,16 @@
             actionLog: [], // { type, team, scoreA, scoreB, set }
             matchComplete: false,
             setHistory: [], // [{ set: 1, winner: 'A', scoreA: 25, scoreB: 23, log: [...] }]
-            matchStartTime: Date.now()
+            matchStartTime: Date.now(),
+            // 追加分
+            membersA: Array.from({length: 12}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `Player A${i+1}` })),
+            membersB: Array.from({length: 12}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `Player B${i+1}` })),
+            lineupA: ["A1", "A2", "A3", "A4", "A5", "A6"], // P1, P2, P3, P4, P5, P6
+            lineupB: ["B1", "B2", "B3", "B4", "B5", "B6"],
+            liberoA: null,
+            liberoB: null,
+            servingTeam: 'A',
+            rotationLog: [] // { lineupA, lineupB, servingTeam }
         };
 
         const STORAGE_KEY = 'volleyball_score_state';
@@ -280,6 +289,19 @@
                 if (!state.colorB) state.colorB = "#ffffff";
                 if (state.maxTimeouts === undefined) state.maxTimeouts = 2;
                 if (!state.matchStartTime) state.matchStartTime = Date.now();
+                
+                // 追加分のプロパティが存在しない場合の初期化
+                if (!state.membersA) {
+                    state.membersA = Array.from({length: 12}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `Player A${i+1}` }));
+                    state.membersB = Array.from({length: 12}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `Player B${i+1}` }));
+                    state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
+                    state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
+                    state.liberoA = null;
+                    state.liberoB = null;
+                    state.servingTeam = 'A';
+                    state.rotationLog = [];
+                }
+                
                 updateUI();
             } else {
                 applySettings(true); // Default init
@@ -481,6 +503,14 @@
             state.matchStartTime = Date.now();
             updateTimer();
 
+            // メンバー・ローテーション関連のリセット
+            state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
+            state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
+            state.liberoA = null;
+            state.liberoB = null;
+            state.servingTeam = 'A';
+            state.rotationLog = [];
+
             updateUI();
         }
 
@@ -554,6 +584,16 @@
                 state.matchComplete = false;
                 state.matchStartTime = Date.now();
                 updateTimer();
+
+                // メンバー・ローテーション関連の初期化
+                state.membersA = Array.from({length: 12}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `Player A${i+1}` }));
+                state.membersB = Array.from({length: 12}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `Player B${i+1}` }));
+                state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
+                state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
+                state.liberoA = null;
+                state.liberoB = null;
+                state.servingTeam = 'A';
+                state.rotationLog = [];
             } else {
                 toggleSettings();
             }
@@ -573,6 +613,14 @@
             state.matchComplete = false;
             state.matchStartTime = Date.now();
             if (typeof updateTimer === 'function') updateTimer();
+
+            // メンバー・ローテーション関連のリセット
+            state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
+            state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
+            state.liberoA = null;
+            state.liberoB = null;
+            state.servingTeam = 'A';
+            state.rotationLog = [];
 
             // 入力欄の最新設定も反映する
             state.teamA = document.getElementById('input-name-a').value || "TEAM A";
