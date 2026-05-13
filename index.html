@@ -2421,13 +2421,17 @@
                 if (isLandscape) {
                     // 横画面: 前衛が中央寄り、後衛が端寄り
                     const col = (p === 2 || p === 3 || p === 4) ? (isTargetFirst ? 1 : -1) : (isTargetFirst ? -1 : 1);
-                    const row = (p === 2 || p === 1) ? 1 : (p === 3 || p === 6) ? 0 : -1;
+                    // 右側のチーム(isTargetFirst=false)の場合、上下(row)を反転させてメイン表示と同期
+                    let row = (p === 2 || p === 1) ? 1 : (p === 3 || p === 6) ? 0 : -1;
+                    if (!isTargetFirst) row *= -1;
                     x = col * gap;
                     y = row * gap;
                 } else {
                     // 縦画面: 前衛が中央寄り、後衛が端寄り
                     const row = (p === 2 || p === 3 || p === 4) ? (isTargetFirst ? 1 : -1) : (isTargetFirst ? -1 : 1);
-                    const col = (p === 2 || p === 1) ? 1 : (p === 3 || p === 6) ? 0 : -1;
+                    // 上側のチーム(isTargetFirst=true)の場合、左右(col)を反転させてメイン表示と同期
+                    let col = (p === 2 || p === 1) ? 1 : (p === 3 || p === 6) ? 0 : -1;
+                    if (isTargetFirst) col *= -1;
                     x = col * gap;
                     y = row * gap;
                 }
