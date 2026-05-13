@@ -448,6 +448,9 @@
             document.getElementById('input-color-a').value = state.colorA;
             document.getElementById('input-color-b').value = state.colorB;
             document.getElementById('input-max-timeouts').value = state.maxTimeouts;
+            document.getElementById('input-sets-format').value = state.maxSets;
+            document.getElementById('input-target-points').value = state.targetPoints;
+            document.getElementById('input-final-set-target').value = state.finalSetTarget;
 
             // Scores
             document.getElementById('score-a').textContent = String(state.scoreA).padStart(2, '0');
@@ -1044,7 +1047,22 @@
         }
 
         // --- Utils ---
-        function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); }
+        function toggleSettings() { 
+            const modal = document.getElementById('settings-modal');
+            const isOpening = modal.classList.contains('hidden');
+            if (isOpening) {
+                // Populate inputs from state
+                document.getElementById('input-name-a').value = state.teamA;
+                document.getElementById('input-name-b').value = state.teamB;
+                document.getElementById('input-color-a').value = state.colorA;
+                document.getElementById('input-color-b').value = state.colorB;
+                document.getElementById('input-sets-format').value = state.maxSets;
+                document.getElementById('input-target-points').value = state.targetPoints;
+                document.getElementById('input-final-set-target').value = state.finalSetTarget;
+                document.getElementById('input-max-timeouts').value = state.maxTimeouts;
+            }
+            modal.classList.toggle('hidden'); 
+        }
         function toggleResetMenu() { document.getElementById('reset-modal').classList.toggle('hidden'); }
         function toggleTimeline() { document.getElementById('timeline-modal').classList.toggle('hidden'); }
         function toggleHistory() { 
@@ -1139,7 +1157,7 @@
                 set: state.currentSet
             });
             
-            saveState();
+            updateUI();
             renderCourt(team);
             closeSubModal();
             showToast("選手交代しました");
