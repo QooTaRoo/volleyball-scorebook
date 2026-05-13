@@ -186,6 +186,12 @@
                     <input type="number" id="input-final-set-target" class="w-full bg-zinc-800 border-none p-2 text-white" value="15">
                 </div>
 
+                <div class="pt-4 border-t border-zinc-800">
+                    <button onclick="openMemberModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded flex items-center justify-center gap-2">
+                        👤 メンバーを編集
+                    </button>
+                </div>
+
                 <div class="flex gap-4 pt-6">
                     <button onclick="applySettings()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3 rounded">設定を保存</button>
                     <button onclick="toggleSettings()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded">閉じる</button>
@@ -236,6 +242,46 @@
             <!-- History items here -->
         </div>
         <button onclick="clearHistory()" class="mt-4 text-xs text-red-500">すべての履歴を削除</button>
+    </div>
+
+    <!-- Member Modal -->
+    <div id="member-modal" class="fixed inset-0 bg-black/95 z-[160] hidden p-4 overflow-hidden flex flex-col">
+        <div class="flex justify-between items-center mb-4 shrink-0">
+            <h2 class="text-2xl font-bold text-yellow-400">メンバー編集</h2>
+            <button onclick="toggleMembers()" class="bg-zinc-700 px-4 py-2 rounded text-sm text-white">閉じる</button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto space-y-8 px-2">
+            <!-- Team A -->
+            <div>
+                <h3 id="member-team-a-label" class="text-lg font-bold mb-3 flex items-center gap-2" style="color: var(--color-a);">
+                    TEAM A
+                </h3>
+                <div id="member-list-a" class="space-y-2">
+                    <!-- Member rows for A -->
+                </div>
+                <button onclick="addMemberRow('A')" class="mt-4 w-full py-2 bg-zinc-800 text-zinc-400 text-sm rounded border border-dashed border-zinc-700">+ メンバーを追加</button>
+            </div>
+
+            <div class="border-t border-zinc-800 my-4"></div>
+
+            <!-- Team B -->
+            <div>
+                <h3 id="member-team-b-label" class="text-lg font-bold mb-3 flex items-center gap-2" style="color: var(--color-b);">
+                    TEAM B
+                </h3>
+                <div id="member-list-b" class="space-y-2">
+                    <!-- Member rows for B -->
+                </div>
+                <button onclick="addMemberRow('B')" class="mt-4 w-full py-2 bg-zinc-800 text-zinc-400 text-sm rounded border border-dashed border-zinc-700">+ メンバーを追加</button>
+            </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-zinc-800 shrink-0">
+            <button onclick="updateMembers()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 rounded shadow-lg">
+                メンバー情報を保存
+            </button>
+        </div>
     </div>
 
     <!-- Toast Notification -->
@@ -290,17 +336,17 @@
                 if (state.maxTimeouts === undefined) state.maxTimeouts = 2;
                 if (!state.matchStartTime) state.matchStartTime = Date.now();
                 
-                // 追加分のプロパティが存在しない場合の初期化
+                // 追加分のプロパティ（メンバー・ローテーション関連）の初期化
                 if (!state.membersA) {
                     state.membersA = Array.from({length: 12}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `Player A${i+1}` }));
                     state.membersB = Array.from({length: 12}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `Player B${i+1}` }));
-                    state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
-                    state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
-                    state.liberoA = null;
-                    state.liberoB = null;
-                    state.servingTeam = 'A';
-                    state.rotationLog = [];
                 }
+                if (!state.lineupA) state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
+                if (!state.lineupB) state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
+                if (state.liberoA === undefined) state.liberoA = null;
+                if (state.liberoB === undefined) state.liberoB = null;
+                if (!state.servingTeam) state.servingTeam = 'A';
+                if (!state.rotationLog) state.rotationLog = [];
                 
                 updateUI();
             } else {
@@ -873,6 +919,72 @@
         function toggleHistory() { 
             document.getElementById('history-modal').classList.toggle('hidden'); 
             if (!document.getElementById('history-modal').classList.contains('hidden')) renderHistory();
+        }
+        function toggleMembers() { document.getElementById('member-modal').classList.toggle('hidden'); }
+
+        // --- Member Management ---
+        let tempMembersA = [];
+        let tempMembersB = [];
+
+        function openMemberModal() {
+            tempMembersA = JSON.parse(JSON.stringify(state.membersA));
+            tempMembersB = JSON.parse(JSON.stringify(state.membersB));
+            
+            document.getElementById('member-team-a-label').textContent = state.teamA;
+            document.getElementById('member-team-b-label').textContent = state.teamB;
+            
+            renderMemberRows('A');
+            renderMemberRows('B');
+            
+            toggleMembers();
+        }
+
+        function renderMemberRows(team) {
+            const list = document.getElementById(team === 'A' ? 'member-list-a' : 'member-list-b');
+            const members = team === 'A' ? tempMembersA : tempMembersB;
+            
+            list.innerHTML = members.map((m, idx) => `
+                <div class="flex gap-2 items-center">
+                    <input type="number" value="${m.number}" 
+                        onchange="updateTempMember('${team}', ${idx}, 'number', this.value)"
+                        class="w-16 bg-zinc-800 border-none p-2 text-white text-center rounded" placeholder="背番号">
+                    <input type="text" value="${m.name}" 
+                        onchange="updateTempMember('${team}', ${idx}, 'name', this.value)"
+                        class="flex-1 bg-zinc-800 border-none p-2 text-white rounded" placeholder="名前">
+                    <button onclick="removeMemberRow('${team}', ${idx})" class="text-zinc-500 hover:text-red-500 p-2 text-xl">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function updateTempMember(team, idx, field, value) {
+            const members = team === 'A' ? tempMembersA : tempMembersB;
+            if (field === 'number') members[idx].number = parseInt(value) || 0;
+            else members[idx].name = value;
+        }
+
+        function addMemberRow(team) {
+            const members = team === 'A' ? tempMembersA : tempMembersB;
+            const newNum = members.length > 0 ? Math.max(...members.map(m => m.number)) + 1 : 1;
+            members.push({
+                id: `${team}${Date.now()}`,
+                number: newNum,
+                name: `Player ${newNum}`
+            });
+            renderMemberRows(team);
+        }
+
+        function removeMemberRow(team, idx) {
+            const members = team === 'A' ? tempMembersA : tempMembersB;
+            members.splice(idx, 1);
+            renderMemberRows(team);
+        }
+
+        function updateMembers() {
+            state.membersA = tempMembersA;
+            state.membersB = tempMembersB;
+            saveState();
+            toggleMembers();
+            showToast("メンバー情報を保存しました");
         }
 
         function showToast(msg) {
