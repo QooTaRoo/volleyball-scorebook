@@ -148,12 +148,12 @@
         </div>
 
         <!-- Float Controls -->
-        <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-40">
-            <div class="pointer-events-auto flex landscape:flex-col portrait:flex-row gap-8 items-center">
+        <div id="float-controls" class="absolute inset-0 pointer-events-none flex items-center justify-center z-40">
+            <div id="float-controls-inner" class="pointer-events-auto flex gap-8 items-center">
                 <button onclick="event.stopPropagation(); undo();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="1つ戻す">↩️</button>
                 <button onclick="event.stopPropagation(); swapCourts();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="コートチェンジ">
-                    <span class="landscape:inline portrait:hidden">↔️</span>
-                    <span class="landscape:hidden portrait:inline">↕️</span>
+                    <span class="icon-swap-landscape hidden">↔️</span>
+                    <span class="icon-swap-portrait">↕️</span>
                 </button>
                 <button onclick="event.stopPropagation(); showCurrentTimeline();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="タイムライン">📊</button>
                 <button onclick="event.stopPropagation(); toggleResetMenu();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="終了 / リセット">🔄</button>
@@ -593,7 +593,7 @@
             }
             document.getElementById('name-a').textContent = state.teamA;
             document.getElementById('name-b').textContent = state.teamB;
-            // チーム名・カラーはメイン得点画面の専用モーダルで個別に設定可能
+            
             document.getElementById('input-max-timeouts').value = state.maxTimeouts;
             document.getElementById('input-sets-format').value = state.maxSets;
             document.getElementById('input-target-points').value = state.targetPoints;
@@ -615,31 +615,30 @@
             // Header Info
             document.getElementById('current-set-num').textContent = state.currentSet;
 
-            // Orientation
+            // Orientation calculation
             let isLandscape = window.innerWidth > window.innerHeight;
             if (state.orientationMode === 'portrait') isLandscape = false;
             if (state.orientationMode === 'landscape') isLandscape = true;
             document.body.classList.toggle('is-landscape', isLandscape);
 
-            // Court Swap
+            // Court Swap & Layout
             const court = document.getElementById('main-court');
             const areaA = document.getElementById('area-a');
             const areaB = document.getElementById('area-b');
-            const isLandscape = window.innerWidth > window.innerHeight;
             
             if (state.isCourtSwapped) {
-                court.style.flexDirection = isLandscape ? 'row-reverse' : 'column-reverse';
-                
+                court.insertBefore(areaB, areaA);
+                court.style.flexDirection = isLandscape ? 'row' : 'column';
                 if (!isLandscape) {
+                    areaB.style.flexDirection = 'column';
                     areaA.style.flexDirection = 'column-reverse';
-                    areaB.style.flexDirection = 'column';
                 } else {
-                    areaA.style.flexDirection = 'column';
                     areaB.style.flexDirection = 'column';
+                    areaA.style.flexDirection = 'column';
                 }
             } else {
+                court.insertBefore(areaA, areaB);
                 court.style.flexDirection = isLandscape ? 'row' : 'column';
-
                 if (!isLandscape) {
                     areaA.style.flexDirection = 'column';
                     areaB.style.flexDirection = 'column-reverse';
@@ -649,10 +648,20 @@
                 }
             }
 
+            // Float Controls Layout sync
+            const floatInner = document.getElementById('float-controls-inner');
+            if (floatInner) {
+                floatInner.style.flexDirection = isLandscape ? 'column' : 'row';
+                // Swap icon sync
+                const iconLand = floatInner.querySelector('.icon-swap-landscape');
+                const iconPort = floatInner.querySelector('.icon-swap-portrait');
+                if (iconLand) iconLand.classList.toggle('hidden', !isLandscape);
+                if (iconPort) iconPort.classList.toggle('hidden', isLandscape);
+            }
+
             saveState();
             if (typeof updatePositionGrids === 'function') updatePositionGrids();
 
-            // 画面回転時などに、もし現在コート図モーダルが表示されていれば向きをリアルタイム更新する
             if (typeof currentCourtTeam !== 'undefined' && currentCourtTeam) {
                 renderCourt(currentCourtTeam);
             }
@@ -921,6 +930,7 @@
             state.showAdvancedMode = document.getElementById('input-advanced-mode').checked;
             const durationEl = document.getElementById('input-timeout-duration');
             if (durationEl) state.timeoutDuration = parseInt(durationEl.value) || 30;
+            state.orientationMode = document.getElementById('input-orientation-mode').value;
             
             if (isInit) {
                 state.scoreA = 0;
@@ -1227,6 +1237,7 @@
                 document.getElementById('input-final-set-target').value = state.finalSetTarget;
                 document.getElementById('input-max-timeouts').value = state.maxTimeouts;
                 document.getElementById('input-advanced-mode').checked = !!state.showAdvancedMode;
+                document.getElementById('input-orientation-mode').value = state.orientationMode || 'auto';
                 const durationEl = document.getElementById('input-timeout-duration');
                 if (durationEl) durationEl.value = state.timeoutDuration || 30;
             }
