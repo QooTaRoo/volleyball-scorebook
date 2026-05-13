@@ -105,11 +105,15 @@
             <div id="to-indicator-a" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer relative z-50 p-2 -m-2 select-none" onclick="event.stopPropagation(); requestTimeout('A');" title="タイムアウトを取る">
                 <!-- Timeouts drawn here -->
             </div>
-            <div class="flex items-center justify-center gap-2 mb-2 w-full px-4">
-                <button onclick="event.stopPropagation(); toggleCourtOverlay('A');" class="pointer-events-auto relative z-50 w-12 h-10 flex items-center justify-center text-xl bg-zinc-800/80 rounded text-zinc-400 shrink-0 hover:bg-zinc-700 active:scale-95 transition-all" title="コート図 / 交代">🏟️</button>
-                <div id="serve-indicator-a" onclick="event.stopPropagation(); toggleServingTeam();" class="pointer-events-auto relative z-50 text-2xl select-none cursor-pointer shrink-0 hover:scale-125 transition-transform" title="タップしてサーブ権移動"></div>
-                <div id="name-a" onclick="event.stopPropagation(); openTeamConfigModal('A');" class="pointer-events-auto relative z-50 team-name truncate text-center cursor-pointer hover:underline select-none" title="チーム設定を変更" style="color: var(--color-a);">TEAM A</div>
-                <div id="sets-a" class="w-14 h-12 flex items-center justify-center text-3xl font-black bg-zinc-800/90 rounded text-yellow-400 shrink-0 shadow-inner">0</div>
+            <div class="flex items-center justify-center w-full px-4 mb-3 relative h-12">
+                <div class="relative flex items-center justify-center max-w-[60%]">
+                    <div id="serve-indicator-a" onclick="event.stopPropagation(); toggleServingTeam();" class="absolute right-full mr-3 pointer-events-auto z-50 text-2xl select-none cursor-pointer shrink-0 hover:scale-125 transition-all duration-300" title="タップしてサーブ権移動">🏐</div>
+                    <div id="name-a" onclick="event.stopPropagation(); openTeamConfigModal('A');" class="pointer-events-auto relative z-50 team-name truncate text-center cursor-pointer hover:underline select-none text-xl font-bold" title="チーム設定を変更" style="color: var(--color-a);">TEAM A</div>
+                    <div class="absolute left-full ml-3 flex items-center gap-2 pointer-events-auto z-50">
+                        <div id="sets-a" class="w-10 h-8 flex items-center justify-center text-xl font-black bg-zinc-800/90 rounded text-yellow-400 shrink-0 shadow-inner select-none">0</div>
+                        <button onclick="event.stopPropagation(); toggleCourtOverlay('A');" class="w-9 h-9 flex items-center justify-center text-lg bg-zinc-800/60 rounded-full text-zinc-400 shrink-0 hover:bg-zinc-700 hover:text-white active:scale-95 transition-all" title="コート図 / 交代">🏟️</button>
+                    </div>
+                </div>
             </div>
             <div id="score-a" class="score-display font-bold" style="color: var(--color-a);">00</div>
         </div>
@@ -119,11 +123,15 @@
             <div id="to-indicator-b" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer relative z-50 p-2 -m-2 select-none" onclick="event.stopPropagation(); requestTimeout('B');" title="タイムアウトを取る">
                 <!-- Timeouts drawn here -->
             </div>
-            <div class="flex items-center justify-center gap-2 mb-2 w-full px-4">
-                <button onclick="event.stopPropagation(); toggleCourtOverlay('B');" class="pointer-events-auto relative z-50 w-12 h-10 flex items-center justify-center text-xl bg-zinc-800/80 rounded text-zinc-400 shrink-0 hover:bg-zinc-700 active:scale-95 transition-all" title="コート図 / 交代">🏟️</button>
-                <div id="serve-indicator-b" onclick="event.stopPropagation(); toggleServingTeam();" class="pointer-events-auto relative z-50 text-2xl select-none cursor-pointer shrink-0 hover:scale-125 transition-transform" title="タップしてサーブ権移動"></div>
-                <div id="name-b" onclick="event.stopPropagation(); openTeamConfigModal('B');" class="pointer-events-auto relative z-50 team-name truncate text-center cursor-pointer hover:underline select-none" title="チーム設定を変更" style="color: var(--color-b);">TEAM B</div>
-                <div id="sets-b" class="w-14 h-12 flex items-center justify-center text-3xl font-black bg-zinc-800/90 rounded text-yellow-400 shrink-0 shadow-inner">0</div>
+            <div class="flex items-center justify-center w-full px-4 mb-3 relative h-12">
+                <div class="relative flex items-center justify-center max-w-[60%]">
+                    <div id="serve-indicator-b" onclick="event.stopPropagation(); toggleServingTeam();" class="absolute right-full mr-3 pointer-events-auto z-50 text-2xl select-none cursor-pointer shrink-0 hover:scale-125 transition-all duration-300" title="タップしてサーブ権移動">🏐</div>
+                    <div id="name-b" onclick="event.stopPropagation(); openTeamConfigModal('B');" class="pointer-events-auto relative z-50 team-name truncate text-center cursor-pointer hover:underline select-none text-xl font-bold" title="チーム設定を変更" style="color: var(--color-b);">TEAM B</div>
+                    <div class="absolute left-full ml-3 flex items-center gap-2 pointer-events-auto z-50">
+                        <div id="sets-b" class="w-10 h-8 flex items-center justify-center text-xl font-black bg-zinc-800/90 rounded text-yellow-400 shrink-0 shadow-inner select-none">0</div>
+                        <button onclick="event.stopPropagation(); toggleCourtOverlay('B');" class="w-9 h-9 flex items-center justify-center text-lg bg-zinc-800/60 rounded-full text-zinc-400 shrink-0 hover:bg-zinc-700 hover:text-white active:scale-95 transition-all" title="コート図 / 交代">🏟️</button>
+                    </div>
+                </div>
             </div>
             <div id="score-b" class="score-display font-bold" style="color: var(--color-b);">00</div>
         </div>
@@ -334,34 +342,34 @@
             <div id="court-grid-container" class="flex-1 flex gap-2 bg-emerald-800 p-4 rounded-lg border-4 border-white/20 relative aspect-[3/2] w-full max-w-sm mx-auto shadow-2xl transition-all duration-300">
                 <!-- Front Row (P4, P3, P2) -->
                 <div id="court-front-row" class="flex-1 flex gap-2 transition-all duration-300">
-                    <div id="pos-4" onclick="openSubModal(3)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors">
-                        <span class="text-xs text-white/50 font-bold mb-1">P4</span>
+                    <div id="pos-4" onclick="openSubModal(3)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
                         <span class="text-3xl font-bold text-white player-num">-</span>
+                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
                     </div>
-                    <div id="pos-3" onclick="openSubModal(2)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors">
-                        <span class="text-xs text-white/50 font-bold mb-1">P3</span>
+                    <div id="pos-3" onclick="openSubModal(2)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
                         <span class="text-3xl font-bold text-white player-num">-</span>
+                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
                     </div>
-                    <div id="pos-2" onclick="openSubModal(1)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors">
-                        <span class="text-xs text-white/50 font-bold mb-1">P2</span>
+                    <div id="pos-2" onclick="openSubModal(1)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
                         <span class="text-3xl font-bold text-white player-num">-</span>
+                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
                     </div>
                 </div>
                 <!-- Net Line -->
                 <div id="court-net-line" class="bg-white/30 transition-all duration-300 shrink-0"></div>
                 <!-- Back Row (P5, P6, P1) -->
                 <div id="court-back-row" class="flex-1 flex gap-2 transition-all duration-300">
-                    <div id="pos-5" onclick="openSubModal(4)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors">
-                        <span class="text-xs text-white/50 font-bold mb-1">P5</span>
+                    <div id="pos-5" onclick="openSubModal(4)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
                         <span class="text-3xl font-bold text-white player-num">-</span>
+                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
                     </div>
-                    <div id="pos-6" onclick="openSubModal(5)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors">
-                        <span class="text-xs text-white/50 font-bold mb-1">P6</span>
+                    <div id="pos-6" onclick="openSubModal(5)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
                         <span class="text-3xl font-bold text-white player-num">-</span>
+                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
                     </div>
-                    <div id="pos-1" onclick="openSubModal(0)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors">
-                        <span class="text-xs text-white/50 font-bold mb-1">P1</span>
+                    <div id="pos-1" onclick="openSubModal(0)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
                         <span class="text-3xl font-bold text-white player-num">-</span>
+                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
                     </div>
                 </div>
             </div>
@@ -431,8 +439,8 @@
             matchStartTime: Date.now(),
             timeoutDuration: 30, // タイムアウト時間（秒）
             // 追加分
-            membersA: Array.from({length: 12}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `Player A${i+1}` })),
-            membersB: Array.from({length: 12}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `Player B${i+1}` })),
+            membersA: Array.from({length: 12}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `${i+1}` })),
+            membersB: Array.from({length: 12}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}` })),
             lineupA: ["A1", "A2", "A3", "A4", "A5", "A6"], // P1, P2, P3, P4, P5, P6
             lineupB: ["B1", "B2", "B3", "B4", "B5", "B6"],
             liberoA: null,
@@ -501,12 +509,12 @@
             const indA = document.getElementById('serve-indicator-a');
             const indB = document.getElementById('serve-indicator-b');
             if (indA) {
-                indA.textContent = state.servingTeam === 'A' ? '🏐' : '';
-                indA.style.display = state.servingTeam === 'A' ? 'block' : 'none';
+                indA.classList.toggle('opacity-0', state.servingTeam !== 'A');
+                indA.style.pointerEvents = state.servingTeam === 'A' ? 'auto' : 'none';
             }
             if (indB) {
-                indB.textContent = state.servingTeam === 'B' ? '🏐' : '';
-                indB.style.display = state.servingTeam === 'B' ? 'block' : 'none';
+                indB.classList.toggle('opacity-0', state.servingTeam !== 'B');
+                indB.style.pointerEvents = state.servingTeam === 'B' ? 'auto' : 'none';
             }
             document.getElementById('name-a').textContent = state.teamA;
             document.getElementById('name-b').textContent = state.teamB;
@@ -851,8 +859,8 @@
                 updateTimer();
 
                 // メンバー・ローテーション関連の初期化
-                state.membersA = Array.from({length: 14}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `Player A${i+1}` }));
-                state.membersB = Array.from({length: 14}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `Player B${i+1}` }));
+                state.membersA = Array.from({length: 14}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `${i+1}` }));
+                state.membersB = Array.from({length: 14}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}` }));
                 state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
                 state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
                 state.liberoA = null;
@@ -1172,10 +1180,10 @@
 
         function ensureMemberState() {
             if (!state.membersA || !Array.isArray(state.membersA)) {
-                state.membersA = Array.from({length: 14}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `Player A${i+1}` }));
+                state.membersA = Array.from({length: 14}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `${i+1}` }));
             }
             if (!state.membersB || !Array.isArray(state.membersB)) {
-                state.membersB = Array.from({length: 14}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `Player B${i+1}` }));
+                state.membersB = Array.from({length: 14}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}` }));
             }
             if (!state.lineupA || !Array.isArray(state.lineupA)) {
                 state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
@@ -1216,6 +1224,12 @@
                         }
                     }
                     numSpan.textContent = player ? player.number : '-';
+                    const nameSpan = el.querySelector('.player-name');
+                    if (nameSpan) {
+                        const name = player ? player.name : '';
+                        // 名前が番号と同じ（デフォルト）の場合は表示しない
+                        nameSpan.textContent = (name && name !== String(player?.number)) ? name : '';
+                    }
                 });
             }
 
@@ -1423,7 +1437,7 @@
                             return {
                                 id: `B${i+1}`,
                                 number: pm ? pm.number : (i + 1),
-                                name: pm ? pm.name : `Player B${i+1}`
+                                name: pm ? pm.name : `${i+1}`
                             };
                         });
                         state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
@@ -1463,7 +1477,7 @@
                 masterEditMembers = Array.from({length: 14}, (_, i) => ({
                     id: `M${i+1}`,
                     number: i + 1,
-                    name: `Player ${i+1}`
+                    name: `${i+1}`
                 }));
             } else {
                 const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
@@ -1474,7 +1488,7 @@
                     let arr = JSON.parse(JSON.stringify(p.members || []));
                     while (arr.length < 14) {
                         const nextIdx = arr.length;
-                        arr.push({ id: `M${nextIdx+1}`, number: nextIdx + 1, name: `Player ${nextIdx+1}` });
+                        arr.push({ id: `M${arr.length+1}`, number: arr.length + 1, name: `${arr.length + 1}` });
                     }
                     if (arr.length > 14) arr = arr.slice(0, 14);
                     masterEditMembers = arr;
