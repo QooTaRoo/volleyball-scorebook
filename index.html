@@ -380,8 +380,10 @@
             document.documentElement.style.setProperty('--color-b', state.colorB);
 
             // Names
-            document.getElementById('name-a').textContent = state.teamA;
-            document.getElementById('name-b').textContent = state.teamB;
+            const iconA = state.servingTeam === 'A' ? '🏐 ' : '';
+            const iconB = state.servingTeam === 'B' ? '🏐 ' : '';
+            document.getElementById('name-a').textContent = iconA + state.teamA;
+            document.getElementById('name-b').textContent = iconB + state.teamB;
             document.getElementById('input-name-a').value = state.teamA;
             document.getElementById('input-name-b').value = state.teamB;
             document.getElementById('input-color-a').value = state.colorA;
@@ -464,19 +466,45 @@
 
             vibrate(50);
             
+            const rotationOccurred = state.servingTeam !== team;
+
             state.actionLog.push({
                 type: 'point',
                 team: team,
                 scoreA: state.scoreA,
                 scoreB: state.scoreB,
-                set: state.currentSet
+                set: state.currentSet,
+                servingTeam: state.servingTeam,
+                rotationOccurred: rotationOccurred
             });
+
+            // サイドアウト判定
+            if (rotationOccurred) {
+                state.servingTeam = team;
+                rotateTeam(team);
+            }
 
             if (team === 'A') state.scoreA++;
             else state.scoreB++;
 
             checkSetEnd();
             updateUI();
+        }
+
+        function rotateTeam(team) {
+            const lineup = team === 'A' ? state.lineupA : state.lineupB;
+            // P1(0) <- P2(1) <- P3(2) <- P4(3) <- P5(4) <- P6(5) <- P1(0)
+            // 配列の先頭を取り出して末尾に追加することで、ポジションを時計回りにずらす
+            const first = lineup.shift();
+            lineup.push(first);
+            
+            state.rotationLog.push({
+                set: state.currentSet,
+                team: team,
+                lineup: [...lineup],
+                scoreA: state.scoreA,
+                scoreB: state.scoreB
+            });
         }
 
         function checkSetEnd() {
@@ -566,8 +594,17 @@
             
             const last = state.actionLog.pop();
             if (last.type === 'point') {
-                if (last.team === 'A') state.scoreA--;
-                else state.scoreB--;
+                state.scoreA = last.scoreA;
+                state.scoreB = last.scoreB;
+                state.servingTeam = last.servingTeam;
+                
+                if (last.rotationOccurred) {
+                    // 回転を戻す
+                    const lineup = last.team === 'A' ? state.lineupA : state.lineupB;
+                    const end = lineup.pop();
+                    lineup.unshift(end);
+                    state.rotationLog.pop();
+                }
             } else if (last.type === 'timeout') {
                 if (last.team === 'A') state.toA--;
                 else state.toB--;
