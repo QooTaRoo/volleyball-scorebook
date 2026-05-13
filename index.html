@@ -140,7 +140,10 @@
         <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-40">
             <div class="pointer-events-auto flex landscape:flex-col portrait:flex-row gap-8 items-center">
                 <button onclick="event.stopPropagation(); undo();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="1つ戻す">↩️</button>
-                <button onclick="event.stopPropagation(); swapCourts();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="コートチェンジ">↔️</button>
+                <button onclick="event.stopPropagation(); swapCourts();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="コートチェンジ">
+                    <span class="landscape:inline portrait:hidden">↔️</span>
+                    <span class="landscape:hidden portrait:inline">↕️</span>
+                </button>
                 <button onclick="event.stopPropagation(); showCurrentTimeline();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="タイムライン">📊</button>
                 <button onclick="event.stopPropagation(); toggleResetMenu();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="終了 / リセット">🔄</button>
             </div>
