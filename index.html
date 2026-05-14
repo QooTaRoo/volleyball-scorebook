@@ -118,13 +118,15 @@
                         ※試合形式や目標点数は「新規試合開始」時に設定します。ここでは基本の共通設定を管理します。
                     </p>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-zinc-500 mb-1">タイムアウト可能回数</label>
-                    <input type="number" id="input-max-timeouts" class="w-full bg-zinc-800 border-none p-2 text-white" value="2" min="0">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-zinc-500 mb-1">タイムアウト時間（秒）</label>
-                    <input type="number" id="input-timeout-duration" class="w-full bg-zinc-800 border-none p-2 text-white" value="30">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-500 mb-1">タイムアウト回数</label>
+                        <input type="number" id="input-max-timeouts" class="w-full bg-zinc-800 border-none p-2 text-white rounded" value="2" min="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-500 mb-1">時間（秒）</label>
+                        <input type="number" id="input-timeout-duration" class="w-full bg-zinc-800 border-none p-2 text-white rounded" value="30">
+                    </div>
                 </div>
 
                 <div class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">

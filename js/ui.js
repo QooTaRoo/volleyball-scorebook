@@ -134,9 +134,6 @@ function showToast(msg) {
 function toggleSettings() { 
     const modal = document.getElementById('settings-modal');
     if (modal.classList.contains('hidden')) {
-        document.getElementById('input-sets-format').value = state.maxSets;
-        document.getElementById('input-target-points').value = state.targetPoints;
-        document.getElementById('input-final-set-target').value = state.finalSetTarget;
         document.getElementById('input-max-timeouts').value = state.maxTimeouts;
         document.getElementById('input-advanced-mode').checked = !!state.showAdvancedMode;
         const durationEl = document.getElementById('input-timeout-duration');
@@ -197,9 +194,6 @@ function updateMatchSetupVisibility() {
 
 // --- Settings Application ---
 function applySettings(isInit = false) {
-    state.maxSets = parseInt(document.getElementById('input-sets-format').value);
-    state.targetPoints = parseInt(document.getElementById('input-target-points').value);
-    state.finalSetTarget = parseInt(document.getElementById('input-final-set-target').value);
     state.maxTimeouts = parseInt(document.getElementById('input-max-timeouts').value);
     state.showAdvancedMode = document.getElementById('input-advanced-mode').checked;
     const durationEl = document.getElementById('input-timeout-duration');
