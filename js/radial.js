@@ -12,7 +12,10 @@ let radialState = {
     currentPlayerId: null,
     playerCoords: {},
     timer: null,
-    isClosing: false // Prevent spamming
+    stillnessTimer: null,
+    lastX: 0,
+    lastY: 0,
+    isClosing: false
 };
 
 const RADIAL_THRESHOLD = 30; 
@@ -100,6 +103,7 @@ function initRadialEvents() {
 
 function resetRadialState() {
     if (radialState.timer) clearTimeout(radialState.timer);
+    if (radialState.stillnessTimer) clearTimeout(radialState.stillnessTimer);
     radialState.active = false;
     radialState.stage = 1;
     radialState.currentOption = null;
@@ -172,10 +176,20 @@ function updateRadialSelection(x, y) {
         if (radialState.currentOption !== option) {
             radialState.currentOption = option;
             highlightOption(option);
+            // オプションが切り替わったときも静止タイマーをリセット
+            resetStillnessTimer();
+        }
+
+        // 静止判定のための距離チェック
+        const moveDist = Math.hypot(x - radialState.lastX, y - radialState.lastY);
+        if (moveDist > 5) {
+            radialState.lastX = x;
+            radialState.lastY = y;
+            resetStillnessTimer();
         }
         
-        // 110px以上（メニュー枠外方向）へスワイプしたら、現在の選択肢で確定して選手選択へ
-        if (dist > 110) {
+        // 強制的にスワイプアウト（140px以上）でも遷移
+        if (dist > 140) {
             enterStage2(option);
         }
     } else {
@@ -299,4 +313,14 @@ function highlightPlayer(posNum) {
         opt.style.color = isMatch ? '#000' : '';
         opt.style.transform = opt.style.transform.replace(' scale(1.2)', '') + (isMatch ? ' scale(1.2)' : '');
     });
+}
+function resetStillnessTimer() {
+    if (radialState.stillnessTimer) clearTimeout(radialState.stillnessTimer);
+    if (radialState.active && radialState.stage === 1 && radialState.currentOption) {
+        radialState.stillnessTimer = setTimeout(() => {
+            if (radialState.active && radialState.stage === 1) {
+                enterStage2(radialState.currentOption);
+            }
+        }, 500); // 0.5秒静止で選手選択へ
+    }
 }
