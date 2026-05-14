@@ -49,25 +49,3 @@ function isAnyModalOpen() {
     return Array.from(document.querySelectorAll('[id$="-modal"]')).some(m => !m.classList.contains('hidden'));
 }
 
-// Global reference for Wake Lock
-let wakeLock = null;
-
-async function keepScreenOn() {
-    if ('wakeLock' in navigator) {
-        try {
-            wakeLock = await navigator.wakeLock.request('screen');
-            wakeLock.addEventListener('release', () => {
-                console.log('Wake Lock was released');
-            });
-        } catch (err) {
-            console.error(`${err.name}, ${err.message}`);
-        }
-    }
-}
-
-// Wake Lock Re-acquisition on Visibility Change (Requirement 3)
-document.addEventListener('visibilitychange', async () => {
-    if (wakeLock !== null && document.visibilityState === 'visible') {
-        keepScreenOn();
-    }
-});

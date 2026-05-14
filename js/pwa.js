@@ -121,18 +121,17 @@ async function shareContainerAsImage(containerId, filename = 'share.png') {
 // Screen Wake Lock
 let wakeLock = null;
 async function keepScreenOn() {
-    if ('wakeLock' in navigator) {
-        try {
-            wakeLock = await navigator.wakeLock.request('screen');
-        } catch (err) {
-            console.warn(`Wake Lock error: ${err.name}, ${err.message}`);
-        }
+    if (!('wakeLock' in navigator)) return;
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (err) {
+        console.warn(`Wake Lock error: ${err.message}`);
     }
 }
 
-// Re-acquire wake lock when page becomes visible
 document.addEventListener('visibilitychange', async () => {
-    if (wakeLock !== null && document.visibilityState === 'visible') {
+    if (document.visibilityState === 'visible') {
         keepScreenOn();
     }
 });
