@@ -7,122 +7,42 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="VB Score">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1a1a'/%3E%3Ctext y='75' x='10' font-family='Arial' font-size='70' fill='yellow'%3EVB%3C/text%3E%3C/svg%3E">
+    <link rel="manifest" href="manifest.json">
     <title>バレーボール・スコア記録</title>
+    
+    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&display=swap');
-
-        :root {
-            --bg-color: #1a1a1a;
-            --text-color: #ffffff;
-            --color-a: #eab308;
-            --color-b: #ffffff;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Roboto Mono', monospace;
-            overflow: hidden;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-        }
-
-        .score-display {
-            font-size: 28vh;
-            line-height: 0.85;
-            font-variant-numeric: tabular-nums;
-            text-align: center;
-            width: 100%;
-            pointer-events: none;
-        }
-
-        .is-landscape .score-display {
-            font-size: 50vh;
-        }
-
-        .tap-area {
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-            touch-action: none; /* スコアエリアのみスクロール禁止 */
-        }
-
-        .team-name {
-            font-size: 2rem;
-            text-transform: uppercase;
-        }
-
-        .timeline-container {
-            scrollbar-width: thin;
-            scrollbar-color: #555 #222;
-        }
-
-        /* モーダル内はスクロールを許可 */
-        [id$="-modal"] {
-            touch-action: auto;
-            overflow-y: auto;
-        }
-
-        * {
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .color-box {
-            color: #000;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .color-box.t-box {
-            border-radius: 50%;
-        }
-        /* Color picker input styling */
-        input[type="color"] {
-            -webkit-appearance: none;
-            border: none;
-        }
-        input[type="color"]::-webkit-color-swatch-wrapper {
-            padding: 0;
-        }
-        input[type="color"]::-webkit-color-swatch {
-            border: none;
-            border-radius: 4px;
-        }
-    </style>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="h-screen w-screen flex flex-col">
 
     <!-- Header / Nav -->
     <header class="h-12 flex items-center justify-between px-4 bg-zinc-900 border-b border-zinc-800 z-50">
-        <button onclick="toggleSettings()" class="text-zinc-400">⚙️</button>
+        <button onclick="toggleSettings()" class="text-zinc-400 p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
         <div id="match-info" class="text-xs text-zinc-500 font-bold tracking-widest flex items-center gap-2">
             <span>第<span id="current-set-num">1</span>セット</span>
             <span>|</span>
-            <span>⏱️ <span id="match-duration">0</span>分</span>
+            <span>⏱️ <span id="match-timer">00:00</span></span>
         </div>
-        <button onclick="toggleHistory()" class="text-zinc-400">📋</button>
+        <button onclick="toggleHistory()" class="text-zinc-400 p-2"><i data-lucide="clipboard-list" class="w-5 h-5"></i></button>
     </header>
 
     <!-- Main Score Area -->
     <main id="main-court" class="flex-1 flex flex-col relative">
         <!-- Team A -->
         <div id="area-a" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center tap-area relative w-full">
-            <div id="to-indicator-a" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer relative z-50 p-2 -m-2 select-none" onclick="event.stopPropagation(); requestTimeout('A');" title="タイムアウトを取る">
-                <!-- Timeouts drawn here -->
-            </div>
+            <div id="to-indicator-a" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer relative z-50 p-2 -m-2 select-none" onclick="event.stopPropagation(); requestTimeout('A');" title="タイムアウトを取る"></div>
             <div class="flex items-center justify-center w-full px-4 mb-3 relative h-12">
                 <div class="relative flex items-center justify-center max-w-[60%]">
-                    <div id="serve-indicator-a" onclick="event.stopPropagation(); toggleServingTeam();" class="absolute right-full mr-3 pointer-events-auto z-50 text-2xl select-none cursor-pointer shrink-0 hover:scale-125 transition-all duration-300" title="タップしてサーブ権移動">🏐</div>
-                    <div id="name-a" onclick="event.stopPropagation(); openTeamConfigModal('A');" class="pointer-events-auto relative z-50 team-name truncate text-center cursor-pointer hover:underline select-none text-xl font-bold" title="チーム設定を変更" style="color: var(--color-a);">TEAM A</div>
+                    <div id="serve-indicator-a" onclick="event.stopPropagation(); toggleServingTeam();" class="absolute right-full mr-3 pointer-events-auto z-50 text-2xl select-none cursor-pointer shrink-0 hover:scale-125 transition-all duration-300 text-yellow-400"><i data-lucide="volleyball" class="w-6 h-6"></i></div>
+                    <div id="name-a" onclick="event.stopPropagation(); openTeamConfigModal('A');" class="pointer-events-auto relative z-50 team-name truncate text-center cursor-pointer hover:underline select-none text-xl font-bold" style="color: var(--color-a);">TEAM A</div>
                     <div class="absolute left-full ml-3 flex items-center gap-2 pointer-events-auto z-50">
                         <div id="sets-a" class="w-10 h-8 flex items-center justify-center text-xl font-black bg-zinc-800/90 rounded text-yellow-400 shrink-0 shadow-inner select-none">0</div>
-                        <button onclick="event.stopPropagation(); toggleCourtOverlay('A');" class="w-9 h-9 flex items-center justify-center text-lg bg-zinc-800/60 rounded-full text-zinc-400 shrink-0 hover:bg-zinc-700 hover:text-white active:scale-95 transition-all" title="コート図 / 交代">🏟️</button>
+                        <button onclick="event.stopPropagation(); toggleCourtOverlay('A');" class="w-9 h-9 flex items-center justify-center text-lg bg-zinc-800/60 rounded-full text-zinc-400 shrink-0 hover:bg-zinc-700 hover:text-white transition-all"><i data-lucide="layout" class="w-4 h-4"></i></button>
                     </div>
                 </div>
             </div>
@@ -131,16 +51,14 @@
 
         <!-- Team B -->
         <div id="area-b" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center tap-area relative w-full">
-            <div id="to-indicator-b" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer relative z-50 p-2 -m-2 select-none" onclick="event.stopPropagation(); requestTimeout('B');" title="タイムアウトを取る">
-                <!-- Timeouts drawn here -->
-            </div>
+            <div id="to-indicator-b" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer relative z-50 p-2 -m-2 select-none" onclick="event.stopPropagation(); requestTimeout('B');" title="タイムアウトを取る"></div>
             <div class="flex items-center justify-center w-full px-4 mb-3 relative h-12">
                 <div class="relative flex items-center justify-center max-w-[60%]">
-                    <div id="serve-indicator-b" onclick="event.stopPropagation(); toggleServingTeam();" class="absolute right-full mr-3 pointer-events-auto z-50 text-2xl select-none cursor-pointer shrink-0 hover:scale-125 transition-all duration-300" title="タップしてサーブ権移動">🏐</div>
-                    <div id="name-b" onclick="event.stopPropagation(); openTeamConfigModal('B');" class="pointer-events-auto relative z-50 team-name truncate text-center cursor-pointer hover:underline select-none text-xl font-bold" title="チーム設定を変更" style="color: var(--color-b);">TEAM B</div>
+                    <div id="serve-indicator-b" onclick="event.stopPropagation(); toggleServingTeam();" class="absolute right-full mr-3 pointer-events-auto z-50 text-2xl select-none cursor-pointer shrink-0 hover:scale-125 transition-all duration-300 text-yellow-400"><i data-lucide="volleyball" class="w-6 h-6"></i></div>
+                    <div id="name-b" onclick="event.stopPropagation(); openTeamConfigModal('B');" class="pointer-events-auto relative z-50 team-name truncate text-center cursor-pointer hover:underline select-none text-xl font-bold" style="color: var(--color-b);">TEAM B</div>
                     <div class="absolute left-full ml-3 flex items-center gap-2 pointer-events-auto z-50">
                         <div id="sets-b" class="w-10 h-8 flex items-center justify-center text-xl font-black bg-zinc-800/90 rounded text-yellow-400 shrink-0 shadow-inner select-none">0</div>
-                        <button onclick="event.stopPropagation(); toggleCourtOverlay('B');" class="w-9 h-9 flex items-center justify-center text-lg bg-zinc-800/60 rounded-full text-zinc-400 shrink-0 hover:bg-zinc-700 hover:text-white active:scale-95 transition-all" title="コート図 / 交代">🏟️</button>
+                        <button onclick="event.stopPropagation(); toggleCourtOverlay('B');" class="w-9 h-9 flex items-center justify-center text-lg bg-zinc-800/60 rounded-full text-zinc-400 shrink-0 hover:bg-zinc-700 hover:text-white transition-all"><i data-lucide="layout" class="w-4 h-4"></i></button>
                     </div>
                 </div>
             </div>
@@ -150,747 +68,336 @@
         <!-- Float Controls -->
         <div id="float-controls" class="absolute inset-0 pointer-events-none flex items-center justify-center z-40">
             <div id="float-controls-inner" class="pointer-events-auto flex gap-8 items-center">
-                <button onclick="event.stopPropagation(); undo();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="1つ戻す">↩️</button>
-                <button onclick="event.stopPropagation(); swapCourts();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="コートチェンジ">
-                    <span class="icon-swap-landscape hidden">↔️</span>
-                    <span class="icon-swap-portrait">↕️</span>
+                <button onclick="event.stopPropagation(); undo();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl text-zinc-400" title="戻す"><i data-lucide="undo-2" class="w-8 h-8"></i></button>
+                <button onclick="event.stopPropagation(); swapCourts();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl text-zinc-400" title="コートチェンジ">
+                    <span class="icon-swap-landscape hidden"><i data-lucide="repeat" class="w-8 h-8"></i></span>
+                    <span class="icon-swap-portrait"><i data-lucide="repeat-2" class="w-8 h-8"></i></span>
                 </button>
-                <button onclick="event.stopPropagation(); showCurrentTimeline();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="タイムライン">📊</button>
-                <button onclick="event.stopPropagation(); toggleResetMenu();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl" title="終了 / リセット">🔄</button>
+                <button onclick="event.stopPropagation(); showCurrentTimeline();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl text-zinc-400" title="統計"><i data-lucide="bar-chart-3" class="w-8 h-8"></i></button>
+                <button onclick="event.stopPropagation(); toggleResetMenu();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl text-zinc-400" title="メニュー"><i data-lucide="more-horizontal" class="w-8 h-8"></i></button>
             </div>
         </div>
 
-        <!-- Radial Menu for Advanced Mode -->
+        <!-- Radial Menu -->
         <div id="radial-menu" class="fixed pointer-events-none z-[100] opacity-0 scale-50 transition-all duration-200 origin-center">
             <div class="relative w-64 h-64 flex items-center justify-center">
-                <!-- Center background -->
                 <div class="absolute inset-0 bg-black/60 backdrop-blur-xl rounded-full border border-white/20 shadow-2xl"></div>
-                
-                <!-- Stage 1: Action Icons -->
                 <div id="radial-stage-action" class="absolute inset-0 transition-opacity duration-200">
                     <div id="radial-opt-spike" class="radial-option absolute flex flex-col items-center justify-center w-16 h-16 rounded-full bg-zinc-800 border border-white/10 text-white" style="top: 0; left: 50%; transform: translate(-50%, 0);">
-                        <span class="text-xl">⚔️</span>
-                        <span class="text-[9px] font-black">SPIKE</span>
+                        <i data-lucide="swords" class="w-6 h-6 mb-0.5"></i><span class="text-[9px] font-black">SPIKE</span>
                     </div>
                     <div id="radial-opt-ace" class="radial-option absolute flex flex-col items-center justify-center w-16 h-16 rounded-full bg-zinc-800 border border-white/10 text-white" style="top: 50%; right: 0; transform: translate(0, -50%);">
-                        <span class="text-xl">🏐</span>
-                        <span class="text-[9px] font-black">ACE</span>
+                        <i data-lucide="zap" class="w-6 h-6 mb-0.5"></i><span class="text-[9px] font-black">ACE</span>
                     </div>
                     <div id="radial-opt-error" class="radial-option absolute flex flex-col items-center justify-center w-16 h-16 rounded-full bg-red-900/40 border border-red-500/30 text-white" style="top: 50%; left: 0; transform: translate(0, -50%);">
-                        <span class="text-xl">❌</span>
-                        <span class="text-[9px] font-black">ERROR</span>
+                        <i data-lucide="x-circle" class="w-6 h-6 mb-0.5"></i><span class="text-[9px] font-black">ERROR</span>
                     </div>
                     <div id="radial-opt-block" class="radial-option absolute flex flex-col items-center justify-center w-16 h-16 rounded-full bg-zinc-800 border border-white/10 text-white" style="bottom: 0; left: 50%; transform: translate(-50%, 0);">
-                        <span class="text-xl">🛡️</span>
-                        <span class="text-[9px] font-black">BLOCK</span>
+                        <i data-lucide="shield" class="w-6 h-6 mb-0.5"></i><span class="text-[9px] font-black">BLOCK</span>
                     </div>
                 </div>
-
-                <!-- Stage 2: Player Icons (P1-P6) -->
                 <div id="radial-stage-player" class="absolute inset-0 opacity-0 transition-opacity duration-200 pointer-events-none">
-                    <!-- JS will populate these around the finger -->
                     <div id="radial-player-list" class="relative w-full h-full"></div>
                 </div>
-
-                <!-- Guidance Text (Center) -->
-                <div id="radial-guidance" class="absolute inset-0 flex items-center justify-center text-white/30 font-black text-[10px] uppercase tracking-wider text-center px-6 leading-tight pointer-events-none z-10">
-                    種類を選択
-                </div>
-                <!-- Selection indicator -->
+                <div id="radial-guidance" class="absolute inset-0 flex items-center justify-center text-white/30 font-black text-[10px] uppercase tracking-wider text-center px-6 leading-tight pointer-events-none z-10">種類を選択</div>
                 <div id="radial-selection-indicator" class="absolute w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_15px_rgba(250,204,21,1)] opacity-0 transition-opacity"></div>
             </div>
         </div>
     </main>
 
     <!-- Modals -->
-    <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/90 z-[100] hidden p-6 overflow-y-auto">
         <div class="max-w-md mx-auto">
             <h2 class="text-2xl font-bold mb-6 border-b border-zinc-700 pb-2 text-yellow-400">設定</h2>
-            
             <div class="space-y-6">
-                <div>
-                    <button onclick="event.stopPropagation(); openMasterTeamModal();" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded flex items-center justify-center gap-2 shadow">
-                        👤 チーム・メンバーの管理（マスター登録）
-                    </button>
+                <button onclick="openMasterTeamModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded flex items-center justify-center gap-2 shadow">
+                    <i data-lucide="users" class="w-4 h-4"></i> チーム・メンバーの管理
+                </button>
+                <div class="p-4 bg-zinc-800/50 rounded-xl border border-white/5 mb-4">
+                    <p class="text-[10px] text-zinc-400 leading-relaxed italic">
+                        ※試合形式や目標点数は「新規試合開始」時に設定します。ここでは基本の共通設定を管理します。
+                    </p>
                 </div>
-
-                <!-- 最初のサーブ権設定は得点画面のサーブ権インジケーター等で直接コントロールするため削除 -->
-
                 <div>
-                    <label class="block text-xs font-bold text-zinc-500 mb-1">試合形式</label>
-                    <select id="input-sets-format" class="w-full bg-zinc-800 border-none p-2 text-white">
-                        <option value="1">1セットマッチ</option>
-                        <option value="3" selected>3セットマッチ</option>
-                        <option value="5">5セットマッチ</option>
-                    </select>
+                    <label class="block text-xs font-bold text-zinc-500 mb-1">タイムアウト可能回数</label>
+                    <input type="number" id="input-max-timeouts" class="w-full bg-zinc-800 border-none p-2 text-white" value="2" min="0">
                 </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-zinc-500 mb-1">1セットのタイムアウト可能回数</label>
-                    <input type="number" id="input-max-timeouts" class="w-full bg-zinc-800 border-none p-2 text-white" value="2" min="0" max="10">
-                </div>
-
                 <div>
                     <label class="block text-xs font-bold text-zinc-500 mb-1">タイムアウト時間（秒）</label>
-                    <input type="number" id="input-timeout-duration" class="w-full bg-zinc-800 border-none p-2 text-white" value="30" min="5" max="180">
+                    <input type="number" id="input-timeout-duration" class="w-full bg-zinc-800 border-none p-2 text-white" value="30">
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-zinc-500 mb-1">1セットの目標点数</label>
-                    <input type="number" id="input-target-points" class="w-full bg-zinc-800 border-none p-2 text-white" value="25">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-zinc-500 mb-1">最終セットの目標点数</label>
-                    <input type="number" id="input-final-set-target" class="w-full bg-zinc-800 border-none p-2 text-white" value="15">
-                </div>
-
-                <div class="space-y-2">
-                    <label class="block text-xs font-bold text-zinc-500 uppercase tracking-widest">画面レイアウト</label>
-                    <select id="input-orientation-mode" class="w-full bg-zinc-800 border-none p-3 text-white rounded-xl font-bold shadow-inner focus:ring-2 focus:ring-yellow-400 outline-none">
-                        <option value="auto">自動判別（標準）</option>
-                        <option value="portrait">縦画面に固定 (Portrait)</option>
-                        <option value="landscape">横画面に固定 (Landscape)</option>
-                    </select>
-                </div>
-
-                <div class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-white/5 mt-4">
+                <div class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
                     <span class="text-xs font-bold text-zinc-300">詳細スタッツモード</span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="input-advanced-mode" class="sr-only peer">
-                        <div class="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        <div class="w-11 h-6 bg-zinc-700 rounded-full peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
                     </label>
                 </div>
-                <p class="text-[10px] text-zinc-500 px-1 -mt-3">得点時に長押しスライドで「スパイク」「エース」等の内訳を記録します。</p>
+                <div class="space-y-4 pt-4 border-t border-zinc-800">
+                    <label class="block text-[10px] font-black text-zinc-600 uppercase tracking-widest">データ管理</label>
+                    
+                    <div class="space-y-2">
+                        <div class="text-[10px] text-zinc-500 font-bold">チーム設定</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="exportTeams()" class="bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded text-[10px] font-bold border border-white/5">📤 エクスポート</button>
+                            <button onclick="importTeams()" class="bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded text-[10px] font-bold border border-white/5">📥 インポート</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="text-[10px] text-zinc-500 font-bold">試合履歴</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="exportHistory()" class="bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded text-[10px] font-bold border border-white/5">📤 エクスポート</button>
+                            <button onclick="importHistory()" class="bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded text-[10px] font-bold border border-white/5">📥 インポート</button>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="flex gap-4 pt-6">
-                    <button onclick="event.stopPropagation(); applySettings();" class="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3 rounded">設定を保存</button>
-                    <button onclick="event.stopPropagation(); toggleSettings();" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded">閉じる</button>
+                    <button onclick="applySettings()" class="flex-1 bg-zinc-700 py-3 rounded font-bold">保存</button>
+                    <button onclick="toggleSettings()" class="flex-1 bg-zinc-800 py-3 rounded font-bold">閉じる</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Reset Modal -->
     <div id="reset-modal" class="fixed inset-0 bg-black/90 z-[150] hidden p-6 flex flex-col items-center justify-center">
-        <div class="max-w-sm w-full bg-zinc-900 border border-zinc-800 p-6 rounded-lg text-center shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-white">試合メニュー</h2>
+        <div class="max-w-sm w-full bg-zinc-900 border border-zinc-800 p-6 rounded-lg text-center">
+            <h2 class="text-xl font-bold mb-6">試合メニュー</h2>
             <div class="space-y-4">
-                <button onclick="finishAndStartNewMatch()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 rounded shadow-lg text-sm">
-                    試合を終了・記録して新しく始める
+                <button onclick="finishMatch()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg">
+                    <i data-lucide="check-square" class="w-5 h-5"></i> 試合を記録して終了
                 </button>
-                <button onclick="startNewMatch()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded shadow-lg text-sm">
-                    記録せずにリセットする (最初から)
+                <button onclick="startNewMatch()" class="w-full bg-zinc-800 hover:bg-red-900/50 text-red-500 font-bold py-4 rounded-xl flex items-center justify-center gap-2 border border-red-900/30">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i> リセット (最初から)
                 </button>
-                <button onclick="toggleResetMenu()" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-4 rounded shadow-lg text-sm mt-4">
-                    キャンセル
-                </button>
+                <button onclick="toggleResetMenu()" class="w-full bg-zinc-700 font-bold py-4 rounded-xl">キャンセル</button>
             </div>
         </div>
     </div>
 
-    <!-- History Modal -->
     <div id="history-modal" class="fixed inset-0 bg-black/95 z-[100] hidden p-6 overflow-y-auto">
         <div class="max-w-2xl mx-auto pb-20">
-            <div class="flex items-center justify-between mb-8 sticky top-0 bg-black/95 py-2 z-10">
+            <div class="flex items-center justify-between mb-8 sticky top-0 bg-black/95 py-2">
                 <h2 class="text-2xl font-bold text-yellow-400">試合履歴</h2>
-                <button onclick="toggleHistory()" class="text-zinc-500 text-3xl">✕</button>
+                <button onclick="toggleHistory()" class="text-3xl">✕</button>
             </div>
             <div id="history-list"></div>
-            <div class="mt-12 pt-8 border-t border-zinc-800 text-center">
-                <button onclick="clearAllHistory()" class="text-red-500 text-xs font-bold uppercase tracking-widest border border-red-500/30 px-4 py-2 rounded-full hover:bg-red-500/10 transition-all">全履歴を削除</button>
-            </div>
+            <button onclick="clearAllHistory()" class="mt-8 text-red-500 text-xs border border-red-500/30 px-4 py-2 rounded-full">全履歴を削除</button>
         </div>
     </div>
 
-    <!-- Analysis Modal -->
+    <div id="timeline-modal" class="fixed inset-0 bg-[#1a1a1a] z-[100] hidden p-4 flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">タイムライン</h2>
+            <div class="flex gap-2">
+                <button onclick="openAnalysis(-1)" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm text-white font-bold flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4"></i> スタッツ分析</button>
+                <button onclick="shareContainerAsImage('timeline-content', 'timeline.png')" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm text-white font-bold flex items-center gap-2"><i data-lucide="share" class="w-4 h-4"></i> 共有</button>
+                <button onclick="toggleTimeline()" class="bg-zinc-700 px-4 py-2 rounded text-sm">閉じる</button>
+            </div>
+        </div>
+        <div id="timeline-content" class="flex-1 overflow-y-auto timeline-container px-2 bg-[#1a1a1a]"></div>
+    </div>
+
     <div id="analysis-modal" class="fixed inset-0 bg-black/95 z-[110] hidden p-6 overflow-y-auto">
         <div class="max-w-2xl mx-auto pb-20">
-            <div class="flex items-center justify-between mb-8 sticky top-0 bg-black/95 py-2 z-10 border-b border-zinc-800">
-                <h2 class="text-2xl font-bold text-emerald-400">📊 試合分析</h2>
-                <button onclick="toggleAnalysis()" class="text-zinc-500 text-3xl">✕</button>
+            <div class="flex items-center justify-between mb-8 sticky top-0 bg-black/95 py-2 border-b border-zinc-800">
+                <h2 class="text-2xl font-bold text-emerald-400">📈 試合分析</h2>
+                <div class="flex gap-2">
+                    <button onclick="shareContainerAsImage('analysis-content', 'stats.png')" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm text-white font-bold flex items-center gap-2"><i data-lucide="share" class="w-4 h-4"></i> 共有</button>
+                    <button onclick="toggleAnalysis()" class="text-zinc-500 p-2"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
             </div>
-            
-            <div id="analysis-header" class="mb-8">
-                <!-- Team vs Team summary here -->
-            </div>
-
-            <div class="space-y-12">
-                <!-- Team Stats Section -->
-                <section>
-                    <h3 class="text-xs font-black text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span class="w-1 h-1 bg-emerald-500 rounded-full"></span> チーム得点内訳
-                    </h3>
-                    <div id="analysis-team-stats" class="space-y-6"></div>
-                </section>
-
-                <!-- Player Stats Section -->
-                <section>
-                    <h3 class="text-xs font-black text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span class="w-1 h-1 bg-yellow-500 rounded-full"></span> 選手別個人スタッツ
-                    </h3>
-                    <div id="analysis-player-stats" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-                </section>
+            <div id="analysis-content">
+                <div id="analysis-header" class="mb-8"></div>
+                <div class="space-y-12">
+                    <section>
+                        <h3 class="text-xs font-black text-zinc-500 mb-4 uppercase tracking-widest">チーム得点内訳</h3>
+                        <div id="analysis-team-stats" class="space-y-6"></div>
+                    </section>
+                    <section>
+                        <h3 class="text-xs font-black text-zinc-500 mb-4 uppercase tracking-widest">選手別個人スタッツ</h3>
+                        <div id="analysis-player-stats" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                    </section>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Timeline Modal -->
-    <div id="timeline-modal" class="fixed inset-0 bg-[#1a1a1a] z-[100] hidden p-4 overflow-hidden flex flex-col">
-        <div class="flex justify-between items-center mb-4 shrink-0">
-            <h2 class="text-2xl font-bold text-white">タイムライン</h2>
-            <div class="flex gap-2">
-                <button onclick="openAnalysis(-1)" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm text-white font-bold">📈 スタッツ分析</button>
-                <button onclick="shareTimelineAsImage('timeline-content')" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm text-white font-bold">📤 画像で共有</button>
-                <button onclick="toggleTimeline()" class="bg-zinc-700 px-4 py-2 rounded text-sm text-white">閉じる</button>
-            </div>
-        </div>
-        <div id="timeline-content" class="flex-1 overflow-y-auto timeline-container text-white px-2 bg-[#1a1a1a]">
-            <!-- Timeline rendering here -->
-        </div>
-    </div>
-
-    <!-- History Modal -->
-    <div id="history-modal" class="fixed inset-0 bg-black/95 z-[100] hidden p-4 overflow-hidden flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold text-yellow-400">試合履歴</h2>
-            <button onclick="toggleHistory()" class="bg-zinc-700 px-4 py-2 rounded text-sm">閉じる</button>
-        </div>
-        <div id="history-list" class="flex-1 overflow-y-auto">
-            <!-- History items here -->
-        </div>
-        <button onclick="clearHistory()" class="mt-4 text-xs text-red-500">すべての履歴を削除</button>
-    </div>
-
-    <!-- Member Modal -->
-    <!-- Team Config Modal (得点画面のチーム名クリックから呼び出し) -->
-    <div id="team-config-modal" class="fixed inset-0 bg-black/90 z-[160] hidden p-6 overflow-y-auto">
-        <div class="max-w-md mx-auto bg-zinc-900 border border-zinc-800 p-6 rounded-lg shadow-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <h2 id="team-config-title" class="text-xl font-bold text-yellow-400">チーム設定</h2>
-                <button onclick="event.stopPropagation(); closeTeamConfigModal();" class="text-zinc-500 hover:text-white text-xl">✕</button>
-            </div>
+    <div id="team-config-modal" class="fixed inset-0 bg-black/90 z-[210] hidden p-6 overflow-y-auto">
+        <div class="max-w-md mx-auto bg-zinc-900 border border-zinc-800 p-6 rounded-lg">
+            <h2 id="team-config-title" class="text-xl font-bold mb-6">チーム設定</h2>
             <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-zinc-400 mb-1">既存のチーム（プリセット）から選択</label>
-                    <select id="config-preset-select" onchange="onConfigPresetChange(this.value)" class="w-full bg-zinc-800 border-none p-2 text-white rounded cursor-pointer">
-                        <option value="">選択しない（一時的な新規入力）</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-zinc-500 mb-1">チーム名</label>
-                    <input type="text" id="config-team-name" class="w-full bg-zinc-800 border-none p-2 text-white rounded font-bold" placeholder="チーム名">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-zinc-500 mb-1">チームカラー</label>
-                    <div class="flex items-center gap-2">
-                        <input type="color" id="config-team-color" class="w-12 h-10 bg-zinc-800 border-none cursor-pointer rounded">
-                        <span class="text-xs text-zinc-400">表示カラー</span>
-                    </div>
-                </div>
-            </div>
-            <div class="mt-8 pt-4 border-t border-zinc-800 flex gap-3">
-                <button onclick="event.stopPropagation(); applyTeamConfig();" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3 rounded shadow">
-                    適用する
-                </button>
-                <button onclick="event.stopPropagation(); closeTeamConfigModal();" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold px-4 py-3 rounded">
-                    キャンセル
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Master Team Modal (マスターデータ管理用・設定画面から呼び出し) -->
-    <div id="member-modal" class="fixed inset-0 bg-black/90 z-[160] hidden p-6 overflow-y-auto">
-        <div class="max-w-md mx-auto flex flex-col h-full bg-zinc-900 border border-zinc-800 p-6 rounded-lg shadow-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-blue-400">チームマスター管理</h2>
-                <button onclick="event.stopPropagation(); toggleMembers();" class="text-zinc-500 hover:text-white text-xl">✕</button>
-            </div>
-
-            <div class="mb-6 bg-zinc-950 p-3 rounded border border-zinc-800">
-                <label class="block text-xs font-bold text-zinc-400 mb-1">編集する保存済みチームを選択</label>
-                <select id="master-team-select" onchange="loadMasterTeamForEdit(this.value)" class="w-full bg-zinc-800 border-none p-2 text-white rounded cursor-pointer">
-                    <option value="">-- 新規チームを作成 --</option>
+                <select id="config-preset-select" onchange="onConfigPresetChange(this.value)" class="w-full bg-zinc-800 p-2 text-white rounded">
+                    <option value="">新規入力</option>
                 </select>
-            </div>
-
-            <div class="flex-1 space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-zinc-500 mb-1">チーム名</label>
-                    <input type="text" id="master-team-name" class="w-full bg-zinc-800 border-none p-2 text-white rounded font-bold" placeholder="チーム名">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-zinc-500 mb-1">チームカラー</label>
-                    <div class="flex items-center gap-2">
-                        <input type="color" id="master-team-color" class="w-12 h-10 bg-zinc-800 border-none cursor-pointer rounded">
-                        <span class="text-xs text-zinc-400">ユニフォーム・メインカラー</span>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="flex justify-between items-center mb-2 mt-4">
-                        <label class="block text-xs font-bold text-zinc-500">登録選手リスト</label>
-                    </div>
-                    <div id="master-member-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                        <!-- JS Rendered -->
-                    </div>
+                <input type="text" id="config-team-name" class="w-full bg-zinc-800 p-2 text-white rounded font-bold" placeholder="チーム名">
+                <div class="flex items-center gap-2">
+                    <input type="color" id="config-team-color" class="w-12 h-10 bg-zinc-800 border-none rounded">
+                    <span class="text-xs text-zinc-400">表示カラー</span>
                 </div>
             </div>
-
-            <div class="mt-8 pt-4 border-t border-zinc-800 flex gap-3">
-                <button onclick="event.stopPropagation(); saveMasterTeam();" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded shadow">
-                    💾 プリセットを保存
-                </button>
-                <button onclick="event.stopPropagation(); deleteMasterTeam();" class="bg-zinc-800 hover:bg-red-950 hover:text-red-400 text-zinc-500 px-4 py-3 rounded" title="このチームを削除">
-                    🗑️ 削除
-                </button>
+            <div class="mt-8 flex gap-3">
+                <button onclick="applyTeamConfig()" class="flex-1 bg-yellow-500 text-black font-bold py-3 rounded">適用</button>
+                <button onclick="closeTeamConfigModal()" class="bg-zinc-800 px-4 py-3 rounded">キャンセル</button>
             </div>
         </div>
     </div>
 
-    <!-- Court Overlay Modal -->
+    <div id="member-modal" class="fixed inset-0 bg-black/90 z-[160] hidden p-6 overflow-y-auto">
+        <div class="max-w-md mx-auto flex flex-col h-full bg-zinc-900 border border-zinc-800 p-6 rounded-lg">
+            <h2 class="text-xl font-bold mb-6 text-blue-400">チームマスター管理</h2>
+            <select id="master-team-select" onchange="loadMasterTeamForEdit(this.value)" class="w-full bg-zinc-800 p-2 text-white rounded mb-6">
+                <option value="">新規チーム作成</option>
+            </select>
+            <div class="space-y-4 flex-1">
+                <input type="text" id="master-team-name" class="w-full bg-zinc-800 p-2 text-white rounded font-bold" placeholder="チーム名">
+                <input type="color" id="master-team-color" class="w-12 h-10 bg-zinc-800 border-none rounded mb-4">
+                <div id="master-member-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button onclick="saveMasterTeam()" class="flex-1 bg-blue-600 py-3 rounded">保存</button>
+                <button onclick="deleteMasterTeam()" class="bg-zinc-800 px-4 py-3 rounded">削除</button>
+            </div>
+        </div>
+    </div>
+
     <div id="court-modal" class="fixed inset-0 bg-black/90 z-[170] hidden p-6 flex flex-col items-center justify-center">
-        <div class="max-w-md w-full flex flex-col h-full max-h-[80vh]">
+        <div class="max-w-md w-full flex flex-col h-full">
             <div class="flex justify-between items-center mb-6">
-                <h2 id="court-team-label" class="text-2xl font-bold text-white">TEAM A</h2>
-                <button onclick="toggleCourtOverlay()" class="bg-zinc-700 px-4 py-2 rounded text-sm text-white">閉じる</button>
+                <h2 id="court-team-label" class="text-2xl font-bold">TEAM A</h2>
+                <button onclick="toggleCourtOverlay()" class="bg-zinc-700 px-4 py-2 rounded text-sm">閉じる</button>
             </div>
-            
-            <!-- Court Grid -->
-            <div id="court-grid-container" class="flex-1 flex gap-2 bg-emerald-800 p-4 rounded-lg border-4 border-white/20 relative aspect-[3/2] w-full max-w-sm mx-auto shadow-2xl transition-all duration-300">
-                <!-- Front Row (P4, P3, P2) -->
-                <div id="court-front-row" class="flex-1 flex gap-2 transition-all duration-300">
-                    <div id="pos-4" onclick="openSubModal(3)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
-                        <span class="text-3xl font-bold text-white player-num">-</span>
-                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
+            <div id="court-grid-container" class="flex-1 flex gap-2 bg-emerald-800 p-4 rounded-lg border-4 border-white/20 relative aspect-[3/2] w-full max-w-sm mx-auto transition-all">
+                <div id="court-front-row" class="flex-1 flex gap-2 transition-all">
+                    <div id="pos-4" onclick="handleCourtPosClick(4)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 px-1 overflow-hidden">
+                        <span class="text-3xl font-bold player-num">-</span><span class="text-[9px] truncate player-name"></span>
                     </div>
-                    <div id="pos-3" onclick="openSubModal(2)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
-                        <span class="text-3xl font-bold text-white player-num">-</span>
-                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
+                    <div id="pos-3" onclick="handleCourtPosClick(3)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 px-1 overflow-hidden">
+                        <span class="text-3xl font-bold player-num">-</span><span class="text-[9px] truncate player-name"></span>
                     </div>
-                    <div id="pos-2" onclick="openSubModal(1)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
-                        <span class="text-3xl font-bold text-white player-num">-</span>
-                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
+                    <div id="pos-2" onclick="handleCourtPosClick(2)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 px-1 overflow-hidden">
+                        <span class="text-3xl font-bold player-num">-</span><span class="text-[9px] truncate player-name"></span>
                     </div>
                 </div>
-                <!-- Net Line -->
-                <div id="court-net-line" class="bg-white/30 transition-all duration-300 shrink-0"></div>
-                <!-- Back Row (P5, P6, P1) -->
-                <div id="court-back-row" class="flex-1 flex gap-2 transition-all duration-300">
-                    <div id="pos-5" onclick="openSubModal(4)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
-                        <span class="text-3xl font-bold text-white player-num">-</span>
-                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
+                <div id="court-net-line" class="bg-white/30 transition-all shrink-0"></div>
+                <div id="court-back-row" class="flex-1 flex gap-2 transition-all">
+                    <div id="pos-5" onclick="handleCourtPosClick(5)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 px-1 overflow-hidden">
+                        <span class="text-3xl font-bold player-num">-</span><span class="text-[9px] truncate player-name"></span>
                     </div>
-                    <div id="pos-6" onclick="openSubModal(5)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
-                        <span class="text-3xl font-bold text-white player-num">-</span>
-                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
+                    <div id="pos-6" onclick="handleCourtPosClick(6)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 px-1 overflow-hidden">
+                        <span class="text-3xl font-bold player-num">-</span><span class="text-[9px] truncate player-name"></span>
                     </div>
-                    <div id="pos-1" onclick="openSubModal(0)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 transition-colors px-1 overflow-hidden">
-                        <span class="text-3xl font-bold text-white player-num">-</span>
-                        <span class="text-[9px] text-white/70 truncate w-full text-center player-name"></span>
+                    <div id="pos-1" onclick="handleCourtPosClick(1)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 px-1 overflow-hidden">
+                        <span class="text-3xl font-bold player-num">-</span><span class="text-[9px] truncate player-name"></span>
                     </div>
                 </div>
             </div>
-            
-            <p class="text-zinc-500 text-xs mt-6 text-center">ポジションをタップして選手交代</p>
+            <p class="text-zinc-500 text-xs mt-6 text-center">タップして選手交代 or 位置を入れ替え</p>
         </div>
     </div>
 
-    <!-- Substitution Modal -->
     <div id="sub-modal" class="fixed inset-0 bg-black/95 z-[180] hidden p-6 flex flex-col items-center justify-center">
-        <div class="max-w-xs w-full bg-zinc-900 border border-zinc-800 p-6 rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[70vh]">
-            <h2 class="text-lg font-bold mb-4 text-white text-center">交代選手を選択</h2>
-            <div id="bench-list" class="flex-1 overflow-y-auto space-y-2 pr-2">
-                <!-- Bench players listed here -->
-            </div>
-            <button onclick="closeSubModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded mt-4">キャンセル</button>
+        <div class="max-w-xs w-full bg-zinc-900 border border-zinc-800 p-6 rounded-lg overflow-hidden flex flex-col max-h-[70vh]">
+            <h2 class="text-lg font-bold mb-4 text-center">選手を選択</h2>
+            <div id="bench-list" class="flex-1 overflow-y-auto space-y-2 pr-2"></div>
+            <button onclick="closeSubModal()" class="w-full bg-zinc-800 py-3 rounded mt-4">キャンセル</button>
         </div>
     </div>
 
-    <!-- Timeout Timer Modal -->
-    <div id="timeout-timer-modal" class="fixed inset-0 bg-black/95 z-[190] hidden p-6 flex flex-col items-center justify-center select-none">
-        <div class="max-w-sm w-full bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-2xl flex flex-col items-center relative overflow-hidden">
+    <div id="timeout-timer-modal" class="fixed inset-0 bg-black/95 z-[190] hidden p-6 flex flex-col items-center justify-center">
+        <div class="max-w-sm w-full bg-zinc-900 border border-zinc-800 p-8 rounded-2xl flex flex-col items-center relative overflow-hidden">
             <div class="absolute top-0 left-0 right-0 h-2 bg-zinc-800">
                 <div id="timeout-timer-progress" class="h-full bg-yellow-500 transition-all duration-1000 w-full"></div>
             </div>
-            <span class="text-xs font-bold text-yellow-500 tracking-widest uppercase mb-1 animate-pulse">TIMEOUT IN PROGRESS</span>
-            <h2 id="timeout-timer-team" class="text-2xl font-black text-white mb-6 text-center truncate w-full">TEAM A</h2>
-            
+            <h2 id="timeout-timer-team" class="text-2xl font-black mb-6 text-center">TEAM A</h2>
             <div class="relative w-40 h-40 flex items-center justify-center mb-8">
-                <!-- Outer glow ring -->
                 <div class="absolute inset-0 rounded-full border-4 border-zinc-800"></div>
-                <!-- Countdown seconds -->
-                <span id="timeout-timer-sec" class="text-6xl font-black text-yellow-400 tracking-tighter">30</span>
+                <span id="timeout-timer-sec" class="text-6xl font-black text-yellow-400">30</span>
             </div>
-
-            <button onclick="stopTimeoutTimer()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-bold py-3 rounded-xl transition-all">スキップして試合再開</button>
+            <button onclick="stopTimeoutTimer()" class="w-full bg-zinc-800 text-zinc-400 py-3 rounded-xl">スキップ</button>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-yellow-400 text-black px-6 py-2 rounded-full font-bold shadow-2xl opacity-0 transition-opacity pointer-events-none z-[200]">
-        セットポイント！
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-yellow-400 text-black px-6 py-2 rounded-full font-bold shadow-2xl opacity-0 transition-opacity pointer-events-none z-[200]">セットポイント！</div>
+
+    <!-- Logic Scripts -->
+    <div id="match-setup-modal" class="fixed inset-0 bg-black/95 z-[200] hidden p-6 overflow-y-auto">
+        <div class="max-w-md mx-auto pb-20">
+            <h2 class="text-3xl font-black text-yellow-400 mb-8 uppercase tracking-tighter border-b border-zinc-800 pb-4">Match Setup</h2>
+            
+            <div class="space-y-8">
+                <!-- Teams -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">Team A</label>
+                        <div onclick="openTeamConfigModal('A')" class="p-3 bg-zinc-900 border border-white/5 rounded-xl text-center cursor-pointer hover:bg-zinc-800 transition-colors">
+                            <div id="setup-name-a" class="font-bold truncate mb-1">TEAM A</div>
+                            <div id="setup-color-a" class="w-full h-1 rounded-full mx-auto" style="background: var(--color-a)"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Team B</label>
+                        <div onclick="openTeamConfigModal('B')" class="p-3 bg-zinc-900 border border-white/5 rounded-xl text-center cursor-pointer hover:bg-zinc-800 transition-colors">
+                            <div id="setup-name-b" class="font-bold truncate mb-1">TEAM B</div>
+                            <div id="setup-color-b" class="w-full h-1 rounded-full mx-auto" style="background: var(--color-b)"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">初回のサーブ権</label>
+                    <div class="flex bg-zinc-900 rounded-xl p-1 border border-white/5">
+                        <button id="setup-serve-a" onclick="setSetupServe('A')" class="flex-1 py-3 rounded-lg font-bold transition-all text-sm">TEAM A</button>
+                        <button id="setup-serve-b" onclick="setSetupServe('B')" class="flex-1 py-3 rounded-lg font-bold transition-all text-sm">TEAM B</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">試合形式</label>
+                        <select id="setup-sets-format" onchange="updateMatchSetupVisibility()" class="w-full bg-zinc-800 border-none p-4 rounded-xl text-white font-bold appearance-none">
+                            <option value="1">1セットマッチ</option>
+                            <option value="2">2セットマッチ (得点合計)</option>
+                            <option value="3" selected>3セットマッチ</option>
+                            <option value="5">5セットマッチ</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">目標点数</label>
+                            <input type="number" id="setup-target-points" class="w-full bg-zinc-800 border-none p-4 rounded-xl text-white font-bold" value="25">
+                        </div>
+                        <div id="setup-final-set-container" class="space-y-2">
+                            <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">最終セット</label>
+                            <input type="number" id="setup-final-set-target" class="w-full bg-zinc-800 border-none p-4 rounded-xl text-white font-bold" value="15">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-8">
+                    <button onclick="confirmStartMatch()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-5 rounded-2xl text-xl shadow-2xl flex items-center justify-center gap-3 transition-transform active:scale-95">
+                        <i data-lucide="play" class="w-6 h-6 fill-black"></i> 試合開始
+                    </button>
+                    <button onclick="toggleMatchSetup()" class="w-full mt-4 text-zinc-500 font-bold py-2">戻る</button>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <script src="js/state.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/radial.js"></script>
+    <script src="js/court.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/teams.js"></script>
+    <script src="js/pwa.js"></script>
+    <script src="js/backup.js"></script>
+    
     <script>
-        // --- State ---
-        let state = {
-            teamA: "TEAM A",
-            teamB: "TEAM B",
-            colorA: "#eab308",
-            colorB: "#ffffff",
-            scoreA: 0,
-            scoreB: 0,
-            setsA: 0,
-            setsB: 0,
-            toA: 0,
-            toB: 0,
-            currentSet: 1,
-            maxSets: 3,
-            targetPoints: 25,
-            finalSetTarget: 15,
-            showAdvancedMode: false,
-            orientationMode: 'auto', // 'auto', 'portrait', 'landscape'
-            maxTimeouts: 2,
-            isCourtSwapped: false,
-            actionLog: [], // { type, team, scoreA, scoreB, set }
-            matchComplete: false,
-            setHistory: [], // [{ set: 1, winner: 'A', scoreA: 25, scoreB: 23, log: [...] }]
-            matchStartTime: Date.now(),
-            timeoutDuration: 30, // タイムアウト時間（秒）
-            // 追加分
-            membersA: Array.from({length: 12}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `${i+1}` })),
-            membersB: Array.from({length: 12}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}` })),
-            lineupA: ["A1", "A2", "A3", "A4", "A5", "A6"], // P1, P2, P3, P4, P5, P6
-            lineupB: ["B1", "B2", "B3", "B4", "B5", "B6"],
-            liberoA: null,
-            liberoB: null,
-            servingTeam: 'A',
-            rotationLog: [] // { lineupA, lineupB, servingTeam }
-        };
-
-        const STORAGE_KEY = 'volleyball_score_state';
-        const HISTORY_KEY = 'volleyball_match_history';
-
-        // --- Init ---
-        function init() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                state = JSON.parse(saved);
-                if (!state.colorA) state.colorA = "#eab308";
-                if (!state.colorB) state.colorB = "#ffffff";
-                if (state.maxTimeouts === undefined) state.maxTimeouts = 2;
-                if (!state.matchStartTime) state.matchStartTime = Date.now();
-                
-                // 追加分のプロパティ（メンバー・ローテーション関連）の初期化
-                if (!state.membersA) {
-                    state.membersA = Array.from({length: 12}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `Player A${i+1}` }));
-                    state.membersB = Array.from({length: 12}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `Player B${i+1}` }));
-                }
-                if (!state.lineupA) state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
-                if (!state.lineupB) state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
-                if (state.liberoA === undefined) state.liberoA = null;
-                if (state.liberoB === undefined) state.liberoB = null;
-                if (!state.servingTeam) state.servingTeam = 'A';
-                if (!state.rotationLog) state.rotationLog = [];
-                
-                updateUI();
-            } else {
-                applySettings(true); // Default init
-            }
-            
-            // Sync settings input values with state
-            document.getElementById('input-max-timeouts').value = state.maxTimeouts;
-
-            registerPWA();
-            keepScreenOn();
-            startTimer();
-        }
-
-        let timerInterval;
-        function startTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(updateTimer, 1000);
-            updateTimer();
-        }
-        function updateTimer() {
-            if (state.matchComplete || !state.matchStartTime) return;
-            const diffMs = Date.now() - state.matchStartTime;
-            const mins = Math.floor(diffMs / 60000);
-            document.getElementById('match-duration').textContent = mins;
-        }
-
-        // --- UI Updates ---
-        function updateUI() {
-            document.documentElement.style.setProperty('--color-a', state.colorA);
-            document.documentElement.style.setProperty('--color-b', state.colorB);
-
-            // Names
-            const indA = document.getElementById('serve-indicator-a');
-            const indB = document.getElementById('serve-indicator-b');
-            if (indA) {
-                indA.classList.toggle('opacity-0', state.servingTeam !== 'A');
-                indA.style.pointerEvents = state.servingTeam === 'A' ? 'auto' : 'none';
-            }
-            if (indB) {
-                indB.classList.toggle('opacity-0', state.servingTeam !== 'B');
-                indB.style.pointerEvents = state.servingTeam === 'B' ? 'auto' : 'none';
-            }
-            document.getElementById('name-a').textContent = state.teamA;
-            document.getElementById('name-b').textContent = state.teamB;
-            
-            document.getElementById('input-max-timeouts').value = state.maxTimeouts;
-            document.getElementById('input-sets-format').value = state.maxSets;
-            document.getElementById('input-target-points').value = state.targetPoints;
-            document.getElementById('input-final-set-target').value = state.finalSetTarget;
-            document.getElementById('input-orientation-mode').value = state.orientationMode;
-
-            // Scores
-            document.getElementById('score-a').textContent = String(state.scoreA).padStart(2, '0');
-            document.getElementById('score-b').textContent = String(state.scoreB).padStart(2, '0');
-            
-            // Sets
-            document.getElementById('sets-a').textContent = state.setsA;
-            document.getElementById('sets-b').textContent = state.setsB;
-            
-            // Timeouts Indicators
-            renderTimeouts('A');
-            renderTimeouts('B');
-
-            // Header Info
-            document.getElementById('current-set-num').textContent = state.currentSet;
-
-            // Orientation calculation
-            let isLandscape = window.innerWidth > window.innerHeight;
-            if (state.orientationMode === 'portrait') isLandscape = false;
-            if (state.orientationMode === 'landscape') isLandscape = true;
-            document.body.classList.toggle('is-landscape', isLandscape);
-
-            // Court Swap & Layout
-            const court = document.getElementById('main-court');
-            const areaA = document.getElementById('area-a');
-            const areaB = document.getElementById('area-b');
-            
-            if (state.isCourtSwapped) {
-                court.insertBefore(areaB, areaA);
-                court.style.flexDirection = isLandscape ? 'row' : 'column';
-                if (!isLandscape) {
-                    areaB.style.flexDirection = 'column';
-                    areaA.style.flexDirection = 'column-reverse';
-                } else {
-                    areaB.style.flexDirection = 'column';
-                    areaA.style.flexDirection = 'column';
-                }
-            } else {
-                court.insertBefore(areaA, areaB);
-                court.style.flexDirection = isLandscape ? 'row' : 'column';
-                if (!isLandscape) {
-                    areaA.style.flexDirection = 'column';
-                    areaB.style.flexDirection = 'column-reverse';
-                } else {
-                    areaA.style.flexDirection = 'column';
-                    areaB.style.flexDirection = 'column';
-                }
-            }
-
-            // Float Controls Layout sync
-            const floatInner = document.getElementById('float-controls-inner');
-            if (floatInner) {
-                floatInner.style.flexDirection = isLandscape ? 'column' : 'row';
-                // Swap icon sync
-                const iconLand = floatInner.querySelector('.icon-swap-landscape');
-                const iconPort = floatInner.querySelector('.icon-swap-portrait');
-                if (iconLand) iconLand.classList.toggle('hidden', !isLandscape);
-                if (iconPort) iconPort.classList.toggle('hidden', isLandscape);
-            }
-
-            saveState();
-            if (typeof updatePositionGrids === 'function') updatePositionGrids();
-
-            if (typeof currentCourtTeam !== 'undefined' && currentCourtTeam) {
-                renderCourt(currentCourtTeam);
-            }
-        }
-
-        function renderTimeouts(team) {
-            const container = document.getElementById(team === 'A' ? 'to-indicator-a' : 'to-indicator-b');
-            const max = state.maxTimeouts || 2;
-            const used = team === 'A' ? state.toA : state.toB;
-            const remain = Math.max(0, max - used);
-            const color = team === 'A' ? state.colorA : state.colorB;
-            
-            let html = '';
-            for (let i = 0; i < max; i++) {
-                if (i < remain) {
-                    // まだ使える（色が塗られた四角）
-                    html += `<div class="w-6 h-4 sm:w-8 sm:h-5 rounded-sm shadow-md transition-all pointer-events-none" style="background-color: ${color};"></div>`;
-                } else {
-                    // 使用済み（枠だけの空の四角）
-                    html += `<div class="w-6 h-4 sm:w-8 sm:h-5 rounded-sm bg-zinc-800/50 border border-zinc-700 transition-all opacity-40 pointer-events-none"></div>`;
-                }
-            }
-            container.innerHTML = html;
-        }
-
-        function getCurrentTarget() {
-            return state.currentSet === state.maxSets ? state.finalSetTarget : state.targetPoints;
-        }
-
-        // --- Game Logic ---
-        function addPoint(winningTeam, pattern = 'unknown', playerId = null) {
-            if (state.matchComplete) return;
-            if (isAnyModalOpen()) return;
-
-            vibrate(50);
-            
-            // 常にタップされたチーム（winningTeam）に加点する
-            const scoringTeam = winningTeam;
-            
-            const rotationOccurred = state.servingTeam !== scoringTeam;
-
-            // 統計用に「アクションを起こしたチーム」を特定
-            // エラー（相手のミス）の場合は、アクションを起こしたのは「相手チーム」
-            const actor = (pattern === 'error') ? (winningTeam === 'A' ? 'B' : 'A') : winningTeam;
-
-            state.actionLog.push({
-                type: 'point',
-                team: actor, // ミスをした、あるいは得点を決めたチーム
-                scoringTeam: scoringTeam, // 実際に点が入ったチーム
-                scoreA: state.scoreA,
-                scoreB: state.scoreB,
-                set: state.currentSet,
-                servingTeam: state.servingTeam,
-                rotationOccurred: rotationOccurred,
-                pattern: pattern,
-                playerId: playerId
-            });
-
-            // サイドアウト判定
-            if (rotationOccurred) {
-                state.servingTeam = scoringTeam;
-                rotateTeam(scoringTeam);
-            }
-
-            if (scoringTeam === 'A') state.scoreA++;
-            else state.scoreB++;
-
-            checkSetEnd();
-            updateUI();
-        }
-
-        function rotateTeam(team) {
-            const lineup = team === 'A' ? state.lineupA : state.lineupB;
-            // P1(0) <- P2(1) <- P3(2) <- P4(3) <- P5(4) <- P6(5) <- P1(0)
-            // 配列の先頭を取り出して末尾に追加することで、ポジションを時計回りにずらす
-            const first = lineup.shift();
-            lineup.push(first);
-            
-            state.rotationLog.push({
-                set: state.currentSet,
-                team: team,
-                lineup: [...lineup],
-                scoreA: state.scoreA,
-                scoreB: state.scoreB
-            });
-        }
-
-        function checkSetEnd() {
-            const target = getCurrentTarget();
-            const a = state.scoreA;
-            const b = state.scoreB;
-
-            if ((a >= target || b >= target) && Math.abs(a - b) >= 2) {
-                const winner = a > b ? 'A' : 'B';
-                finishSet(winner);
-            } else if (a === target - 1 || b === target - 1) {
-                showToast("セットポイント！");
-            }
-        }
-
-        function finishSet(winner) {
-            // Undo用にセット終了前の状態を記録
-            state.actionLog.push({
-                type: 'set_finish',
-                winner: winner,
-                scoreA: state.scoreA,
-                scoreB: state.scoreB,
-                toA: state.toA,
-                toB: state.toB,
-                currentSet: state.currentSet,
-                setsA: state.setsA,
-                setsB: state.setsB,
-                isCourtSwapped: state.isCourtSwapped
-            });
-
-            if (winner === 'A') state.setsA++;
-            else state.setsB++;
-
-            state.setHistory.push({
-                set: state.currentSet,
-                winner: winner,
-                scoreA: state.scoreA,
-                scoreB: state.scoreB,
-                log: [...state.actionLog.filter(l => l.set === state.currentSet)]
-            });
-
-            const matchWinnerNeeded = Math.ceil(state.maxSets / 2);
-            if (state.setsA === matchWinnerNeeded || state.setsB === matchWinnerNeeded) {
-                finishMatch(winner === 'A' ? state.teamA : state.teamB);
-            } else {
-                alert(`第${state.currentSet}セット終了！ 勝者: ${winner === 'A' ? state.teamA : state.teamB}`);
-                state.currentSet++;
-                state.scoreA = 0;
-                state.scoreB = 0;
-                state.toA = 0;
-                state.toB = 0;
-                swapCourts(true); // 自動のコートチェンジ
-            }
-        }
-
-        function finishMatch(winnerName) {
-            const matchHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-            matchHistory.unshift({
-                date: new Date().toLocaleString(),
-                teamA: state.teamA,
-                teamB: state.teamB,
-                colorA: state.colorA,
-                colorB: state.colorB,
-                setsA: state.setsA,
-                setsB: state.setsB,
-                setHistory: JSON.parse(JSON.stringify(state.setHistory)),
-                maxSets: state.maxSets,
-                durationMinutes: Math.floor((Date.now() - state.matchStartTime) / 60000)
-            });
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(matchHistory));
-
-            alert(`試合終了！ 勝者: ${winnerName}\n\n[OK]を押すとスコアをリセットして次の試合を開始します。`);
-
-            state.scoreA = 0;
-            state.scoreB = 0;
-            state.setsA = 0;
-            state.setsB = 0;
-            state.toA = 0;
-            state.toB = 0;
-            state.currentSet = 1;
-            state.actionLog = [];
-            state.setHistory = [];
-            state.matchComplete = false;
-            state.matchStartTime = Date.now();
-            updateTimer();
-
-            // メンバー・ローテーション関連のリセット
-            state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
-            state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
-            state.liberoB = null;
-            const fsEl = document.getElementById('input-first-serve');
-            state.servingTeam = fsEl ? fsEl.value : 'A';
-            state.rotationLog = [];
-
-            updateUI();
-        }
-
         function toggleServingTeam() {
             if (state.matchComplete) return;
             vibrate(30);
@@ -898,1597 +405,30 @@
             updateUI();
         }
 
-        function undo() {
-            if (state.actionLog.length === 0) return;
-            vibrate(30);
-            
-            const last = state.actionLog.pop();
-            if (last.type === 'point') {
-                state.scoreA = last.scoreA;
-                state.scoreB = last.scoreB;
-                state.servingTeam = last.servingTeam;
-                
-                if (last.rotationOccurred) {
-                    // 回転を戻す
-                    const lineup = last.team === 'A' ? state.lineupA : state.lineupB;
-                    const end = lineup.pop();
-                    lineup.unshift(end);
-                    if (state.rotationLog.length > 0) state.rotationLog.pop();
-                }
-            } else if (last.type === 'timeout') {
-                if (last.team === 'A') state.toA--;
-                else state.toB--;
-            } else if (last.type === 'substitution') {
-                const lineup = last.team === 'A' ? state.lineupA : state.lineupB;
-                lineup[last.posIdx] = last.outPlayerId;
-            } else if (last.type === 'set_finish') {
-                state.scoreA = last.scoreA;
-                state.scoreB = last.scoreB;
-                state.toA = last.toA;
-                state.toB = last.toB;
-                state.currentSet = last.currentSet;
-                state.setsA = last.setsA;
-                state.setsB = last.setsB;
-                state.isCourtSwapped = last.isCourtSwapped;
-                state.setHistory.pop();
-            } else if (last.type === 'swap_courts') {
-                state.isCourtSwapped = last.isCourtSwapped;
-            }
-            updateUI();
-        }
-
-        function swapCourts(isAuto = false) {
-            if (!isAuto) {
-                state.actionLog.push({
-                    type: 'swap_courts',
-                    isCourtSwapped: state.isCourtSwapped
-                });
-            }
-            state.isCourtSwapped = !state.isCourtSwapped;
-            updateUI();
-        }
-
-        function requestTimeout(team) {
-            if (state.matchComplete) return;
-            
-            const teamName = team === 'A' ? state.teamA : state.teamB;
-            const currentTo = team === 'A' ? state.toA : state.toB;
-            const max = state.maxTimeouts || 2;
-            
-            if (currentTo >= max) {
-                if(!confirm(`${teamName} は既に${max}回タイムアウトを取っています。追加しますか？`)) return;
+        // Initialize App
+        function init() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const loadedState = JSON.parse(saved);
+                // Deep merge or specific field copy to ensure new fields (like editLog) exist
+                state = Object.assign(state, loadedState);
+                updateUI();
             } else {
-                if(!confirm(`${teamName} のタイムアウトを取りますか？`)) return;
-            }
-
-            vibrate(50);
-            state.actionLog.push({
-                type: 'timeout',
-                team: team,
-                scoreA: state.scoreA,
-                scoreB: state.scoreB,
-                set: state.currentSet
-            });
-            if (team === 'A') state.toA++;
-            else state.toB++;
-            saveState();
-            updateUI();
-            startTimeoutTimer(team);
-        }
-
-        // --- Settings ---
-        function applySettings(isInit = false) {
-            // チーム名・色は設定画面では入力しない
-            state.maxSets = parseInt(document.getElementById('input-sets-format').value);
-            state.targetPoints = parseInt(document.getElementById('input-target-points').value);
-            state.finalSetTarget = parseInt(document.getElementById('input-final-set-target').value);
-            state.maxTimeouts = parseInt(document.getElementById('input-max-timeouts').value);
-            state.showAdvancedMode = document.getElementById('input-advanced-mode').checked;
-            const durationEl = document.getElementById('input-timeout-duration');
-            if (durationEl) state.timeoutDuration = parseInt(durationEl.value) || 30;
-            state.orientationMode = document.getElementById('input-orientation-mode').value;
-            
-            if (isInit) {
-                state.scoreA = 0;
-                state.scoreB = 0;
-                state.setsA = 0;
-                state.setsB = 0;
-                state.toA = 0;
-                state.toB = 0;
-                state.currentSet = 1;
-                state.actionLog = [];
-                state.setHistory = [];
-                state.matchComplete = false;
-                state.matchStartTime = Date.now();
-                updateTimer();
-
-                // メンバー・ローテーション関連の初期化
-                state.membersA = Array.from({length: 14}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `${i+1}` }));
-                state.membersB = Array.from({length: 14}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}` }));
-                state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
-                state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
-                state.liberoA = null;
-                state.liberoB = null;
-                state.servingTeam = 'A'; // デフォルトは常に左/上のチーム
-                state.rotationLog = [];
-            } else {
-                toggleSettings();
-            }
-            updateUI();
-        }
-
-        function resetStateForNewMatch() {
-            state.scoreA = 0;
-            state.scoreB = 0;
-            state.setsA = 0;
-            state.setsB = 0;
-            state.toA = 0;
-            state.toB = 0;
-            state.currentSet = 1;
-            state.actionLog = [];
-            state.setHistory = [];
-            state.matchComplete = false;
-            state.matchStartTime = Date.now();
-            if (typeof updateTimer === 'function') updateTimer();
-
-            // メンバー・ローテーション関連のリセット
-            state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
-            state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
-            state.liberoA = null;
-            state.liberoB = null;
-            state.servingTeam = 'A';
-            state.rotationLog = [];
-
-            // 入力欄の最新設定も反映する
-            // チーム設定は保持する
-            state.maxSets = parseInt(document.getElementById('input-sets-format').value);
-            state.targetPoints = parseInt(document.getElementById('input-target-points').value);
-            state.finalSetTarget = parseInt(document.getElementById('input-final-set-target').value);
-            state.showAdvancedMode = document.getElementById('input-advanced-mode').checked;
-            state.orientationMode = document.getElementById('input-orientation-mode').value;
-            
-            document.getElementById('settings-modal').classList.add('hidden');
-            updateUI();
-        }
-
-        function finishAndStartNewMatch() {
-            toggleResetMenu();
-
-            // 進行中のセットがあれば記録する
-            if (state.scoreA > 0 || state.scoreB > 0 || state.actionLog.length > 0) {
-                let currentSetWinner = 'Draw';
-                if (state.scoreA > state.scoreB) currentSetWinner = 'A';
-                else if (state.scoreB > state.scoreA) currentSetWinner = 'B';
-                
-                state.setHistory.push({
-                    set: state.currentSet,
-                    winner: currentSetWinner,
-                    scoreA: state.scoreA,
-                    scoreB: state.scoreB,
-                    log: [...state.actionLog.filter(l => l.set === state.currentSet)]
-                });
-                
-                if (currentSetWinner === 'A') state.setsA++;
-                else if (currentSetWinner === 'B') state.setsB++;
-            }
-
-            // 何もデータがない（全く進んでいない）場合は記録しない
-            const hasData = state.setHistory.length > 0 || state.setsA > 0 || state.setsB > 0;
-            if (hasData) {
-                const matchHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-                matchHistory.unshift({
-                    date: new Date().toLocaleString(),
-                    teamA: state.teamA,
-                    teamB: state.teamB,
-                    colorA: state.colorA,
-                    colorB: state.colorB,
-                    setsA: state.setsA,
-                    setsB: state.setsB,
-                    setHistory: JSON.parse(JSON.stringify(state.setHistory)),
-                    maxSets: state.maxSets,
-                    durationMinutes: Math.floor((Date.now() - state.matchStartTime) / 60000)
-                });
-                localStorage.setItem(HISTORY_KEY, JSON.stringify(matchHistory));
-                showToast("試合を記録しました");
-            } else {
-                showToast("スコアがないため記録しませんでした");
-            }
-
-            resetStateForNewMatch();
-        }
-
-        function startNewMatch() {
-            toggleResetMenu();
-            resetStateForNewMatch();
-        }
-
-        // --- Timeline View ---
-        function renderTimeline(setLog, teamA, teamB, colorA, colorB, currentScoreA, currentScoreB, setInProgress) {
-            const container = document.createElement('div');
-            container.className = "py-4 border-b border-zinc-800/50 mb-4";
-
-            let aScore = 0;
-            let bScore = 0;
-            let aTO = 0;
-            let bTO = 0;
-            
-            const columns = [];
-            
-            setLog.forEach(action => {
-                if (action.type === 'point') {
-                    if (action.team === 'A') aScore++;
-                    else bScore++;
-                    columns.push({
-                        type: 'point',
-                        team: action.team,
-                        val: action.team === 'A' ? aScore : bScore
-                    });
-                } else if (action.type === 'timeout') {
-                    if (action.team === 'A') aTO++;
-                    else bTO++;
-                    columns.push({
-                        type: 'timeout',
-                        team: action.team,
-                        val: action.team === 'A' ? aTO : bTO
-                    });
-                }
-            });
-
-            const finalA = setInProgress ? currentScoreA : aScore;
-            const finalB = setInProgress ? currentScoreB : bScore;
-
-            let htmlA = `<div class="flex items-center" style="min-width: max-content;">`;
-            let htmlB = `<div class="flex items-center mt-1.5" style="min-width: max-content;">`;
-
-            // Final score box (leftmost)
-            htmlA += `<div class="w-12 h-10 flex items-center justify-center font-bold text-xl rounded mr-4 color-box" style="background: ${colorA};">${finalA}</div>`;
-            htmlB += `<div class="w-12 h-10 flex items-center justify-center font-bold text-xl rounded mr-4 color-box" style="background: ${colorB};">${finalB}</div>`;
-
-            // Timeline items
-            columns.forEach(col => {
-                if (col.type === 'point') {
-                    if (col.team === 'A') {
-                        htmlA += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm" style="background: ${colorA};">${col.val}</div>`;
-                        htmlB += `<div class="w-7 h-7 mx-0.5"></div>`;
-                    } else {
-                        htmlA += `<div class="w-7 h-7 mx-0.5"></div>`;
-                        htmlB += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm" style="background: ${colorB};">${col.val}</div>`;
-                    }
-                } else if (col.type === 'timeout') {
-                    if (col.team === 'A') {
-                        htmlA += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[11px]" style="background: ${colorA}; border: 1.5px solid #000;">T${col.val}</div>`;
-                        htmlB += `<div class="w-7 h-7 mx-0.5"></div>`;
-                    } else {
-                        htmlA += `<div class="w-7 h-7 mx-0.5"></div>`;
-                        htmlB += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[11px]" style="background: ${colorB}; border: 1.5px solid #000;">T${col.val}</div>`;
-                    }
-                }
-            });
-
-            htmlA += `</div>`;
-            htmlB += `</div>`;
-
-            container.innerHTML = `<div class="overflow-x-auto pb-2 timeline-container">${htmlA}${htmlB}</div>`;
-            return container;
-        }
-
-        function showCurrentTimeline() {
-            const content = document.getElementById('timeline-content');
-            content.innerHTML = "";
-            
-            const allSets = [...state.setHistory];
-            if (!state.matchComplete) {
-                allSets.push({
-                    set: state.currentSet,
-                    scoreA: state.scoreA,
-                    scoreB: state.scoreB,
-                    log: state.actionLog.filter(l => l.set === state.currentSet)
-                });
-            }
-
-            const matchScoreHeader = document.createElement('div');
-            matchScoreHeader.className = "flex items-center justify-center gap-4 mb-8 text-xl font-bold bg-[#1a1a1a] sticky top-0 py-4 z-10";
-            matchScoreHeader.innerHTML = `
-                <span style="color: ${state.colorA}">${state.teamA}</span>
-                <span class="bg-zinc-800 px-3 py-1 rounded text-white">${state.setsA}</span>
-                <span class="text-zinc-500">-</span>
-                <span class="bg-zinc-800 px-3 py-1 rounded text-white">${state.setsB}</span>
-                <span style="color: ${state.colorB}">${state.teamB}</span>
-            `;
-            content.appendChild(matchScoreHeader);
-
-            allSets.forEach(setData => {
-                const isCurrent = setData.set === state.currentSet && !state.matchComplete;
-
-                const setHeader = document.createElement('div');
-                setHeader.className = "text-xs font-bold text-zinc-400";
-                setHeader.textContent = `第${setData.set}セット`;
-                content.appendChild(setHeader);
-
-                content.appendChild(renderTimeline(
-                    setData.log, 
-                    state.teamA, state.teamB, 
-                    state.colorA, state.colorB, 
-                    isCurrent ? state.scoreA : setData.scoreA, 
-                    isCurrent ? state.scoreB : setData.scoreB,
-                    isCurrent
-                ));
-            });
-
-            toggleTimeline();
-        }
-
-        // --- History ---
-        function renderHistory() {
-            const list = document.getElementById('history-list');
-            list.innerHTML = "";
-            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-
-            if (history.length === 0) {
-                list.innerHTML = "<div class='text-zinc-600 py-10 text-center'>試合履歴がありません。</div>";
-                return;
-            }
-
-            history.forEach((m, idx) => {
-                const item = document.createElement('div');
-                item.className = "bg-zinc-900 border border-zinc-800 p-4 mb-4 rounded";
-                item.id = `history-item-${idx}`;
-                const cA = m.colorA || '#eab308';
-                const cB = m.colorB || '#ffffff';
-                item.innerHTML = `
-                    <div class="flex justify-between text-xs text-zinc-500 mb-2">
-                        <span>${m.date}</span>
-                        <div class="flex gap-2">
-                            <span>⏱️ ${m.durationMinutes !== undefined ? m.durationMinutes : 0}分</span>
-                            <span>${m.maxSets}セットマッチ</span>
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="text-xl font-bold" style="color: ${cA}">${m.teamA} <span class="text-zinc-500 text-sm ml-2">${m.setsA}</span></div>
-                        <div class="text-zinc-600 px-2">vs</div>
-                        <div class="text-xl font-bold text-right" style="color: ${cB}"><span class="text-zinc-500 text-sm mr-2">${m.setsB}</span> ${m.teamB}</div>
-                    </div>
-                    <div id="history-timeline-${idx}" class="hidden mt-4 border-t border-zinc-800 pt-4 bg-[#1a1a1a] px-2 pb-2"></div>
-                    <div class="flex gap-2 mt-2" data-html2canvas-ignore>
-                        <button onclick="toggleHistoryTimeline(${idx})" class="flex-1 bg-zinc-800 py-2 text-xs rounded">詳細 / タイムライン</button>
-                        <button onclick="openAnalysis(${idx})" class="flex-1 bg-zinc-800 py-2 text-xs rounded">📈 分析を表示</button>
-                        <button onclick="shareTimelineAsImage('history-item-${idx}')" id="share-btn-${idx}" class="hidden bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs rounded font-bold">📤 画像で共有</button>
-                    </div>
-                `;
-                list.appendChild(item);
-                
-                const tlContainer = item.querySelector(`#history-timeline-${idx}`);
-                m.setHistory.forEach(setData => {
-                    const h = document.createElement('div');
-                    h.className = "text-[10px] font-bold text-zinc-500 mt-2 mb-1";
-                    h.textContent = `第${setData.set}セット`;
-                    tlContainer.appendChild(h);
-                    tlContainer.appendChild(renderTimeline(setData.log, m.teamA, m.teamB, cA, cB, setData.scoreA, setData.scoreB, false));
-                });
-            });
-        }
-
-        function toggleHistoryTimeline(idx) {
-            const el = document.getElementById(`history-timeline-${idx}`);
-            const btn = document.getElementById(`share-btn-${idx}`);
-            el.classList.toggle('hidden');
-            if (btn) btn.classList.toggle('hidden');
-        }
-
-        function toggleAnalysis() {
-            document.getElementById('analysis-modal').classList.toggle('hidden');
-        }
-
-        function openAnalysis(idx = -1) {
-            let match;
-            if (idx === -1) {
-                // 現在の試合を分析
-                match = {
-                    teamA: state.teamA,
-                    teamB: state.teamB,
-                    setsA: state.setsA,
-                    setsB: state.setsB,
-                    colorA: state.colorA,
-                    colorB: state.colorB,
-                    membersA: state.membersA,
-                    membersB: state.membersB,
-                    setHistory: [...state.setHistory, {
-                        set: state.currentSet,
-                        scoreA: state.scoreA,
-                        scoreB: state.scoreB,
-                        log: state.actionLog.filter(l => l.set === state.currentSet)
-                    }]
-                };
-            } else {
-                const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-                match = history[idx];
-            }
-
-            if (!match) return;
-
-            renderAnalysisContent(match);
-            toggleAnalysis();
-        }
-
-        function renderAnalysisContent(m) {
-            const header = document.getElementById('analysis-header');
-            const teamStats = document.getElementById('analysis-team-stats');
-            const playerStats = document.getElementById('analysis-player-stats');
-
-            // --- Header ---
-            const setScoresHtml = m.setHistory.map(s => {
-                const isMatchInProgress = (m.teamA === state.teamA && m.teamB === state.teamB);
-                const isLastSet = s.set === state.currentSet && isMatchInProgress;
-                return `
-                    <div class="flex items-center justify-center gap-3 w-full">
-                        <span class="text-[9px] text-zinc-600 font-black w-8 text-right">SET ${s.set}</span>
-                        <div class="flex items-center gap-2 px-3 py-1 rounded-lg ${isLastSet ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 ring-1 ring-emerald-500/10' : 'bg-zinc-800/50 text-zinc-400 border border-white/5'} text-xs font-black min-w-[70px] justify-center shadow-inner">
-                            <span>${s.scoreA}</span>
-                            <span class="text-zinc-600">-</span>
-                            <span>${s.scoreB}</span>
-                        </div>
-                        <div class="w-8 italic text-[8px] text-emerald-500 font-bold">${isLastSet ? 'LIVE' : ''}</div>
-                    </div>
-                `;
-            }).join('');
-
-            header.innerHTML = `
-                <div class="bg-zinc-900/50 p-6 rounded-3xl border border-white/5 shadow-2xl overflow-hidden relative">
-                    <!-- Background Decoration -->
-                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
-                    
-                    <div class="flex items-stretch justify-between gap-2">
-                        <!-- Team A -->
-                        <div class="flex-1 flex flex-col items-center justify-center py-2">
-                            <div class="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Sets</div>
-                            <div class="text-6xl font-black mb-2 transition-all" style="color: ${m.colorA}; text-shadow: 0 0 20px ${m.colorA}44;">${m.setsA}</div>
-                            <div class="text-sm font-bold text-center px-1" style="color: ${m.colorA}">${m.teamA}</div>
-                        </div>
-
-                        <!-- Center Scores -->
-                        <div class="flex-[1.2] flex flex-col items-center justify-center gap-2 border-x border-white/5 px-2">
-                            ${setScoresHtml}
-                        </div>
-
-                        <!-- Team B -->
-                        <div class="flex-1 flex flex-col items-center justify-center py-2">
-                            <div class="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Sets</div>
-                            <div class="text-6xl font-black mb-2 transition-all" style="color: ${m.colorB}; text-shadow: 0 0 20px ${m.colorB}44;">${m.setsB}</div>
-                            <div class="text-sm font-bold text-center px-1" style="color: ${m.colorB}">${m.teamB}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // --- 集計ロジック ---
-            const stats = {
-                A: { spike: 0, block: 0, ace: 0, error: 0, total: 0, players: {} },
-                B: { spike: 0, block: 0, ace: 0, error: 0, total: 0, players: {} }
-            };
-
-            m.setHistory.forEach(set => {
-                set.log.forEach(action => {
-                    if (action.type !== 'point') return;
-                    const actingTeam = action.team; // アクションを起こした（ミスした、または決めた）チーム
-                    const pattern = action.pattern || 'unknown';
-                    const pId = action.playerId;
-
-                    if (stats[actingTeam]) {
-                        if (pattern !== 'unknown') {
-                            stats[actingTeam][pattern]++;
-                            if (pattern !== 'error') stats[actingTeam].total++;
-                        }
-                        
-                        if (pId) {
-                            if (!stats[actingTeam].players[pId]) stats[actingTeam].players[pId] = { spike: 0, block: 0, ace: 0, error: 0 };
-                            if (pattern !== 'unknown') stats[actingTeam].players[pId][pattern]++;
-                        }
-                    }
-                });
-            });
-
-            // --- Team Stats UI (Bar Charts) ---
-            teamStats.innerHTML = '';
-            const categories = [
-                { id: 'spike', label: 'スパイク得点', color: '#10b981' },
-                { id: 'block', label: 'ブロック得点', color: '#3b82f6' },
-                { id: 'ace', label: 'サービスエース', color: '#eab308' },
-                { id: 'error', label: '相手のミスによる得点', color: '#ef4444' }
-            ];
-
-            categories.forEach(cat => {
-                let valA, valB;
-                if (cat.id === 'error') {
-                    // 「相手のミスによる得点」を表示するため、AのグラフにはBのミスを表示
-                    valA = stats.B.error;
-                    valB = stats.A.error;
-                } else {
-                    valA = stats.A[cat.id];
-                    valB = stats.B[cat.id];
-                }
-
-                const max = Math.max(valA + valB, 1);
-                const percA = (valA / max) * 100;
-                const percB = (valB / max) * 100;
-
-                const row = document.createElement('div');
-                row.className = "space-y-2";
-                row.innerHTML = `
-                    <div class="flex justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">
-                        <span>${cat.label}</span>
-                        <div class="flex gap-4">
-                            <span style="color: ${m.colorA}">${valA}</span>
-                            <span style="color: ${m.colorB}">${valB}</span>
-                        </div>
-                    </div>
-                    <div class="h-2 w-full bg-zinc-800 rounded-full flex overflow-hidden">
-                        <div class="h-full transition-all duration-1000" style="width: ${percA}%; background: ${m.colorA}; opacity: 0.8"></div>
-                        <div class="h-full transition-all duration-1000" style="width: ${percB}%; background: ${m.colorB}; opacity: 0.8; margin-left: auto"></div>
-                    </div>
-                `;
-                teamStats.appendChild(row);
-            });
-
-            // --- Player Stats UI ---
-            playerStats.innerHTML = '';
-            ['A', 'B'].forEach(t => {
-                const teamName = t === 'A' ? m.teamA : m.teamB;
-                const color = t === 'A' ? m.colorA : m.colorB;
-                const pData = stats[t].players;
-                const sortedIds = Object.keys(pData).sort((a,b) => (pData[b].spike + pData[b].block + pData[b].ace) - (pData[a].spike + pData[a].block + pData[a].ace));
-
-                const container = document.createElement('div');
-                container.className = "bg-zinc-900/30 p-4 rounded-xl border border-white/5";
-                container.innerHTML = `<h4 class="text-xs font-bold mb-4 border-b border-zinc-800 pb-2" style="color: ${color}">${teamName} 選手別</h4>`;
-                
-                if (sortedIds.length === 0) {
-                    container.innerHTML += `<div class="text-[10px] text-zinc-600 italic">データなし</div>`;
-                } else {
-                    const table = document.createElement('div');
-                    table.className = "space-y-3";
-                    sortedIds.forEach(pId => {
-                        const p = pData[pId];
-                        const total = p.spike + p.block + p.ace;
-                        const members = t === 'A' ? (m.membersA || []) : (m.membersB || []);
-                        const player = members.find(mem => mem.id === pId);
-                        const displayNum = player ? player.number : pId.replace(/[AB]/, '');
-                        const displayName = player ? (player.name === String(player.number) ? '' : player.name.substring(0,4)) : '';
-
-                        table.innerHTML += `
-                            <div class="group flex flex-col gap-1 p-1 hover:bg-white/5 rounded-lg transition-all cursor-pointer" onclick="const d = this.querySelector('.player-detail'); d.classList.toggle('hidden'); if(!d.classList.contains('hidden')) { this.scrollIntoView({behavior:'smooth', block:'nearest'}); }">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded bg-zinc-800 flex flex-col items-center justify-center text-[10px] font-bold text-zinc-400 group-hover:bg-zinc-700 transition-colors">
-                                        <span class="leading-none text-white">${displayNum}</span>
-                                        ${displayName ? `<span class="text-[6px] opacity-60 truncate w-full text-center px-0.5">${displayName}</span>` : ''}
-                                    </div>
-                                    <div class="flex-1">
-                                        <div class="flex justify-between text-[10px] mb-1">
-                                            <span class="text-zinc-300 font-bold">Total: ${total}</span>
-                                            <span class="text-red-500/70">Err: ${p.error}</span>
-                                        </div>
-                                        <div class="flex h-1 rounded-full overflow-hidden bg-zinc-800 shadow-inner">
-                                            <div style="width: ${(p.spike/Math.max(total,1))*100}%; background: #10b981"></div>
-                                            <div style="width: ${(p.block/Math.max(total,1))*100}%; background: #3b82f6"></div>
-                                            <div style="width: ${(p.ace/Math.max(total,1))*100}%; background: #eab308"></div>
-                                        </div>
-                                    </div>
-                                    <div class="text-[8px] text-zinc-600">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" /></svg>
-                                    </div>
-                                </div>
-                                <div class="player-detail hidden pl-11 pr-2 py-2 grid grid-cols-4 gap-2 text-[9px] font-black tracking-tighter border-t border-white/5 mt-1 animate-in slide-in-from-top-1 duration-200">
-                                    <div class="flex flex-col"><span class="text-zinc-500 text-[7px] uppercase">Spike</span><span class="text-emerald-400">${p.spike}</span></div>
-                                    <div class="flex flex-col"><span class="text-zinc-500 text-[7px] uppercase">Block</span><span class="text-blue-400">${p.block}</span></div>
-                                    <div class="flex flex-col"><span class="text-zinc-500 text-[7px] uppercase">Ace</span><span class="text-yellow-400">${p.ace}</span></div>
-                                    <div class="flex flex-col"><span class="text-zinc-500 text-[7px] uppercase">Error</span><span class="text-red-400">${p.error}</span></div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    container.appendChild(table);
-                }
-                playerStats.appendChild(container);
-            });
-        }
-
-        function clearAllHistory() {
-            if (confirm("すべての履歴を削除しますか？")) {
-                localStorage.removeItem(HISTORY_KEY);
-                renderHistory();
-            }
-        }
-
-        // --- Utils ---
-        function toggleSettings() { 
-            const modal = document.getElementById('settings-modal');
-            const isOpening = modal.classList.contains('hidden');
-            if (isOpening) {
-                // Populate inputs from state
-                // チーム名・カラーは設定画面から除外
-                document.getElementById('input-sets-format').value = state.maxSets;
-                document.getElementById('input-target-points').value = state.targetPoints;
-                document.getElementById('input-final-set-target').value = state.finalSetTarget;
-                document.getElementById('input-max-timeouts').value = state.maxTimeouts;
-                document.getElementById('input-advanced-mode').checked = !!state.showAdvancedMode;
-                document.getElementById('input-orientation-mode').value = state.orientationMode || 'auto';
-                const durationEl = document.getElementById('input-timeout-duration');
-                if (durationEl) durationEl.value = state.timeoutDuration || 30;
-            }
-            modal.classList.toggle('hidden'); 
-        }
-        function toggleResetMenu() { document.getElementById('reset-modal').classList.toggle('hidden'); }
-        function toggleTimeline() { document.getElementById('timeline-modal').classList.toggle('hidden'); }
-        function toggleHistory() { 
-            document.getElementById('history-modal').classList.toggle('hidden'); 
-            if (!document.getElementById('history-modal').classList.contains('hidden')) renderHistory();
-        }
-        function toggleMembers() { document.getElementById('member-modal').classList.toggle('hidden'); }
-
-        // --- Court Overlay & Substitution ---
-        let currentCourtTeam = null;
-        let currentSubPosIdx = null;
-
-        function toggleCourtOverlay(team) {
-            const modal = document.getElementById('court-modal');
-            if (team) {
-                currentCourtTeam = team;
-                renderCourt(team);
-                modal.classList.remove('hidden');
-            } else {
-                currentCourtTeam = null;
-                modal.classList.add('hidden');
-            }
-        }
-
-        function ensureMemberState() {
-            if (!state.membersA || !Array.isArray(state.membersA)) {
-                state.membersA = Array.from({length: 14}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `${i+1}` }));
-            }
-            if (!state.membersB || !Array.isArray(state.membersB)) {
-                state.membersB = Array.from({length: 14}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}` }));
-            }
-            if (!state.lineupA || !Array.isArray(state.lineupA)) {
-                state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
-            }
-            if (!state.lineupB || !Array.isArray(state.lineupB)) {
-                state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
-            }
-        }
-
-        function renderCourt(team) {
-            ensureMemberState();
-            const teamName = team === 'A' ? (state.teamA || "TEAM A") : (state.teamB || "TEAM B");
-            const lineup = team === 'A' ? state.lineupA : state.lineupB;
-            const members = team === 'A' ? state.membersA : state.membersB;
-
-            const labelEl = document.getElementById('court-team-label');
-            if (labelEl) {
-                labelEl.textContent = teamName;
-                labelEl.style.color = team === 'A' ? (state.colorA || "#eab308") : (state.colorB || "#ffffff");
-            }
-
-            // ポジション配列: P1, P2, P3, P4, P5, P6 (idx 0 to 5)
-            if (Array.isArray(lineup)) {
-                lineup.forEach((playerId, idx) => {
-                    const posNum = idx + 1;
-                    const el = document.getElementById(`pos-${posNum}`);
-                    if (!el) return;
-                    const numSpan = el.querySelector('.player-num');
-                    if (!numSpan) return;
-                    
-                    let player = null;
-                    if (Array.isArray(members)) {
-                        player = members.find(m => m.id === playerId);
-                        if (!player) {
-                            const match = playerId ? String(playerId).match(/[ABM](\d+)/) : null;
-                            const pIdx = match ? parseInt(match[1]) - 1 : idx;
-                            player = members[pIdx] || members[idx];
-                        }
-                    }
-                    numSpan.textContent = player ? player.number : '-';
-                    const nameSpan = el.querySelector('.player-name');
-                    if (nameSpan) {
-                        const name = player ? player.name : '';
-                        // 名前が番号と同じ（デフォルト）の場合は表示しない
-                        nameSpan.textContent = (name && name !== String(player?.number)) ? name : '';
-                    }
-                });
-            }
-
-            // 動的レイアウトの方向切り替え（実際のネットを挟んだ向きへ調整）
-            const container = document.getElementById('court-grid-container');
-            const frontRow = document.getElementById('court-front-row');
-            const backRow = document.getElementById('court-back-row');
-            const netLine = document.getElementById('court-net-line');
-
-            if (container && frontRow && backRow && netLine) {
-                const isLandscape = window.innerWidth > window.innerHeight;
-                // 画面上の前半（左側または上側）に配置されているかどうか
-                const isFirstHalf = state.isCourtSwapped ? (team === 'B') : (team === 'A');
-
-                if (isLandscape) {
-                    // 横画面：左右分割。ネットは画面中央の縦線。
-                    container.style.flexDirection = 'row';
-                    
-                    netLine.style.width = '3px';
-                    netLine.style.height = 'auto';
-                    netLine.style.margin = '0 6px';
-
-                    if (isFirstHalf) {
-                        // 左側のチーム：ネットは右側。左から 後衛 ➔ ネット ➔ 前衛
-                        backRow.style.order = '1';
-                        netLine.style.order = '2';
-                        frontRow.style.order = '3';
-                        // レフト/ライトの関係を維持し時計回りに見せるため、上から P5/P4、下が P1/P2 とする
-                        frontRow.style.flexDirection = 'column';
-                        backRow.style.flexDirection = 'column';
-                    } else {
-                        // 右側のチーム：ネットは左側。左から 前衛 ➔ ネット ➔ 後衛
-                        frontRow.style.order = '1';
-                        netLine.style.order = '2';
-                        backRow.style.order = '3';
-                        // ネットの向き（左側）に対して正しく時計回りに見せるため、列内の上下順序を反転させる
-                        frontRow.style.flexDirection = 'column-reverse';
-                        backRow.style.flexDirection = 'column-reverse';
-                    }
-                } else {
-                    // 縦画面：上下分割。ネットは画面中央の横線。
-                    container.style.flexDirection = 'column';
-                    
-                    netLine.style.width = 'auto';
-                    netLine.style.height = '3px';
-                    netLine.style.margin = '6px 0';
-
-                    if (isFirstHalf) {
-                        // 上側のチーム：ネットは下側。上から 後衛 ➔ ネット ➔ 前衛
-                        backRow.style.order = '1';
-                        netLine.style.order = '2';
-                        frontRow.style.order = '3';
-                        // 向こう側のコートを記録席から見た視点として、左右（レフト/ライト）を反転させることで時計回りに見せる
-                        frontRow.style.flexDirection = 'row-reverse';
-                        backRow.style.flexDirection = 'row-reverse';
-                    } else {
-                        // 下側のチーム：ネットは上側。上から 前衛 ➔ ネット ➔ 後衛
-                        frontRow.style.order = '1';
-                        netLine.style.order = '2';
-                        backRow.style.order = '3';
-                        // 通常視点（手前側コート）なので、左から右へ通常の順序とする
-                        frontRow.style.flexDirection = 'row';
-                        backRow.style.flexDirection = 'row';
-                    }
-                }
-            }
-        }
-
-        function openSubModal(posIdx) {
-            ensureMemberState();
-            currentSubPosIdx = posIdx;
-            const team = currentCourtTeam;
-            const lineup = team === 'A' ? state.lineupA : state.lineupB;
-            const members = team === 'A' ? state.membersA : state.membersB;
-            
-            // ベンチメンバー = lineupに含まれていない全登録メンバー
-            const bench = Array.isArray(members) ? members.filter(m => !(Array.isArray(lineup) && lineup.includes(m.id))) : [];
-            
-            const list = document.getElementById('bench-list');
-            if (bench.length === 0) {
-                list.innerHTML = `<div class="text-zinc-500 text-center py-4 text-sm">控え選手がいません</div>`;
-            } else {
-                list.innerHTML = bench.map(m => `
-                    <button onclick="substitute('${m.id}')" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white p-3 rounded flex justify-between items-center transition-colors">
-                        <span class="font-bold text-lg w-10">${m.number}</span>
-                        <span class="flex-1 text-left truncate mx-2 text-sm">${m.name}</span>
-                        <span class="text-blue-400 text-xs font-bold">交代 ➔</span>
-                    </button>
-                `).join('');
+                applySettings(true);
             }
             
-            document.getElementById('sub-modal').classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            registerPWA();
+            keepScreenOn();
+            startTimer();
+            initRadialEvents();
+            
+            // Handle window resize for orientation
+            window.addEventListener('resize', updateUI);
         }
 
-        function closeSubModal() {
-            document.getElementById('sub-modal').classList.add('hidden');
-            currentSubPosIdx = null;
-        }
-
-        function substitute(benchPlayerId) {
-            if (currentSubPosIdx === null || !currentCourtTeam) return;
-            
-            const team = currentCourtTeam;
-            const lineup = team === 'A' ? state.lineupA : state.lineupB;
-            const oldPlayerId = lineup[currentSubPosIdx];
-            
-            // 交代実行
-            lineup[currentSubPosIdx] = benchPlayerId;
-            
-            state.actionLog.push({
-                type: 'substitution',
-                team: team,
-                posIdx: currentSubPosIdx,
-                outPlayerId: oldPlayerId,
-                inPlayerId: benchPlayerId,
-                scoreA: state.scoreA,
-                scoreB: state.scoreB,
-                set: state.currentSet
-            });
-            
-            updateUI();
-            renderCourt(team);
-            closeSubModal();
-            showToast("選手交代しました");
-        }
-
-        // --- Member Management ---
-        let tempMembersA = [];
-        let tempMembersB = [];
-
-        // --- Team Config from Score Screen ---
-        let currentConfigTeam = 'A';
-
-        function openTeamConfigModal(team) {
-            currentConfigTeam = team;
-            document.getElementById('team-config-title').textContent = team === 'A' ? "チームA 設定" : "チームB 設定";
-            
-            const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-            const sel = document.getElementById('config-preset-select');
-            sel.innerHTML = `<option value="">選択しない（一時的な新規入力）</option>` + 
-                presets.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-
-            const curName = team === 'A' ? state.teamA : state.teamB;
-            const curColor = team === 'A' ? state.colorA : state.colorB;
-            
-            document.getElementById('config-team-name').value = curName || "";
-            document.getElementById('config-team-color').value = curColor || "#ffffff";
-            
-            if (presets.some(p => p.name === curName)) {
-                sel.value = curName;
-            } else {
-                sel.value = "";
-            }
-
-            document.getElementById('team-config-modal').classList.remove('hidden');
-        }
-
-        function closeTeamConfigModal() {
-            document.getElementById('team-config-modal').classList.add('hidden');
-        }
-
-        function onConfigPresetChange(val) {
-            if (!val) return;
-            const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-            const p = presets.find(item => item.name === val);
-            if (p) {
-                document.getElementById('config-team-name').value = p.name;
-                if (p.color) document.getElementById('config-team-color').value = p.color;
-            }
-        }
-
-        function applyTeamConfig() {
-            const t = currentConfigTeam;
-            const nameVal = document.getElementById('config-team-name').value.trim() || (t === 'A' ? "TEAM A" : "TEAM B");
-            const colorVal = document.getElementById('config-team-color').value;
-            const presetVal = document.getElementById('config-preset-select').value;
-
-            if (t === 'A') {
-                state.teamA = nameVal;
-                state.colorA = colorVal;
-                if (presetVal) {
-                    const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-                    const p = presets.find(item => item.name === presetVal);
-                    if (p && Array.isArray(p.members)) {
-                        state.membersA = Array.from({length: 14}, (_, i) => {
-                            const pm = p.members[i];
-                            return {
-                                id: `A${i+1}`,
-                                number: pm ? pm.number : (i + 1),
-                                name: pm ? pm.name : `Player A${i+1}`
-                            };
-                        });
-                        state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
-                    }
-                }
-            } else {
-                state.teamB = nameVal;
-                state.colorB = colorVal;
-                if (presetVal) {
-                    const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-                    const p = presets.find(item => item.name === presetVal);
-                    if (p && Array.isArray(p.members)) {
-                        state.membersB = Array.from({length: 14}, (_, i) => {
-                            const pm = p.members[i];
-                            return {
-                                id: `B${i+1}`,
-                                number: pm ? pm.number : (i + 1),
-                                name: pm ? pm.name : `${i+1}`
-                            };
-                        });
-                        state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
-                    }
-                }
-            }
-
-            saveState();
-            updateUI();
-            closeTeamConfigModal();
-            showToast(`${nameVal} を適用しました`);
-        }
-
-        // --- Master Team Management ---
-        const PRESET_TEAMS_KEY = 'vb_preset_teams';
-        let masterEditOriginalName = "";
-        let masterEditMembers = [];
-
-        function openMasterTeamModal() {
-            ensureMemberState();
-            const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-            const sel = document.getElementById('master-team-select');
-            sel.innerHTML = `<option value="">-- 新規チームを作成 --</option>` + 
-                presets.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-            
-            sel.value = "";
-            loadMasterTeamForEdit("");
-            
-            document.getElementById('member-modal').classList.remove('hidden');
-        }
-
-        function loadMasterTeamForEdit(presetName) {
-            masterEditOriginalName = presetName;
-            if (!presetName) {
-                document.getElementById('master-team-name').value = "";
-                document.getElementById('master-team-color').value = "#3b82f6";
-                masterEditMembers = Array.from({length: 14}, (_, i) => ({
-                    id: `M${i+1}`,
-                    number: i + 1,
-                    name: `${i+1}`
-                }));
-            } else {
-                const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-                const p = presets.find(item => item.name === presetName);
-                if (p) {
-                    document.getElementById('master-team-name').value = p.name;
-                    document.getElementById('master-team-color').value = p.color || "#3b82f6";
-                    let arr = JSON.parse(JSON.stringify(p.members || []));
-                    while (arr.length < 14) {
-                        const nextIdx = arr.length;
-                        arr.push({ id: `M${arr.length+1}`, number: arr.length + 1, name: `${arr.length + 1}` });
-                    }
-                    if (arr.length > 14) arr = arr.slice(0, 14);
-                    masterEditMembers = arr;
-                }
-            }
-            renderMasterMemberRows();
-        }
-
-        function renderMasterMemberRows() {
-            const list = document.getElementById('master-member-list');
-            list.innerHTML = masterEditMembers.map((m, idx) => `
-                <div class="flex gap-2 items-center">
-                    <span class="text-xs text-zinc-600 font-bold w-5 text-right">${idx + 1}.</span>
-                    <input type="number" value="${m.number}" 
-                        onchange="updateMasterMember(${idx}, 'number', this.value)"
-                        class="w-14 bg-zinc-800 border-none p-1.5 text-white text-center rounded text-xs font-bold" placeholder="番号">
-                    <input type="text" value="${m.name}" 
-                        onchange="updateMasterMember(${idx}, 'name', this.value)"
-                        class="flex-1 bg-zinc-800 border-none p-1.5 text-white rounded text-xs" placeholder="名前 (未入力可)">
-                </div>
-            `).join('');
-        }
-
-        function updateMasterMember(idx, field, val) {
-            if (field === 'number') masterEditMembers[idx].number = parseInt(val) || 0;
-            else masterEditMembers[idx].name = val;
-        }
-
-        function saveMasterTeam() {
-            const nameVal = document.getElementById('master-team-name').value.trim();
-            if (!nameVal) {
-                alert("チーム名を入力してください。");
-                return;
-            }
-            const colorVal = document.getElementById('master-team-color').value;
-
-            let presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-            
-            const newPreset = {
-                id: masterEditOriginalName ? (presets.find(p => p.name === masterEditOriginalName)?.id || `preset_${Date.now()}`) : `preset_${Date.now()}`,
-                name: nameVal,
-                color: colorVal,
-                members: JSON.parse(JSON.stringify(masterEditMembers))
-            };
-
-            const existingIdx = presets.findIndex(p => p.name === nameVal);
-
-            if (masterEditOriginalName && masterEditOriginalName !== nameVal) {
-                const oldIdx = presets.findIndex(p => p.name === masterEditOriginalName);
-                if (oldIdx >= 0) {
-                    presets[oldIdx] = newPreset;
-                } else {
-                    presets.push(newPreset);
-                }
-            } else if (existingIdx >= 0) {
-                presets[existingIdx] = newPreset;
-            } else {
-                presets.push(newPreset);
-            }
-
-            localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(presets));
-            showToast(`チームマスター「${nameVal}」を保存しました`);
-            
-            if (state.teamA === masterEditOriginalName || state.teamA === nameVal) {
-                state.teamA = nameVal;
-                state.colorA = colorVal;
-                state.membersA = Array.from({length: 14}, (_, i) => {
-                    const mem = masterEditMembers[i];
-                    return {
-                        id: `A${i+1}`,
-                        number: mem ? mem.number : (i + 1),
-                        name: mem ? mem.name : `Player A${i+1}`
-                    };
-                });
-                state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
-            }
-            if (state.teamB === masterEditOriginalName || state.teamB === nameVal) {
-                state.teamB = nameVal;
-                state.colorB = colorVal;
-                state.membersB = Array.from({length: 14}, (_, i) => {
-                    const mem = masterEditMembers[i];
-                    return {
-                        id: `B${i+1}`,
-                        number: mem ? mem.number : (i + 1),
-                        name: mem ? mem.name : `Player B${i+1}`
-                    };
-                });
-                state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
-            }
-            
-            saveState();
-            updateUI();
-            
-            masterEditOriginalName = nameVal;
-            const sel = document.getElementById('master-team-select');
-            sel.innerHTML = `<option value="">-- 新規チームを作成 --</option>` + 
-                presets.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-            sel.value = nameVal;
-            
-            toggleMembers();
-        }
-
-        function deleteMasterTeam() {
-            if (!masterEditOriginalName) {
-                alert("削除する保存済みチームを選択してください。");
-                return;
-            }
-            if (!confirm(`チームマスター「${masterEditOriginalName}」を削除してもよろしいですか？`)) return;
-
-            let presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-            presets = presets.filter(p => p.name !== masterEditOriginalName);
-            localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(presets));
-            
-            showToast(`「${masterEditOriginalName}」を削除しました`);
-            
-            openMasterTeamModal();
-        }
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.style.opacity = "1";
-            setTimeout(() => t.style.opacity = "0", 2000);
-        }
-
-        function saveState() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        }
-
-        function vibrate(ms) {
-            if (navigator.vibrate) navigator.vibrate(ms);
-        }
-
-        async function keepScreenOn() {
-            if ('wakeLock' in navigator) {
-                try {
-                    await navigator.wakeLock.request('screen');
-                } catch (err) {}
-            }
-        }
-
-        // --- Timeout Timer ---
-        let timeoutTimerInterval = null;
-        let timeoutRemainingSeconds = 0;
-
-        function startTimeoutTimer(team) {
-            const duration = state.timeoutDuration || 30;
-            timeoutRemainingSeconds = duration;
-            
-            const modal = document.getElementById('timeout-timer-modal');
-            const teamLabel = document.getElementById('timeout-timer-team');
-            const secLabel = document.getElementById('timeout-timer-sec');
-            const progress = document.getElementById('timeout-timer-progress');
-            
-            const teamName = team === 'A' ? state.teamA : state.teamB;
-            const teamColor = team === 'A' ? state.colorA : state.colorB;
-            
-            if (teamLabel) {
-                teamLabel.textContent = `${teamName} タイムアウト`;
-                teamLabel.style.color = teamColor || "#ffffff";
-            }
-            if (secLabel) secLabel.textContent = timeoutRemainingSeconds;
-            if (progress) {
-                progress.style.transitionDuration = '0s';
-                progress.style.width = '100%';
-                setTimeout(() => {
-                    progress.style.transitionDuration = '1s';
-                }, 50);
-            }
-            
-            if (modal) modal.classList.remove('hidden');
-            
-            if (timeoutTimerInterval) clearInterval(timeoutTimerInterval);
-            
-            timeoutTimerInterval = setInterval(() => {
-                timeoutRemainingSeconds--;
-                if (secLabel) secLabel.textContent = timeoutRemainingSeconds;
-                if (progress) {
-                    const pct = (timeoutRemainingSeconds / duration) * 100;
-                    progress.style.width = `${pct}%`;
-                }
-                
-                if (timeoutRemainingSeconds <= 0) {
-                    vibrate(1000);
-                    stopTimeoutTimer();
-                    showToast("タイムアウト終了");
-                }
-            }, 1000);
-        }
-
-        function stopTimeoutTimer() {
-            if (timeoutTimerInterval) {
-                clearInterval(timeoutTimerInterval);
-                timeoutTimerInterval = null;
-            }
-            const modal = document.getElementById('timeout-timer-modal');
-            if (modal) modal.classList.add('hidden');
-        }
-
-        // --- PWA Support ---
-        function registerPWA() {
-            const manifest = {
-                "name": "Volleyball Scorebook",
-                "short_name": "VB Score",
-                "start_url": ".",
-                "display": "standalone",
-                "background_color": "#1a1a1a",
-                "theme_color": "#1a1a1a",
-                "icons": [
-                    {
-                        "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1a1a'/%3E%3Ctext y='75' x='10' font-family='Arial' font-size='70' fill='yellow'%3EVB%3C/text%3E%3C/svg%3E",
-                        "sizes": "192x192",
-                        "type": "image/svg+xml"
-                    }
-                ]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-            const manifestURL = URL.createObjectURL(manifestBlob);
-            const link = document.createElement('link');
-            link.rel = 'manifest';
-            link.href = manifestURL;
-            document.head.appendChild(link);
-
-            if ('serviceWorker' in navigator) {
-                const swCode = `
-                    self.addEventListener('install', e => self.skipWaiting());
-                    self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
-                `;
-                const swBlob = new Blob([swCode], {type: 'application/javascript'});
-                const swURL = URL.createObjectURL(swBlob);
-                navigator.serviceWorker.register(swURL).catch(console.error);
-            }
-        }
-
-        async function shareTimelineAsImage(containerId) {
-            if (typeof html2canvas === 'undefined') {
-                alert("画像化ライブラリの読み込みに失敗しました。");
-                return;
-            }
-
-            const container = document.getElementById(containerId);
-            if (!container) return;
-
-            const timelineContainers = container.querySelectorAll('.timeline-container');
-            const originalStyles = [];
-            let maxWidth = container.offsetWidth;
-
-            timelineContainers.forEach((tc) => {
-                originalStyles.push({
-                    el: tc,
-                    overflowX: tc.style.overflowX,
-                    width: tc.style.width
-                });
-                tc.style.overflowX = 'visible';
-                tc.style.width = 'max-content';
-                if (tc.scrollWidth > maxWidth) maxWidth = tc.scrollWidth;
-            });
-
-            const origContainerStyle = {
-                width: container.style.width,
-                overflowY: container.style.overflowY,
-                overflowX: container.style.overflowX,
-                height: container.style.height
-            };
-            
-            container.style.width = maxWidth + 40 + 'px';
-            container.style.height = 'max-content';
-            container.style.overflowY = 'visible';
-            container.style.overflowX = 'visible';
-
-            try {
-                await new Promise(r => setTimeout(r, 100));
-                
-                const canvas = await html2canvas(container, {
-                    backgroundColor: '#1a1a1a',
-                    scale: 2,
-                    windowWidth: maxWidth + 40
-                });
-
-                canvas.toBlob(async (blob) => {
-                    const file = new File([blob], 'timeline.png', { type: 'image/png' });
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                title: 'バレーボール スコア・タイムライン',
-                                files: [file]
-                            });
-                        } catch (err) {
-                            if (err.name !== 'AbortError') alert("共有に失敗しました: " + err.message);
-                        }
-                    } else {
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'timeline.png';
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    }
-                });
-            } catch (err) {
-                alert("画像の生成に失敗しました: " + err.message);
-            } finally {
-                container.style.width = origContainerStyle.width;
-                container.style.height = origContainerStyle.height;
-                container.style.overflowY = origContainerStyle.overflowY;
-                container.style.overflowX = origContainerStyle.overflowX;
-                originalStyles.forEach(orig => {
-                    orig.el.style.overflowX = orig.overflowX;
-                    orig.el.style.width = orig.width;
-                });
-            }
-        }
-
-        window.addEventListener('resize', updateUI);
         init();
-
-        // --- Radial Menu & Advanced Input ---
-        let radialState = {
-            active: false,
-            stage: 1, // 1: Action, 2: Player
-            team: null,
-            startX: 0,
-            startY: 0,
-            startTime: 0,
-            currentOption: null,
-            currentPlayerId: null,
-            timer: null
-        };
-
-        const RADIAL_THRESHOLD = 30; // スライド判定の閾値
-        const RADIAL_HOLD_TIME = 200; // 長押し判定時間(ms)
-
-        function initRadialEvents() {
-            const areaA = document.getElementById('area-a');
-            const areaB = document.getElementById('area-b');
-
-            [areaA, areaB].forEach(area => {
-                const team = area.id === 'area-a' ? 'A' : 'B';
-                
-                // PCでの右クリックメニューを禁止
-                area.addEventListener('contextmenu', (e) => e.preventDefault());
-
-                area.addEventListener('pointerdown', (e) => {
-                    if (isAnyModalOpen()) return;
-                    if (e.target !== area && !area.classList.contains('score-display') && e.target.closest('button, .pointer-events-auto')) return;
-
-                    radialState.active = false;
-                    radialState.team = team;
-                    radialState.startX = e.clientX;
-                    radialState.startY = e.clientY;
-                    radialState.startTime = Date.now();
-                    radialState.currentOption = null;
-
-                    if (state.showAdvancedMode) {
-                        radialState.timer = setTimeout(() => {
-                            showRadialMenu(e.clientX, e.clientY);
-                        }, RADIAL_HOLD_TIME);
-                    }
-                });
-            });
-
-            window.addEventListener('pointermove', (e) => {
-                if (!radialState.active) {
-                    if (radialState.timer && 
-                        Math.hypot(e.clientX - radialState.startX, e.clientY - radialState.startY) > 15) {
-                        clearTimeout(radialState.timer);
-                        radialState.timer = null;
-                    }
-                    return;
-                }
-                updateRadialSelection(e.clientX, e.clientY);
-            });
-
-            const endInteraction = (e) => {
-                if (radialState.timer) {
-                    clearTimeout(radialState.timer);
-                    radialState.timer = null;
-                }
-
-                if (radialState.team) {
-                    const elapsed = Date.now() - radialState.startTime;
-                    const dist = Math.hypot(e.clientX - radialState.startX, e.clientY - radialState.startY);
-
-                    if (radialState.active) {
-                        const pattern = radialState.currentOption;
-                        const playerId = radialState.currentPlayerId;
-                        const dist = Math.hypot(e.clientX - radialState.startX, e.clientY - radialState.startY);
-                        
-                        hideRadialMenu();
-                        
-                        // 180px以上離れていたらキャンセル扱い
-                        if (dist > 180) {
-                            showToast("キャンセルしました");
-                        } else if (pattern) {
-                            addPoint(radialState.team, pattern, playerId);
-                        }
-                    } else if (elapsed < 500 && dist < 20) {
-                        addPoint(radialState.team, 'unknown');
-                    }
-                }
-                radialState.active = false;
-                radialState.team = null;
-            };
-
-            window.addEventListener('pointerup', endInteraction);
-            window.addEventListener('pointercancel', () => {
-                hideRadialMenu();
-                if (radialState.timer) clearTimeout(radialState.timer);
-                radialState.active = false;
-                radialState.team = null;
-            });
-        }
-
-        function showRadialMenu(x, y) {
-            radialState.active = true;
-            radialState.stage = 1;
-            const menu = document.getElementById('radial-menu');
-            menu.style.left = `${x}px`;
-            menu.style.top = `${y}px`;
-            menu.style.transform = 'translate(-50%, -50%) scale(1)';
-            menu.style.opacity = '1';
-            
-            document.getElementById('radial-stage-action').style.opacity = '1';
-            document.getElementById('radial-stage-player').style.opacity = '0';
-            document.getElementById('radial-guidance').textContent = "種類を選択";
-
-            const area = document.getElementById(radialState.team === 'A' ? 'area-a' : 'area-b');
-            const grid = area.querySelector('.pos-grid-overlay');
-            if (grid) grid.style.opacity = '0.4';
-
-            if (navigator.vibrate) navigator.vibrate(10);
-        }
-
-        function hideRadialMenu() {
-            const menu = document.getElementById('radial-menu');
-            menu.style.transform = 'translate(-50%, -50%) scale(0.5)';
-            menu.style.opacity = '0';
-            
-            ['a', 'b'].forEach(t => {
-                const grid = document.getElementById(`area-${t}`).querySelector('.pos-grid-overlay');
-                if (grid) grid.style.opacity = '0.1';
-            });
-
-            document.querySelectorAll('.radial-option, .radial-player-opt').forEach(opt => {
-                opt.style.backgroundColor = '';
-                opt.style.transform = opt.style.transform.replace(' scale(1.1)', '').replace(' scale(1.2)', '');
-            });
-        }
-
-        function updateRadialSelection(x, y) {
-            const dx = x - radialState.startX;
-            const dy = y - radialState.startY;
-            const dist = Math.hypot(dx, dy);
-            const indicator = document.getElementById('radial-selection-indicator');
-
-            if (dist < 20) {
-                indicator.style.opacity = '0';
-                return;
-            }
-            indicator.style.opacity = '1';
-            indicator.style.transform = `translate(${dx}px, ${dy}px)`;
-
-            if (radialState.stage === 1) {
-                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-                let option = null;
-                if (angle > -135 && angle <= -45) option = 'spike';
-                else if (angle > -45 && angle <= 45) option = 'ace';
-                else if (angle > 45 && angle <= 135) option = 'block';
-                else option = 'error';
-
-                if (radialState.currentOption !== option) {
-                    radialState.currentOption = option;
-                    highlightOption(option);
-                }
-                
-                // 中心から一定距離以上離れたら、現在の選択肢で確定して選手選択（Stage 2）へ
-                if (dist > 60) {
-                    enterStage2(option);
-                }
-            } else {
-                // Stage 2: Player Selection (Court Layout / Distance-based)
-                if (dist < 30) {
-                    radialState.currentPlayerId = null;
-                    highlightPlayer(null);
-                    return;
-                }
-
-                const teamToPick = radialState.currentOption === 'error' ? (radialState.team === 'A' ? 'B' : 'A') : radialState.team;
-                const lineup = teamToPick === 'A' ? state.lineupA : state.lineupB;
-                
-                // 動的に計算された座標（radialState.playerCoords）を使用
-                let minScore = Infinity;
-                let bestPos = null;
-
-                for (let p in radialState.playerCoords) {
-                    const c = radialState.playerCoords[p];
-                    const d = Math.hypot(dx - c.x, dy - c.y);
-                    if (d < minScore) {
-                        minScore = d;
-                        bestPos = parseInt(p);
-                    }
-                }
-
-                if (bestPos && minScore < 60) {
-                    const playerId = lineup[bestPos - 1];
-                    if (radialState.currentPlayerId !== playerId) {
-                        radialState.currentPlayerId = playerId;
-                        highlightPlayer(bestPos);
-                        if (navigator.vibrate) navigator.vibrate(5);
-                    }
-                }
-            }
-
-            // 範囲外キャンセルの視覚的フィードバック (180px以上で半透明)
-            const menu = document.getElementById('radial-menu');
-            if (dist > 180) {
-                menu.style.opacity = '0.3';
-                menu.style.transform = 'translate(-50%, -50%) scale(0.95)';
-            } else {
-                menu.style.opacity = '1';
-                menu.style.transform = 'translate(-50%, -50%) scale(1)';
-            }
-        }
-
-        function highlightOption(type) {
-            document.querySelectorAll('.radial-option').forEach(opt => {
-                const isMatch = opt.id === `radial-opt-${type}`;
-                opt.style.backgroundColor = isMatch ? (type === 'error' ? '#ef4444' : '#10b981') : '';
-                opt.style.transform = opt.style.transform.replace(' scale(1.1)', '') + (isMatch ? ' scale(1.1)' : '');
-            });
-        }
-
-        function enterStage2(option) {
-            radialState.stage = 2;
-            radialState.currentPlayerId = null;
-            if (navigator.vibrate) navigator.vibrate([10, 30]);
-
-            const stage1 = document.getElementById('radial-stage-action');
-            const stage2 = document.getElementById('radial-stage-player');
-            const guidance = document.getElementById('radial-guidance');
-
-            stage1.style.opacity = '0';
-            stage2.style.opacity = '1';
-            
-            // 選手配置（画面の向きとチーム位置に連動）
-            const list = document.getElementById('radial-player-list');
-            list.innerHTML = '';
-            
-            const teamToPick = option === 'error' ? (radialState.team === 'A' ? 'B' : 'A') : radialState.team;
-            const teamName = teamToPick === 'A' ? state.teamA : state.teamB;
-            guidance.textContent = teamName;
-
-            const lineup = teamToPick === 'A' ? state.lineupA : state.lineupB;
-            const members = teamToPick === 'A' ? state.membersA : state.membersB;
-
-            // 現在のレイアウト（縦・横）とチーム位置を判定
-            const isLandscape = document.body.classList.contains('is-landscape');
-            // Team A が左(Landscape)または上(Portrait)にあるかどうか
-            const isTeamAFirst = !state.isCourtSwapped;
-            const isTargetFirst = (teamToPick === 'A' ? isTeamAFirst : !isTeamAFirst);
-
-            // 座標計算
-            const gap = 75;
-            radialState.playerCoords = {};
-
-            const posDefinitions = [1, 2, 3, 4, 5, 6].map(p => {
-                let x = 0, y = 0;
-                if (isLandscape) {
-                    // 横画面: 前衛が中央寄り、後衛が端寄り
-                    const col = (p === 2 || p === 3 || p === 4) ? (isTargetFirst ? 1 : -1) : (isTargetFirst ? -1 : 1);
-                    // 右側のチーム(isTargetFirst=false)の場合、上下(row)を反転させてメイン表示と同期
-                    let row = (p === 2 || p === 1) ? 1 : (p === 3 || p === 6) ? 0 : -1;
-                    if (!isTargetFirst) row *= -1;
-                    x = col * gap;
-                    y = row * gap;
-                } else {
-                    // 縦画面: 前衛が中央寄り、後衛が端寄り
-                    const row = (p === 2 || p === 3 || p === 4) ? (isTargetFirst ? 1 : -1) : (isTargetFirst ? -1 : 1);
-                    // 上側のチーム(isTargetFirst=true)の場合、左右(col)を反転させてメイン表示と同期
-                    let col = (p === 2 || p === 1) ? 1 : (p === 3 || p === 6) ? 0 : -1;
-                    if (isTargetFirst) col *= -1;
-                    x = col * gap;
-                    y = row * gap;
-                }
-                radialState.playerCoords[p] = { x, y };
-                return { id: p, x, y };
-            });
-
-            posDefinitions.forEach(pos => {
-                const playerId = lineup[pos.id - 1];
-                const player = members.find(m => m.id === playerId);
-                let displayStr = player ? player.number : pos.id;
-                if (player && player.name && player.name !== String(player.number)) {
-                    displayStr = player.name.substring(0, 4);
-                }
-
-                const opt = document.createElement('div');
-                opt.id = `radial-player-opt-${pos.id}`;
-                opt.className = 'radial-player-opt absolute flex flex-col items-center justify-center w-14 h-14 rounded-xl bg-zinc-800 border border-white/20 text-white font-black text-xs shadow-lg transition-all overflow-hidden';
-                opt.style.left = '50%';
-                opt.style.top = '50%';
-                opt.style.transform = `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`;
-                opt.innerHTML = `
-                    <span class="leading-none text-[11px]">${displayStr}</span>
-                    <span class="absolute bottom-0.5 text-[6px] opacity-40 font-normal">P${pos.id}</span>
-                `;
-                list.appendChild(opt);
-            });
-        }
-
-        function highlightPlayer(posNum) {
-            document.querySelectorAll('.radial-player-opt').forEach(opt => {
-                const isMatch = posNum !== null && opt.id === `radial-player-opt-${posNum}`;
-                opt.style.backgroundColor = isMatch ? '#eab308' : '';
-                opt.style.color = isMatch ? '#000' : '';
-                opt.style.transform = opt.style.transform.replace(' scale(1.2)', '') + (isMatch ? ' scale(1.2)' : '');
-            });
-        }
-
-
-        function isAnyModalOpen() {
-            const modals = ['settings-modal', 'reset-modal', 'timeline-modal', 'history-modal', 'member-modal', 'court-modal', 'sub-modal', 'team-config-modal'];
-            return modals.some(id => {
-                const el = document.getElementById(id);
-                return el && !el.classList.contains('hidden');
-            });
-        }
-
-        function updatePositionGrids() {
-            // 背景グリッドは非表示（削除）
-            ['a', 'b'].forEach(t => {
-                const area = document.getElementById(`area-${t}`);
-                const grid = area.querySelector('.pos-grid-overlay');
-                if (grid) grid.remove();
-            });
-        }
-
-        initRadialEvents();
     </script>
 </body>
 </html>
