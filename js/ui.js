@@ -226,5 +226,6 @@ function confirmStartMatch() {
     saveState();
     updateUI();
     toggleMatchSetup();
+    if (typeof keepScreenOn === 'function') keepScreenOn();
     showToast("試合開始！");
 }
