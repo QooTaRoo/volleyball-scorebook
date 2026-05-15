@@ -25,7 +25,7 @@ let state = {
     actionLog: [],
     matchComplete: false,
     setHistory: [],
-    matchStartTime: Date.now(),
+    matchStartTime: null,
     timeoutDuration: 30,
     membersA: Array.from({length: 14}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `${i+1}` })),
     membersB: Array.from({length: 14}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}` })),

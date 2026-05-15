@@ -7,11 +7,14 @@ function startTimer() {
 }
 
 function updateTimer() {
-    if (!state.matchStartTime) return;
+    const el = document.getElementById('match-timer');
+    if (!state.matchStartTime) {
+        if (el) el.textContent = "00:00";
+        return;
+    }
     const diff = Math.floor((Date.now() - state.matchStartTime) / 1000);
     const m = Math.floor(diff / 60);
     const s = diff % 60;
-    const el = document.getElementById('match-timer');
     if (el) el.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 

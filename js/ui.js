@@ -131,27 +131,96 @@ function showToast(msg) {
 }
 
 // Modal Toggles
+let isMenuHubActive = false;
+
 function toggleSettings() { 
     const modal = document.getElementById('settings-modal');
-    if (modal.classList.contains('hidden')) {
+    const isOpening = modal.classList.contains('hidden');
+    if (isOpening) {
         document.getElementById('input-max-timeouts').value = state.maxTimeouts;
         document.getElementById('input-advanced-mode').checked = !!state.showAdvancedMode;
         const durationEl = document.getElementById('input-timeout-duration');
         if (durationEl) durationEl.value = state.timeoutDuration || 30;
     }
-    modal.classList.toggle('hidden'); 
+    modal.classList.toggle('hidden');
+    
+    // Return to menu if closed and we were in menu hub
+    if (!isOpening && isMenuHubActive) {
+        toggleMainMenu(true);
+    }
 }
-function toggleResetMenu() { document.getElementById('reset-modal').classList.toggle('hidden'); }
+
+function toggleMainMenu(forceShow = null) {
+    const modal = document.getElementById('main-menu');
+    const resumeBtn = document.getElementById('menu-resume-btn');
+    const finishBtn = document.getElementById('menu-finish-btn');
+    const discardBtn = document.getElementById('menu-discard-btn');
+    
+    const isLive = !!state.matchStartTime;
+    if (resumeBtn) resumeBtn.classList.toggle('hidden', !isLive);
+    if (finishBtn) finishBtn.classList.toggle('hidden', !isLive);
+    if (discardBtn) discardBtn.classList.toggle('hidden', !isLive);
+
+    if (forceShow === true) {
+        modal.classList.remove('hidden');
+        isMenuHubActive = true;
+    } else if (forceShow === false) {
+        modal.classList.add('hidden');
+    } else {
+        modal.classList.toggle('hidden');
+        isMenuHubActive = !modal.classList.contains('hidden');
+    }
+    
+    if (!modal.classList.contains('hidden')) {
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+}
+
+function startNewMatchFromMenu() {
+    if (startNewMatch()) {
+        toggleMainMenu(false);
+    }
+}
+
+function finishMatchFromMenu() {
+    toggleMainMenu(false);
+    finishMatch();
+}
+
+function discardMatchFromMenu() {
+    if (!confirm("現在の試合を保存せずに破棄して終了しますか？")) return;
+    resetMatchState();
+    saveState();
+    updateUI();
+    toggleMainMenu(true); // Refresh menu to hide live buttons
+}
+
+function toggleHistoryFromMenu() {
+    toggleMainMenu(false);
+    toggleHistory();
+}
+
+function toggleSettingsFromMenu() {
+    toggleMainMenu(false);
+    toggleSettings();
+}
 function toggleTimeline() { document.getElementById('timeline-modal').classList.toggle('hidden'); }
 function toggleHistory() { 
-    document.getElementById('history-modal').classList.toggle('hidden'); 
-    if (!document.getElementById('history-modal').classList.contains('hidden')) renderHistory();
+    const modal = document.getElementById('history-modal');
+    const isOpening = modal.classList.contains('hidden');
+    modal.classList.toggle('hidden'); 
+    if (isOpening) {
+        renderHistory();
+    } else if (isMenuHubActive) {
+        toggleMainMenu(true);
+    }
 }
 function toggleMembers() { document.getElementById('member-modal').classList.toggle('hidden'); }
 function toggleAnalysis() { document.getElementById('analysis-modal').classList.toggle('hidden'); }
 function toggleMatchSetup() { 
     const modal = document.getElementById('match-setup-modal');
-    if (modal.classList.contains('hidden')) {
+    const isOpening = modal.classList.contains('hidden');
+    if (isOpening) {
         document.getElementById('setup-sets-format').value = state.maxSets;
         document.getElementById('setup-target-points').value = state.targetPoints;
         document.getElementById('setup-final-set-target').value = state.finalSetTarget;
@@ -160,6 +229,11 @@ function toggleMatchSetup() {
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
     modal.classList.toggle('hidden'); 
+    
+    // Return to menu if closed and we were in menu hub
+    if (!isOpening && isMenuHubActive) {
+        toggleMainMenu(true);
+    }
 }
 
 function setSetupServe(team) {
@@ -210,10 +284,13 @@ function applySettings(isInit = false) {
 
 function startNewMatch() {
     if (state.actionLog.length > 0) {
-        if (!confirm("現在の試合記録を破棄して、新しい試合の準備をしますか？")) return;
+        if (!confirm("現在の試合記録を破棄して、新しい試合の準備をしますか？")) return false;
     }
-    toggleResetMenu();
+    resetMatchState();
+    saveState();
+    updateUI();
     toggleMatchSetup();
+    return true;
 }
 
 function confirmStartMatch() {
@@ -223,8 +300,10 @@ function confirmStartMatch() {
     state.servingTeam = setupServingTeam;
     
     resetMatchState();
+    state.matchStartTime = Date.now();
     saveState();
     updateUI();
+    isMenuHubActive = false;
     toggleMatchSetup();
     if (typeof keepScreenOn === 'function') keepScreenOn();
     showToast("試合開始！");

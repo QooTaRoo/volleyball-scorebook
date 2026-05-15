@@ -148,11 +148,26 @@ function finishMatch(winnerName, scoreDetail = "") {
     });
     localStorage.setItem(HISTORY_KEY, JSON.stringify(matchHistory));
 
-    alert(`試合終了！ 勝者: ${winnerName}\n${scoreDetail}\n\n[OK]を押すとスコアをリセットして次の試合を開始します。`);
+    let msg = "試合終了！";
+    if (winnerName) msg += ` 勝者: ${winnerName}`;
+    if (scoreDetail) msg += `\n${scoreDetail}`;
+    msg += "\n\n[OK]を押すと初期画面に戻ります。";
+    
+    alert(msg);
 
     // Reset for new match
     resetMatchState();
     updateUI();
+    // Ensure only the main menu is shown
+    if (typeof toggleMainMenu === 'function') {
+        // Hide other major modals first
+        const modalsToHide = ['match-setup-modal', 'settings-modal', 'history-modal', 'timeline-modal'];
+        modalsToHide.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        toggleMainMenu(true);
+    }
 }
 
 function resetMatchState() {
@@ -166,7 +181,7 @@ function resetMatchState() {
     state.actionLog = [];
     state.setHistory = [];
     state.matchComplete = false;
-    state.matchStartTime = Date.now();
+    state.matchStartTime = null;
     state.rotationLog = [];
     
     // Lineup inheritance: usually new matches reset to default? 

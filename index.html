@@ -21,14 +21,12 @@
 <body class="h-screen w-screen flex flex-col">
 
     <!-- Header / Nav -->
-    <header class="h-12 flex items-center justify-between px-4 bg-zinc-900 border-b border-zinc-800 z-50">
-        <button onclick="toggleSettings()" class="text-zinc-400 p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
+    <header class="h-12 flex items-center justify-center px-4 bg-zinc-900 border-b border-zinc-800 z-50">
         <div id="match-info" class="text-xs text-zinc-500 font-bold tracking-widest flex items-center gap-2">
             <span>第<span id="current-set-num">1</span>セット</span>
             <span>|</span>
             <span>⏱️ <span id="match-timer">00:00</span></span>
         </div>
-        <button onclick="toggleHistory()" class="text-zinc-400 p-2"><i data-lucide="clipboard-list" class="w-5 h-5"></i></button>
     </header>
 
     <!-- Main Score Area -->
@@ -74,7 +72,7 @@
                     <span class="icon-swap-portrait"><i data-lucide="repeat-2" class="w-8 h-8"></i></span>
                 </button>
                 <button onclick="event.stopPropagation(); showCurrentTimeline();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl text-zinc-400" title="統計"><i data-lucide="bar-chart-3" class="w-8 h-8"></i></button>
-                <button onclick="event.stopPropagation(); toggleResetMenu();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl text-zinc-400" title="メニュー"><i data-lucide="more-horizontal" class="w-8 h-8"></i></button>
+                <button onclick="event.stopPropagation(); toggleMainMenu();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl text-zinc-400" title="メニュー"><i data-lucide="more-horizontal" class="w-8 h-8"></i></button>
             </div>
         </div>
 
@@ -106,6 +104,39 @@
     </main>
 
     <!-- Modals -->
+    <div id="main-menu" class="fixed inset-0 bg-black/95 z-[300] hidden flex flex-col items-center justify-center p-8">
+        <div class="max-w-sm w-full space-y-12 text-center">
+            <h1 class="text-5xl font-black italic tracking-tighter text-yellow-400 drop-shadow-2xl">VB SCORE</h1>
+            <div class="space-y-4">
+                <button onclick="startNewMatchFromMenu()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-5 rounded-2xl text-xl shadow-2xl flex items-center justify-center gap-3 transition-transform active:scale-95">
+                    <i data-lucide="play" class="w-6 h-6 fill-black"></i> 新規試合開始
+                </button>
+                <button id="menu-resume-btn" onclick="toggleMainMenu()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-transform active:scale-95">
+                    <i data-lucide="arrow-left-circle" class="w-5 h-5"></i> 試合に戻る
+                </button>
+                <button id="menu-finish-btn" onclick="finishMatchFromMenu()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-transform active:scale-95">
+                    <i data-lucide="check-square" class="w-5 h-5"></i> 試合を終了して記録
+                </button>
+                <button id="menu-discard-btn" onclick="discardMatchFromMenu()" class="w-full bg-zinc-900 border border-red-900/30 text-red-500 font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-transform active:scale-95">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i> 試合を破棄して終了
+                </button>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="toggleHistoryFromMenu()" class="bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-400 py-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95">
+                        <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                        <span class="text-xs font-bold">試合履歴</span>
+                    </button>
+                    <button onclick="toggleSettingsFromMenu()" class="bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-400 py-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95">
+                        <i data-lucide="settings" class="w-6 h-6"></i>
+                        <span class="text-xs font-bold">アプリ設定</span>
+                    </button>
+                </div>
+            </div>
+            <div class="pt-8">
+                 <p class="text-[10px] text-zinc-600 font-black uppercase tracking-widest opacity-50">Volleyball Scorebook PWA</p>
+            </div>
+        </div>
+    </div>
+
     <div id="settings-modal" class="fixed inset-0 bg-black/90 z-[100] hidden p-6 overflow-y-auto">
         <div class="max-w-md mx-auto">
             <h2 class="text-2xl font-bold mb-6 border-b border-zinc-700 pb-2 text-yellow-400">設定</h2>
@@ -164,20 +195,7 @@
         </div>
     </div>
 
-    <div id="reset-modal" class="fixed inset-0 bg-black/90 z-[150] hidden p-6 flex flex-col items-center justify-center">
-        <div class="max-w-sm w-full bg-zinc-900 border border-zinc-800 p-6 rounded-lg text-center">
-            <h2 class="text-xl font-bold mb-6">試合メニュー</h2>
-            <div class="space-y-4">
-                <button onclick="finishMatch()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg">
-                    <i data-lucide="check-square" class="w-5 h-5"></i> 試合を記録して終了
-                </button>
-                <button onclick="startNewMatch()" class="w-full bg-zinc-800 hover:bg-red-900/50 text-red-500 font-bold py-4 rounded-xl flex items-center justify-center gap-2 border border-red-900/30">
-                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i> リセット (最初から)
-                </button>
-                <button onclick="toggleResetMenu()" class="w-full bg-zinc-700 font-bold py-4 rounded-xl">キャンセル</button>
-            </div>
-        </div>
-    </div>
+
 
     <div id="history-modal" class="fixed inset-0 bg-black/95 z-[100] hidden p-6 overflow-y-auto">
         <div class="max-w-2xl mx-auto pb-20">
@@ -400,38 +418,6 @@
     <script src="js/pwa.js"></script>
     <script src="js/backup.js"></script>
     
-    <script>
-        function toggleServingTeam() {
-            if (state.matchComplete) return;
-            vibrate(30);
-            state.servingTeam = state.servingTeam === 'A' ? 'B' : 'A';
-            updateUI();
-        }
-
-        // Initialize App
-        function init() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const loadedState = JSON.parse(saved);
-                // Deep merge or specific field copy to ensure new fields (like editLog) exist
-                state = Object.assign(state, loadedState);
-                updateUI();
-            } else {
-                applySettings(true);
-            }
-            
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-            
-            registerPWA();
-            keepScreenOn();
-            startTimer();
-            initRadialEvents();
-            
-            // Handle window resize for orientation
-            window.addEventListener('resize', updateUI);
-        }
-
-        init();
-    </script>
+    <script src="js/init.js"></script>
 </body>
 </html>
