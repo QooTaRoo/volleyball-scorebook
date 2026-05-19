@@ -45,8 +45,10 @@ function updateUI() {
     if (finalSetTargetEl) finalSetTargetEl.value = state.finalSetTarget;
 
     // Scores & Sets
-    document.getElementById('score-a').textContent = String(state.scoreA).padStart(2, '0');
-    document.getElementById('score-b').textContent = String(state.scoreB).padStart(2, '0');
+    const scoreAText = document.getElementById('score-a-text') || document.getElementById('score-a');
+    const scoreBText = document.getElementById('score-b-text') || document.getElementById('score-b');
+    scoreAText.textContent = String(state.scoreA).padStart(2, '0');
+    scoreBText.textContent = String(state.scoreB).padStart(2, '0');
     document.getElementById('sets-a').textContent = state.setsA;
     document.getElementById('sets-b').textContent = state.setsB;
     

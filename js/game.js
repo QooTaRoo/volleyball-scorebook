@@ -62,8 +62,20 @@ function checkSetEnd() {
     if ((a >= target || b >= target) && Math.abs(a - b) >= 2) {
         const winner = a > b ? 'A' : 'B';
         finishSet(winner);
-    } else if (a === target - 1 || b === target - 1) {
-        showToast("セットポイント！");
+    } else if ((a >= target - 1 && a > b) || (b >= target - 1 && b > a)) {
+        const leadingTeam = a > b ? 'A' : 'B';
+        const matchWinnerNeeded = Math.ceil(state.maxSets / 2);
+        let isMatchPoint = false;
+        
+        if (state.maxSets === 2 && state.currentSet === 2) {
+            isMatchPoint = true;
+        } else if (leadingTeam === 'A' && state.setsA + 1 === matchWinnerNeeded) {
+            isMatchPoint = true;
+        } else if (leadingTeam === 'B' && state.setsB + 1 === matchWinnerNeeded) {
+            isMatchPoint = true;
+        }
+        
+        showToast(isMatchPoint ? "MATCH POINT" : "SET POINT");
     }
 }
 

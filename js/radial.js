@@ -23,11 +23,11 @@ const RADIAL_HOLD_TIME = 200;
 const STAGE_TRANSITION_DELAY = 200; // Requirement 2: Delay between stages
 
 function initRadialEvents() {
-    const areaA = document.getElementById('area-a');
-    const areaB = document.getElementById('area-b');
+    const areaA = document.getElementById('score-a');
+    const areaB = document.getElementById('score-b');
 
     [areaA, areaB].forEach(area => {
-        const team = area.id === 'area-a' ? 'A' : 'B';
+        const team = area.id === 'score-a' ? 'A' : 'B';
         area.addEventListener('contextmenu', (e) => e.preventDefault());
 
         area.addEventListener('pointerdown', (e) => {
@@ -46,6 +46,15 @@ function initRadialEvents() {
                     showRadialMenu(e.clientX, e.clientY);
                 }, RADIAL_HOLD_TIME);
             }
+
+            // Create visual ripple feedback
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            const rect = area.getBoundingClientRect();
+            ripple.style.left = `${e.clientX - rect.left}px`;
+            ripple.style.top = `${e.clientY - rect.top}px`;
+            area.appendChild(ripple);
+            setTimeout(() => { if (ripple.parentNode) ripple.remove(); }, 500);
         });
     });
 

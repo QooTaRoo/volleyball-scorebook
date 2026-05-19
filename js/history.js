@@ -177,7 +177,8 @@ function openAnalysis(idx = -1) {
         match = {
             teamA: state.teamA, teamB: state.teamB, setsA: state.setsA, setsB: state.setsB,
             colorA: state.colorA, colorB: state.colorB, membersA: state.membersA, membersB: state.membersB,
-            setHistory: [...state.setHistory, {
+            isLiveMatch: !state.matchComplete,
+            setHistory: state.matchComplete ? [...state.setHistory] : [...state.setHistory, {
                 set: state.currentSet, scoreA: state.scoreA, scoreB: state.scoreB,
                 log: state.actionLog.filter(l => l.set === state.currentSet)
             }]
@@ -196,15 +197,16 @@ function renderAnalysisContent(m) {
     const playerStats = document.getElementById('analysis-player-stats');
 
     const setScoresHtml = m.setHistory.map(s => {
-        const isMatchInProgress = (m.teamA === state.teamA && m.teamB === state.teamB);
-        const isLastSet = s.set === state.currentSet && isMatchInProgress;
+        const isLastSet = m.isLiveMatch && s.set === state.currentSet;
+        const statusText = isLastSet ? 'LIVE' : 'FINAL';
+        const statusColor = isLastSet ? 'text-emerald-500' : 'text-zinc-500';
         return `
             <div class="flex items-center justify-center gap-3 w-full">
                 <span class="text-[9px] text-zinc-600 font-black w-8 text-right">SET ${s.set}</span>
                 <div class="flex items-center gap-2 px-3 py-1 rounded-lg ${isLastSet ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800/50 text-zinc-400 border border-white/5'} text-xs font-black min-w-[70px] justify-center shadow-inner">
                     <span>${s.scoreA}</span><span class="text-zinc-600">-</span><span>${s.scoreB}</span>
                 </div>
-                <div class="w-8 italic text-[8px] text-emerald-500 font-bold">${isLastSet ? 'LIVE' : ''}</div>
+                <div class="w-8 italic text-[8px] ${statusColor} font-bold">${statusText}</div>
             </div>
         `;
     }).join('');

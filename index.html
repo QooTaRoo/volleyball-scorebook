@@ -32,7 +32,7 @@
     <!-- Main Score Area -->
     <main id="main-court" class="flex-1 flex flex-col relative">
         <!-- Team A -->
-        <div id="area-a" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center tap-area relative w-full">
+        <div id="area-a" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center relative w-full">
             <div id="to-indicator-a" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer relative z-50 p-2 -m-2 select-none" onclick="event.stopPropagation(); requestTimeout('A');" title="タイムアウトを取る"></div>
             <div class="flex items-center justify-center w-full px-4 mb-3 relative h-12">
                 <div class="relative flex items-center justify-center max-w-[60%]">
@@ -44,11 +44,11 @@
                     </div>
                 </div>
             </div>
-            <div id="score-a" class="score-display font-bold" style="color: var(--color-a);">00</div>
+            <div id="score-a" class="score-display font-bold tap-area" style="color: var(--color-a);"><span id="score-a-text">00</span></div>
         </div>
 
         <!-- Team B -->
-        <div id="area-b" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center tap-area relative w-full">
+        <div id="area-b" class="flex-1 basis-0 min-w-0 min-h-0 overflow-hidden flex flex-col items-center justify-center relative w-full">
             <div id="to-indicator-b" class="flex gap-3 mb-3 pointer-events-auto cursor-pointer relative z-50 p-2 -m-2 select-none" onclick="event.stopPropagation(); requestTimeout('B');" title="タイムアウトを取る"></div>
             <div class="flex items-center justify-center w-full px-4 mb-3 relative h-12">
                 <div class="relative flex items-center justify-center max-w-[60%]">
@@ -60,7 +60,7 @@
                     </div>
                 </div>
             </div>
-            <div id="score-b" class="score-display font-bold" style="color: var(--color-b);">00</div>
+            <div id="score-b" class="score-display font-bold tap-area" style="color: var(--color-b);"><span id="score-b-text">00</span></div>
         </div>
 
         <!-- Float Controls -->
