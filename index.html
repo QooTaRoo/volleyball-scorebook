@@ -44,7 +44,12 @@
                     </div>
                 </div>
             </div>
-            <div id="score-a" class="score-display font-bold tap-area" style="color: var(--color-a);"><span id="score-a-text">00</span></div>
+            <div id="score-a" class="score-display font-bold tap-area" style="color: var(--color-a);">
+                <div class="flex justify-center">
+                    <div class="digit-wrapper" id="wrap-a-tens"><span id="score-a-tens">0</span></div>
+                    <div class="digit-wrapper" id="wrap-a-ones"><span id="score-a-ones">0</span></div>
+                </div>
+            </div>
         </div>
 
         <!-- Team B -->
@@ -60,7 +65,12 @@
                     </div>
                 </div>
             </div>
-            <div id="score-b" class="score-display font-bold tap-area" style="color: var(--color-b);"><span id="score-b-text">00</span></div>
+            <div id="score-b" class="score-display font-bold tap-area" style="color: var(--color-b);">
+                <div class="flex justify-center">
+                    <div class="digit-wrapper" id="wrap-b-tens"><span id="score-b-tens">0</span></div>
+                    <div class="digit-wrapper" id="wrap-b-ones"><span id="score-b-ones">0</span></div>
+                </div>
+            </div>
         </div>
 
         <!-- Float Controls -->
@@ -404,6 +414,26 @@
                     </button>
                     <button onclick="toggleMatchSetup()" class="w-full mt-4 text-zinc-500 font-bold py-2">戻る</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modals -->
+    <!-- Alert Modal -->
+    <div id="custom-alert-modal" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-zinc-900 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-zinc-800">
+            <p id="custom-alert-msg" class="text-xl font-bold mb-8 whitespace-pre-line"></p>
+            <button id="custom-alert-ok" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl text-lg hover:bg-yellow-400">OK</button>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="custom-confirm-modal" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-zinc-900 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-zinc-800">
+            <p id="custom-confirm-msg" class="text-xl font-bold mb-8 whitespace-pre-line"></p>
+            <div class="flex gap-4">
+                <button id="custom-confirm-cancel" class="flex-1 bg-zinc-800 text-white font-bold py-4 rounded-xl text-lg hover:bg-zinc-700">キャンセル</button>
+                <button id="custom-confirm-ok" class="flex-1 bg-yellow-500 text-black font-black py-4 rounded-xl text-lg hover:bg-yellow-400">OK</button>
             </div>
         </div>
     </div>

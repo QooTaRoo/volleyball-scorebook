@@ -13,7 +13,7 @@ function downloadJSON(data, filename) {
 function exportTeams() {
     try {
         const teams = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-        if (teams.length === 0) { alert("エクスポートするチームデータがありません。"); return; }
+        if (teams.length === 0) { showCustomAlert("エクスポートするチームデータがありません。"); return; }
         
         const data = {
             type: "teams",
@@ -24,14 +24,14 @@ function exportTeams() {
         downloadJSON(data, `vb_teams_backup_${new Date().toISOString().split('T')[0]}.json`);
         showToast("チーム設定をエクスポートしました");
     } catch (err) {
-        alert("チームのエクスポートに失敗しました: " + err.message);
+        showCustomAlert("チームのエクスポートに失敗しました: " + err.message);
     }
 }
 
 function exportHistory() {
     try {
         const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-        if (history.length === 0) { alert("エクスポートする試合履歴がありません。"); return; }
+        if (history.length === 0) { showCustomAlert("エクスポートする試合履歴がありません。"); return; }
 
         const data = {
             type: "history",
@@ -42,14 +42,15 @@ function exportHistory() {
         downloadJSON(data, `vb_history_backup_${new Date().toISOString().split('T')[0]}.json`);
         showToast("試合履歴をエクスポートしました");
     } catch (err) {
-        alert("履歴のエクスポートに失敗しました: " + err.message);
+        showCustomAlert("履歴のエクスポートに失敗しました: " + err.message);
     }
 }
 
 function importTeams() {
-    handleFileUpload((data) => {
+    handleFileUpload(async (data) => {
         if (!data.teams) throw new Error("チームデータが含まれていません");
-        if (!confirm("チーム設定をインポートしますか？\n(同名のチームは上書きされます)")) return;
+        const confirmed = await showCustomConfirm("チーム設定をインポートしますか？\n(同名のチームは上書きされます)");
+        if (!confirmed) return;
 
         let localTeams = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
         data.teams.forEach(remoteTeam => {
@@ -59,13 +60,15 @@ function importTeams() {
         });
         localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(localTeams));
         showToast("チーム設定をインポートしました");
+        if (typeof renderMasterTeamsList === 'function') renderMasterTeamsList();
     });
 }
 
 function importHistory() {
-    handleFileUpload((data) => {
+    handleFileUpload(async (data) => {
         if (!data.history) throw new Error("試合履歴が含まれていません");
-        if (!confirm("試合履歴をインポートしますか？\n(重複しないデータのみ追加されます)")) return;
+        const confirmed = await showCustomConfirm("試合履歴をインポートしますか？\n(重複しないデータのみ追加されます)");
+        if (!confirmed) return;
 
         let localHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
         data.history.forEach(remoteMatch => {
@@ -95,7 +98,7 @@ function handleFileUpload(callback) {
                 const data = JSON.parse(event.target.result);
                 callback(data);
             } catch (err) {
-                alert("ファイルの読み込みに失敗しました: " + err.message);
+                showCustomAlert("ファイルの読み込みに失敗しました: " + err.message);
             }
         };
         reader.readAsText(file);

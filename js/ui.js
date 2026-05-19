@@ -1,5 +1,7 @@
 // --- UI Management ---
 let setupServingTeam = 'A';
+let lastRenderedScoreA = null;
+let lastRenderedScoreB = null;
 
 function updateUI() {
     document.documentElement.style.setProperty('--color-a', state.colorA);
@@ -45,10 +47,8 @@ function updateUI() {
     if (finalSetTargetEl) finalSetTargetEl.value = state.finalSetTarget;
 
     // Scores & Sets
-    const scoreAText = document.getElementById('score-a-text') || document.getElementById('score-a');
-    const scoreBText = document.getElementById('score-b-text') || document.getElementById('score-b');
-    scoreAText.textContent = String(state.scoreA).padStart(2, '0');
-    scoreBText.textContent = String(state.scoreB).padStart(2, '0');
+    updateScoreDigits('A', state.scoreA);
+    updateScoreDigits('B', state.scoreB);
     document.getElementById('sets-a').textContent = state.setsA;
     document.getElementById('sets-b').textContent = state.setsB;
     
@@ -104,6 +104,95 @@ function updateUI() {
     if (typeof renderCourt === 'function' && currentCourtTeam) {
         renderCourt(currentCourtTeam);
     }
+}
+
+function updateScoreDigits(team, currentScore) {
+    const lastScore = team === 'A' ? lastRenderedScoreA : lastRenderedScoreB;
+    const str = String(currentScore).padStart(2, '0');
+    
+    if (lastScore === null || lastScore === currentScore) {
+        // Initial render or no change, only update DOM if needed
+        const tensEl = document.getElementById(`score-${team.toLowerCase()}-tens`);
+        const onesEl = document.getElementById(`score-${team.toLowerCase()}-ones`);
+        if (tensEl && tensEl.textContent !== str[0]) tensEl.textContent = str[0];
+        if (onesEl && onesEl.textContent !== str[1]) onesEl.textContent = str[1];
+    } else {
+        const isUndo = currentScore < lastScore;
+        const oldStr = String(lastScore).padStart(2, '0');
+        
+        for (let i = 0; i < 2; i++) {
+            if (oldStr[i] !== str[i]) {
+                animateDigit(`wrap-${team.toLowerCase()}-${i===0?'tens':'ones'}`, `score-${team.toLowerCase()}-${i===0?'tens':'ones'}`, str[i], isUndo);
+            }
+        }
+    }
+    
+    if (team === 'A') lastRenderedScoreA = currentScore;
+    else lastRenderedScoreB = currentScore;
+}
+
+function showCustomConfirm(message, confirmText = "OK", cancelText = "キャンセル") {
+    return new Promise(resolve => {
+        const modal = document.getElementById('custom-confirm-modal');
+        document.getElementById('custom-confirm-msg').textContent = message;
+        document.getElementById('custom-confirm-ok').textContent = confirmText;
+        document.getElementById('custom-confirm-cancel').textContent = cancelText;
+        
+        const okBtn = document.getElementById('custom-confirm-ok');
+        const cancelBtn = document.getElementById('custom-confirm-cancel');
+        
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            okBtn.onclick = null;
+            cancelBtn.onclick = null;
+        };
+        
+        okBtn.onclick = () => { cleanup(); resolve(true); };
+        cancelBtn.onclick = () => { cleanup(); resolve(false); };
+        
+        modal.classList.remove('hidden');
+    });
+}
+
+function showCustomAlert(message, okText = "OK") {
+    return new Promise(resolve => {
+        const modal = document.getElementById('custom-alert-modal');
+        document.getElementById('custom-alert-msg').textContent = message;
+        document.getElementById('custom-alert-ok').textContent = okText;
+        
+        const okBtn = document.getElementById('custom-alert-ok');
+        
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            okBtn.onclick = null;
+        };
+        
+        okBtn.onclick = () => { cleanup(); resolve(); };
+        
+        modal.classList.remove('hidden');
+    });
+}
+
+function animateDigit(wrapperId, spanId, newText, isUndo) {
+    const wrap = document.getElementById(wrapperId);
+    const span = document.getElementById(spanId);
+    if (!wrap || !span) return;
+    
+    // reset animation
+    wrap.classList.remove('flip-up', 'flip-down');
+    void wrap.offsetWidth; // trigger reflow
+    
+    wrap.classList.add(isUndo ? 'flip-down' : 'flip-up');
+
+    // Swap text content at midpoint of animation (125ms out of 250ms)
+    setTimeout(() => {
+        span.textContent = newText;
+    }, 125);
+    
+    // Clean up animation class after completion to prevent accidental re-triggers
+    setTimeout(() => {
+        wrap.classList.remove('flip-up', 'flip-down');
+    }, 300);
 }
 
 function renderTimeouts(team) {
@@ -178,8 +267,8 @@ function toggleMainMenu(forceShow = null) {
     }
 }
 
-function startNewMatchFromMenu() {
-    if (startNewMatch()) {
+async function startNewMatchFromMenu() {
+    if (await startNewMatch()) {
         toggleMainMenu(false);
     }
 }
@@ -189,8 +278,9 @@ function finishMatchFromMenu() {
     finishMatch();
 }
 
-function discardMatchFromMenu() {
-    if (!confirm("現在の試合を保存せずに破棄して終了しますか？")) return;
+async function discardMatchFromMenu() {
+    const confirmed = await showCustomConfirm("現在の試合を保存せずに破棄して終了しますか？");
+    if (!confirmed) return;
     resetMatchState();
     saveState();
     updateUI();
@@ -284,9 +374,10 @@ function applySettings(isInit = false) {
     updateUI();
 }
 
-function startNewMatch() {
+async function startNewMatch() {
     if (state.actionLog.length > 0) {
-        if (!confirm("現在の試合記録を破棄して、新しい試合の準備をしますか？")) return false;
+        const confirmed = await showCustomConfirm("現在の試合記録を破棄して、新しい試合の準備をしますか？");
+        if (!confirmed) return false;
     }
     resetMatchState();
     saveState();

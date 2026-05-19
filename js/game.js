@@ -54,33 +54,50 @@ function rotateTeam(team) {
     });
 }
 
-function checkSetEnd() {
-    const target = getCurrentTarget();
-    const a = state.scoreA;
-    const b = state.scoreB;
+async function checkSetEnd() {
+    if (state.matchComplete) return;
 
-    if ((a >= target || b >= target) && Math.abs(a - b) >= 2) {
-        const winner = a > b ? 'A' : 'B';
-        finishSet(winner);
-    } else if ((a >= target - 1 && a > b) || (b >= target - 1 && b > a)) {
-        const leadingTeam = a > b ? 'A' : 'B';
-        const matchWinnerNeeded = Math.ceil(state.maxSets / 2);
-        let isMatchPoint = false;
-        
-        if (state.maxSets === 2 && state.currentSet === 2) {
-            isMatchPoint = true;
-        } else if (leadingTeam === 'A' && state.setsA + 1 === matchWinnerNeeded) {
-            isMatchPoint = true;
-        } else if (leadingTeam === 'B' && state.setsB + 1 === matchWinnerNeeded) {
-            isMatchPoint = true;
+    let maxPoints = state.targetPoints;
+    let requiredDifference = 2;
+    if (state.currentSet === state.maxSets) {
+        maxPoints = state.finalSetTarget;
+    }
+
+    if ((state.scoreA >= maxPoints || state.scoreB >= maxPoints) && Math.abs(state.scoreA - state.scoreB) >= requiredDifference) {
+        if (state.scoreA > state.scoreB) {
+            await finishSet('A');
+        } else {
+            await finishSet('B');
         }
+    } else {
+        // Point target logic for toast
+        let targetA = maxPoints;
+        let targetB = maxPoints;
+        if (state.scoreA >= maxPoints - 1 && state.scoreA >= state.scoreB) targetA = state.scoreA + 1;
+        if (state.scoreB >= maxPoints - 1 && state.scoreB >= state.scoreA) targetB = state.scoreB + 1;
         
-        showToast(isMatchPoint ? "MATCH POINT" : "SET POINT");
+        let isMatchPoint = false;
+        let isSetPoint = false;
+        
+        if (state.scoreA === targetA - 1 || state.scoreB === targetB - 1) {
+            isSetPoint = true;
+            const matchWinnerNeeded = Math.ceil(state.maxSets / 2);
+            if (state.scoreA === targetA - 1 && state.setsA === matchWinnerNeeded - 1) isMatchPoint = true;
+            if (state.scoreB === targetB - 1 && state.setsB === matchWinnerNeeded - 1) isMatchPoint = true;
+            
+            // Special handling for 2-set match format
+            if (state.maxSets === 2 && state.currentSet === 2) {
+                isMatchPoint = true;
+                isSetPoint = false;
+            }
+        }
+
+        if (isMatchPoint) showToast("MATCH POINT");
+        else if (isSetPoint) showToast("SET POINT");
     }
 }
 
-function finishSet(winner) {
-    // Record set finish
+async function finishSet(winner) {
     state.actionLog.push({
         type: 'set_finish',
         winner: winner,
@@ -94,10 +111,6 @@ function finishSet(winner) {
         isCourtSwapped: state.isCourtSwapped
     });
 
-    if (winner === 'A') state.setsA++;
-    else state.setsB++;
-
-    // Save current set history
     state.setHistory.push({
         set: state.currentSet,
         winner: winner,
@@ -105,6 +118,9 @@ function finishSet(winner) {
         scoreB: state.scoreB,
         log: [...state.actionLog.filter(l => l.set === state.currentSet)]
     });
+
+    if (winner === 'A') state.setsA++;
+    else state.setsB++;
 
     const matchWinnerNeeded = Math.ceil(state.maxSets / 2);
     
@@ -118,15 +134,15 @@ function finishSet(winner) {
             else if (totalB > totalA) matchWinner = state.teamB;
             else matchWinner = "引き分け";
             
-            finishMatch(matchWinner, `合計得点 ${totalA} - ${totalB}`);
+            await finishMatch(matchWinner, `合計得点 ${totalA} - ${totalB}`);
         } else {
-            alert(`第1セット終了！ 次のセットを開始します。`);
+            await showCustomAlert(`第1セット終了！ 次のセットを開始します。`);
             prepareNextSet();
         }
     } else if (state.setsA === matchWinnerNeeded || state.setsB === matchWinnerNeeded) {
-        finishMatch(winner === 'A' ? state.teamA : state.teamB);
+        await finishMatch(winner === 'A' ? state.teamA : state.teamB);
     } else {
-        alert(`第${state.currentSet}セット終了！ 勝者: ${winner === 'A' ? state.teamA : state.teamB}`);
+        await showCustomAlert(`第${state.currentSet}セット終了！ 勝者: ${winner === 'A' ? state.teamA : state.teamB}`);
         prepareNextSet();
     }
 }
@@ -142,7 +158,7 @@ function prepareNextSet() {
     updateUI();
 }
 
-function finishMatch(winnerName, scoreDetail = "") {
+async function finishMatch(winnerName, scoreDetail = "") {
     // CRITICAL: Ensure last set is in setHistory (already handled by finishSet)
     
     const matchHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
@@ -163,9 +179,8 @@ function finishMatch(winnerName, scoreDetail = "") {
     let msg = "試合終了！";
     if (winnerName) msg += ` 勝者: ${winnerName}`;
     if (scoreDetail) msg += `\n${scoreDetail}`;
-    msg += "\n\n[OK]を押すと初期画面に戻ります。";
     
-    alert(msg);
+    await showCustomAlert(msg);
 
     // Reset for new match
     resetMatchState();
@@ -262,17 +277,21 @@ function swapCourts(isAuto = false) {
     updateUI();
 }
 
-function requestTimeout(team) {
+async function requestTimeout(team) {
     if (state.matchComplete) return;
     const teamName = team === 'A' ? state.teamA : state.teamB;
     const currentTo = team === 'A' ? state.toA : state.toB;
     const max = state.maxTimeouts || 2;
     
+    let msg = "";
     if (currentTo >= max) {
-        if(!confirm(`${teamName} は既に${max}回タイムアウトを取っています。追加しますか？`)) return;
+        msg = `${teamName} は既に${max}回タイムアウトを取っています。\n追加しますか？`;
     } else {
-        if(!confirm(`${teamName} のタイムアウトを取りますか？`)) return;
+        msg = `${teamName} のタイムアウトを取りますか？`;
     }
+    
+    const confirmed = await showCustomConfirm(msg);
+    if (!confirmed) return;
 
     vibrate(50);
     state.actionLog.push({

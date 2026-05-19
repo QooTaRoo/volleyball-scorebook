@@ -113,7 +113,7 @@ function renderMasterMemberRows() {
 
 function saveMasterTeam() {
     const nameVal = document.getElementById('master-team-name').value.trim();
-    if (!nameVal) { alert("チーム名を入力してください。"); return; }
+    if (!nameVal) { showCustomAlert("チーム名を入力してください。"); return; }
     const colorVal = document.getElementById('master-team-color').value;
 
     let presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
@@ -147,17 +147,16 @@ function saveMasterTeam() {
     toggleMembers();
 }
 
-function deleteMasterTeam() {
-    if (!masterEditOriginalName) {
-        toggleMembers();
-        return;
-    }
-    if (!confirm(`チーム「${masterEditOriginalName}」をマスターから削除しますか？`)) return;
-
-    let presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-    presets = presets.filter(p => p.name !== masterEditOriginalName);
-    localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(presets));
+async function deleteMasterTeam() {
+    if (!masterEditOriginalName) return;
     
+    const confirmed = await showCustomConfirm(`チーム「${masterEditOriginalName}」をマスターから削除しますか？`);
+    if (!confirmed) return;
+
+    let teams = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
+    teams = teams.filter(t => t.name !== masterEditOriginalName);
+    localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(teams));
+
     showToast(`チーム「${masterEditOriginalName}」を削除しました`);
     toggleMembers();
 }

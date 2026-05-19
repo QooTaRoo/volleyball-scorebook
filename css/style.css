@@ -62,6 +62,39 @@ body {
     }
 }
 
+/* Flip Animations */
+.digit-wrapper {
+    display: inline-block;
+    perspective: 1000px;
+}
+
+.digit-wrapper span {
+    display: inline-block;
+    transform-style: preserve-3d;
+}
+
+.flip-up span {
+    animation: flip-up-anim 0.25s ease-in-out forwards;
+}
+
+.flip-down span {
+    animation: flip-down-anim 0.25s ease-in-out forwards;
+}
+
+@keyframes flip-up-anim {
+    0% { transform: rotateX(0deg); opacity: 1; }
+    49% { transform: rotateX(90deg); opacity: 0; }
+    51% { transform: rotateX(-90deg); opacity: 0; }
+    100% { transform: rotateX(0deg); opacity: 1; }
+}
+
+@keyframes flip-down-anim {
+    0% { transform: rotateX(0deg); opacity: 1; }
+    49% { transform: rotateX(-90deg); opacity: 0; }
+    51% { transform: rotateX(90deg); opacity: 0; }
+    100% { transform: rotateX(0deg); opacity: 1; }
+}
+
 .team-name {
     font-size: 2rem;
     text-transform: uppercase;

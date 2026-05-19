@@ -80,7 +80,7 @@ function registerPWA() {
 
 async function shareContainerAsImage(containerId, filename = 'share.png') {
     if (typeof html2canvas === 'undefined') {
-        alert("画像化ライブラリの読み込みに失敗しました。");
+        showCustomAlert("画像化ライブラリの読み込みに失敗しました。");
         return;
     }
 
@@ -107,14 +107,14 @@ async function shareContainerAsImage(containerId, filename = 'share.png') {
         canvas.toBlob(async (blob) => {
             const file = new File([blob], filename, { type: 'image/png' });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try { await navigator.share({ title: 'バレーボール スコア', files: [file] }); } catch (err) { if (err.name !== 'AbortError') alert("共有に失敗しました: " + err.message); }
+                try { await navigator.share({ title: 'バレーボール スコア', files: [file] }); } catch (err) { if (err.name !== 'AbortError') showCustomAlert("共有に失敗しました: " + err.message); }
             } else {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
             }
         });
     } catch (err) {
-        alert("画像生成失敗: " + err.message);
+        showCustomAlert("画像生成失敗: " + err.message);
     } finally {
         container.style.width = origStyle.width; container.style.height = origStyle.height;
         container.style.overflowY = origStyle.overflowY; container.style.overflowX = origStyle.overflowX;
