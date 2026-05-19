@@ -59,7 +59,7 @@ async function checkSetEnd() {
 
     let maxPoints = state.targetPoints;
     let requiredDifference = 2;
-    if (state.currentSet === state.maxSets) {
+    if (state.maxSets >= 3 && state.currentSet === state.maxSets) {
         maxPoints = state.finalSetTarget;
     }
 

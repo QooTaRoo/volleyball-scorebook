@@ -113,7 +113,7 @@ function renderHistory() {
 
     history.forEach((m, idx) => {
         const item = document.createElement('div');
-        item.className = "bg-zinc-900 border border-zinc-800 p-4 mb-4 rounded-xl shadow-xl transition-all active:scale-[0.98]";
+        item.className = "bg-zinc-900 border border-zinc-800 p-4 mb-4 rounded-xl shadow-xl";
         item.id = `history-item-${idx}`;
         const cA = m.colorA || '#eab308';
         const cB = m.colorB || '#ffffff';
@@ -202,11 +202,11 @@ function renderAnalysisContent(m) {
         const statusColor = isLastSet ? 'text-emerald-500' : 'text-zinc-500';
         return `
             <div class="flex items-center justify-center gap-3 w-full">
-                <span class="text-[9px] text-zinc-600 font-black w-8 text-right">SET ${s.set}</span>
-                <div class="flex items-center gap-2 px-3 py-1 rounded-lg ${isLastSet ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800/50 text-zinc-400 border border-white/5'} text-xs font-black min-w-[70px] justify-center shadow-inner">
-                    <span>${s.scoreA}</span><span class="text-zinc-600">-</span><span>${s.scoreB}</span>
+                <span class="text-[10px] text-zinc-500 font-black w-10 text-right tracking-wider">SET ${s.set}</span>
+                <div class="flex items-center justify-center gap-2 px-4 py-1.5 rounded-xl ${isLastSet ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800/50 text-zinc-200 border border-white/5'} text-base sm:text-lg font-black min-w-[90px] shadow-inner">
+                    <span>${s.scoreA}</span><span class="text-zinc-600 px-0.5">-</span><span>${s.scoreB}</span>
                 </div>
-                <div class="w-8 italic text-[8px] ${statusColor} font-bold">${statusText}</div>
+                <div class="w-10 italic text-[9px] ${statusColor} font-bold tracking-widest">${statusText}</div>
             </div>
         `;
     }).join('');
