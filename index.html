@@ -75,7 +75,7 @@
 
         <!-- Float Controls -->
         <div id="float-controls" class="absolute inset-0 pointer-events-none flex items-center justify-center z-40">
-            <div id="float-controls-inner" class="pointer-events-auto flex gap-8 items-center">
+            <div id="float-controls-inner" class="pointer-events-auto flex gap-6 items-center bg-zinc-950/70 backdrop-blur-md border border-white/10 px-5 py-2 rounded-full shadow-2xl">
                 <button onclick="event.stopPropagation(); undo();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl text-zinc-400" title="戻す"><i data-lucide="undo-2" class="w-8 h-8"></i></button>
                 <button onclick="event.stopPropagation(); swapCourts();" class="bg-transparent hover:scale-125 transition-transform p-2 text-4xl drop-shadow-xl text-zinc-400" title="コートチェンジ">
                     <span class="icon-swap-landscape hidden"><i data-lucide="repeat" class="w-8 h-8"></i></span>
@@ -167,6 +167,13 @@
                     <div>
                         <label class="block text-xs font-bold text-zinc-500 mb-1">時間（秒）</label>
                         <input type="number" id="input-timeout-duration" class="w-full bg-zinc-800 border-none p-2 text-white rounded" value="30">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+                    <span class="text-xs font-bold text-zinc-300">背景カラー</span>
+                    <div class="flex items-center gap-2">
+                        <input type="color" id="input-bg-color" class="w-12 h-10 bg-zinc-800 border-none rounded">
                     </div>
                 </div>
 

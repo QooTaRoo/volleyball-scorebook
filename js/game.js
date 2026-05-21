@@ -184,6 +184,7 @@ async function finishMatch(winnerName, scoreDetail = "") {
 
     // Reset for new match
     resetMatchState();
+    saveState();
     updateUI();
     // Ensure only the main menu is shown
     if (typeof toggleMainMenu === 'function') {

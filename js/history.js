@@ -118,11 +118,14 @@ function renderHistory() {
         const cA = m.colorA || '#eab308';
         const cB = m.colorB || '#ffffff';
         item.innerHTML = `
-            <div class="flex justify-between text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">
+            <div class="flex justify-between items-center text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">
                 <span>${m.date}</span>
-                <div class="flex gap-3">
+                <div class="flex items-center gap-3">
                     <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${m.durationMinutes || 0}分</span>
                     <span class="flex items-center gap-1"><i data-lucide="layers" class="w-3 h-3"></i> ${m.maxSets}セット</span>
+                    <button onclick="deleteHistoryItem(${idx})" class="text-zinc-500 hover:text-red-500 transition-colors p-1" title="履歴を削除">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
                 </div>
             </div>
             <div class="flex justify-between items-center mb-5 px-2">
@@ -326,3 +329,24 @@ function renderAnalysisContent(m) {
     });
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
+
+async function clearAllHistory() {
+    const confirmed = await showCustomConfirm("すべての試合履歴を削除しますか？\n(この操作は取り消せません)");
+    if (!confirmed) return;
+    
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+    showToast("すべての試合履歴を削除しました");
+}
+
+async function deleteHistoryItem(idx) {
+    const confirmed = await showCustomConfirm("この試合履歴を削除しますか？\n(この操作は取り消せません)");
+    if (!confirmed) return;
+    
+    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    history.splice(idx, 1);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    renderHistory();
+    showToast("試合履歴を削除しました");
+}
+

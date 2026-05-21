@@ -27,6 +27,7 @@ let state = {
     setHistory: [],
     matchStartTime: null,
     timeoutDuration: 30,
+    bgColor: "#1a1a1a",
     membersA: Array.from({length: 14}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `${i+1}` })),
     membersB: Array.from({length: 14}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}` })),
     lineupA: ["A1", "A2", "A3", "A4", "A5", "A6"],
