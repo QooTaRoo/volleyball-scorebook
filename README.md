@@ -58,7 +58,29 @@
 - **Icons**: Lucide Icons
 - **Libraries**: html2canvas (画像生成), Lucide (アイコン)
 - **Persistence**: LocalStorage / FileReader API (バックアップ)
+- **Testing**: Vitest / JSDOM (ローカルテストスイート)
+
+## 🧪 テストの実行方法
+
+新機能の追加やリファクタリング時にデグレードが発生しないよう、ローカルテストスイートが導入されています。
+
+### 1. 依存関係のインストール
+テスト用のモジュール（Vitest / JSDOM）をインストールします。
+```bash
+npm install
+```
+
+### 2. テストの実行
+以下のコマンドで全23個のユニット・インテグレーションテストを実行します。
+```bash
+# 1回のみ実行する場合
+npm run test:run
+
+# ウォッチモード（変更監視）で実行する場合
+npm run test
+```
 
 ## 📝 ライセンス
 
 MIT License
+
