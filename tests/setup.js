@@ -87,7 +87,9 @@ global.loadApp = () => {
       .replace(/^let isMenuHubActive\s*=/m, 'var isMenuHubActive =')
       .replace(/^let currentCourtTeam\s*=/m, 'var currentCourtTeam =')
       .replace(/^let currentSubPosIdx\s*=/m, 'var currentSubPosIdx =')
-      .replace(/^let swapSelectionIdx\s*=/m, 'var swapSelectionIdx =');
+      .replace(/^let swapSelectionIdx\s*=/m, 'var swapSelectionIdx =')
+      .replace(/^let radialState\s*=/m, 'var radialState =')
+      .replace(/^let currentEditingActionIdx\s*=/m, 'var currentEditingActionIdx =');
 
     combinedCode += code + '\n;';
   });

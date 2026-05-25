@@ -239,4 +239,65 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
       expect(window.state.toA).toBe(3);
     });
   });
+
+  describe('My Team Stats Limit and Recalculation Engine', () => {
+    beforeEach(() => {
+      window.state.maxSets = 3;
+      window.state.targetPoints = 25;
+      window.state.currentSet = 1;
+      window.state.scoreA = 0;
+      window.state.scoreB = 0;
+      window.state.setsA = 0;
+      window.state.setsB = 0;
+      window.state.actionLog = [];
+      window.state.setHistory = [];
+      window.state.rotationLog = [];
+      window.state.servingTeam = 'A';
+      window.state.initialServingTeam = 'A';
+      window.state.isMyTeamA = false;
+      window.state.isMyTeamB = false;
+      window.state.myTeamOnlyStats = false;
+      window.state.membersA = Array.from({length: 6}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `${i+1}` }));
+      window.state.membersB = Array.from({length: 6}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}` }));
+      window.state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
+      window.state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
+    });
+
+    it('should skip detailed stats Stage 2 player selection when opponent team scores and myTeamOnlyStats is active', () => {
+      window.state.isMyTeamA = true;
+      window.state.myTeamOnlyStats = true;
+      
+      window.radialState = { active: true, stage: 1, team: 'B' };
+      
+      window.enterStage2('spike');
+      
+      expect(window.state.scoreB).toBe(1);
+      expect(window.state.actionLog.length).toBe(1);
+      expect(window.state.actionLog[0].team).toBe('B');
+      expect(window.state.actionLog[0].pattern).toBe('spike');
+      expect(window.state.actionLog[0].playerId).toBeNull();
+    });
+
+    it('should fully recalculate serve orders, scores, rotations, and set results from an edited log', async () => {
+      window.state.servingTeam = 'A';
+      window.state.initialServingTeam = 'A';
+      
+      window.addPoint('A');
+      window.addPoint('B');
+      window.addPoint('B');
+      
+      expect(window.state.scoreA).toBe(1);
+      expect(window.state.scoreB).toBe(2);
+      expect(window.state.servingTeam).toBe('B');
+      
+      const firstAction = window.state.actionLog[0];
+      firstAction.scoringTeam = 'B';
+      
+      window.recalculateStateFromLog();
+      
+      expect(window.state.scoreA).toBe(0);
+      expect(window.state.scoreB).toBe(3);
+      expect(window.state.servingTeam).toBe('B');
+    });
+  });
 });

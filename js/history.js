@@ -19,7 +19,8 @@ function renderTimeline(setLog, teamA, teamB, colorA, colorB, currentScoreA, cur
             columns.push({
                 type: 'point',
                 team: scTeam,
-                val: scTeam === 'A' ? aScore : bScore
+                val: scTeam === 'A' ? aScore : bScore,
+                action: action
             });
         } else if (action.type === 'timeout') {
             if (action.team === 'A') aTO++;
@@ -43,12 +44,17 @@ function renderTimeline(setLog, teamA, teamB, colorA, colorB, currentScoreA, cur
 
     columns.forEach(col => {
         if (col.type === 'point') {
+            const actIdx = state.actionLog.indexOf(col.action);
+            const isClickable = !state.matchComplete && actIdx >= 0;
+            const cursorClass = isClickable ? 'cursor-pointer hover:scale-110 active:scale-95 transition-transform' : '';
+            const onclickAttr = isClickable ? `onclick="event.stopPropagation(); openEditActionModal(this);" data-action-idx="${actIdx}"` : '';
+
             if (col.team === 'A') {
-                htmlA += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm" style="background: ${colorA}; color: #000;">${col.val}</div>`;
+                htmlA += `<div ${onclickAttr} class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm ${cursorClass}" style="background: ${colorA}; color: #000;">${col.val}</div>`;
                 htmlB += `<div class="w-7 h-7 mx-0.5"></div>`;
             } else {
                 htmlA += `<div class="w-7 h-7 mx-0.5"></div>`;
-                htmlB += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm" style="background: ${colorB}; color: #000;">${col.val}</div>`;
+                htmlB += `<div ${onclickAttr} class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm ${cursorClass}" style="background: ${colorB}; color: #000;">${col.val}</div>`;
             }
         } else if (col.type === 'timeout') {
             if (col.team === 'A') {
@@ -348,5 +354,269 @@ async function deleteHistoryItem(idx) {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
     renderHistory();
     showToast("試合履歴を削除しました");
+}
+
+let currentEditingActionIdx = null;
+let selectedEditTeam = 'A';
+
+function openEditActionModal(element) {
+    const idx = parseInt(element.getAttribute('data-action-idx'));
+    if (isNaN(idx) || idx < 0 || idx >= state.actionLog.length) return;
+    
+    currentEditingActionIdx = idx;
+    const action = state.actionLog[idx];
+    
+    const modal = document.getElementById('edit-action-modal');
+    if (!modal) return;
+    
+    const btnA = document.getElementById('edit-action-team-a');
+    const btnB = document.getElementById('edit-action-team-b');
+    if (btnA && btnB) {
+        btnA.textContent = state.teamA;
+        btnB.textContent = state.teamB;
+        btnA.style.borderColor = state.colorA;
+        btnB.style.borderColor = state.colorB;
+    }
+    
+    const scoringTeam = action.scoringTeam || (action.pattern === 'error' ? (action.team === 'A' ? 'B' : 'A') : action.team);
+    setEditActionTeam(scoringTeam);
+    
+    const patternSel = document.getElementById('edit-action-pattern');
+    if (patternSel) {
+        patternSel.value = action.pattern || 'unknown';
+    }
+    
+    populateEditActionPlayers(scoringTeam, action.pattern || 'unknown', action.playerId);
+    applyMyTeamEditRestriction(scoringTeam, action.pattern || 'unknown');
+
+    modal.classList.remove('hidden');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function closeEditActionModal() {
+    const modal = document.getElementById('edit-action-modal');
+    if (modal) modal.classList.add('hidden');
+    currentEditingActionIdx = null;
+}
+
+function setEditActionTeam(team) {
+    selectedEditTeam = team;
+    const btnA = document.getElementById('edit-action-team-a');
+    const btnB = document.getElementById('edit-action-team-b');
+    if (!btnA || !btnB) return;
+    
+    if (team === 'A') {
+        btnA.className = "flex-1 py-2.5 rounded-lg font-bold transition-all text-xs text-center bg-zinc-700 text-white border-2 border-yellow-500 shadow-lg";
+        btnB.className = "flex-1 py-2.5 rounded-lg font-bold transition-all text-xs text-center text-zinc-400 bg-zinc-800 border border-transparent";
+    } else {
+        btnB.className = "flex-1 py-2.5 rounded-lg font-bold transition-all text-xs text-center bg-zinc-700 text-white border-2 border-yellow-500 shadow-lg";
+        btnA.className = "flex-1 py-2.5 rounded-lg font-bold transition-all text-xs text-center text-zinc-400 bg-zinc-800 border border-transparent";
+    }
+    
+    const patternSel = document.getElementById('edit-action-pattern');
+    const pattern = patternSel ? patternSel.value : 'unknown';
+    populateEditActionPlayers(team, pattern, null);
+    applyMyTeamEditRestriction(team, pattern);
+}
+
+function onEditPatternChange(pattern) {
+    populateEditActionPlayers(selectedEditTeam, pattern, null);
+    applyMyTeamEditRestriction(selectedEditTeam, pattern);
+}
+
+function applyMyTeamEditRestriction(scoringTeam, pattern) {
+    const hasMyTeamInPlay = !!state.isMyTeamA || !!state.isMyTeamB;
+    const actorTeam = (pattern === 'error') ? (scoringTeam === 'A' ? 'B' : 'A') : scoringTeam;
+    const isActorMyTeam = (actorTeam === 'A' && state.isMyTeamA) || (actorTeam === 'B' && state.isMyTeamB);
+    
+    const playerContainer = document.getElementById('edit-action-player-container');
+    if (!playerContainer) return;
+    
+    if (state.myTeamOnlyStats && hasMyTeamInPlay && !isActorMyTeam) {
+        playerContainer.classList.add('hidden');
+    } else {
+        playerContainer.classList.remove('hidden');
+    }
+}
+
+function populateEditActionPlayers(scoringTeam, pattern, selectedPlayerId) {
+    const sel = document.getElementById('edit-action-player');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">選手選択なし</option>';
+    
+    const teamToPick = (pattern === 'error') ? (scoringTeam === 'A' ? 'B' : 'A') : scoringTeam;
+    const members = teamToPick === 'A' ? state.membersA : state.membersB;
+    
+    members.forEach(m => {
+        const selectedAttr = m.id === selectedPlayerId ? 'selected' : '';
+        const nameStr = m.name === String(m.number) ? `番号 ${m.number}` : `番号 ${m.number} - ${m.name}`;
+        sel.innerHTML += `<option value="${m.id}" ${selectedAttr}>${nameStr}</option>`;
+    });
+}
+
+function saveEditedAction() {
+    if (currentEditingActionIdx === null) return;
+    
+    const action = state.actionLog[currentEditingActionIdx];
+    const patternSel = document.getElementById('edit-action-pattern');
+    const playerSel = document.getElementById('edit-action-player');
+    
+    const pattern = patternSel ? patternSel.value : 'unknown';
+    const playerContainer = document.getElementById('edit-action-player-container');
+    const playerId = (playerSel && playerContainer && !playerContainer.classList.contains('hidden')) ? (playerSel.value || null) : null;
+    
+    action.scoringTeam = selectedEditTeam;
+    action.pattern = pattern;
+    action.playerId = playerId;
+    
+    recalculateStateFromLog();
+    
+    closeEditActionModal();
+    
+    const timelineModal = document.getElementById('timeline-modal');
+    if (timelineModal && !timelineModal.classList.contains('hidden')) {
+        // Toggle timeline twice to refresh
+        document.getElementById('timeline-modal').classList.add('hidden');
+        showCurrentTimeline();
+    }
+    
+    showToast("得点入力を修正し、再計算しました");
+}
+
+function recalculateStateFromLog() {
+    const log = JSON.parse(JSON.stringify(state.actionLog));
+    
+    state.scoreA = 0;
+    state.scoreB = 0;
+    state.setsA = 0;
+    state.setsB = 0;
+    state.toA = 0;
+    state.toB = 0;
+    state.currentSet = 1;
+    state.matchComplete = false;
+    state.setHistory = [];
+    state.rotationLog = [];
+    state.isCourtSwapped = false;
+    
+    state.lineupA = state.membersA.slice(0, 6).map(m => m.id);
+    state.lineupB = state.membersB.slice(0, 6).map(m => m.id);
+    
+    while (state.lineupA.length < 6) {
+        const nextNum = state.lineupA.length + 1;
+        const newId = `A${nextNum}`;
+        if (!state.membersA.find(m => m.id === newId)) {
+            state.membersA.push({ id: newId, number: nextNum, name: `${nextNum}` });
+        }
+        state.lineupA.push(newId);
+    }
+    while (state.lineupB.length < 6) {
+        const nextNum = state.lineupB.length + 1;
+        const newId = `B${nextNum}`;
+        if (!state.membersB.find(m => m.id === newId)) {
+            state.membersB.push({ id: newId, number: nextNum, name: `${nextNum}` });
+        }
+        state.lineupB.push(newId);
+    }
+    
+    state.servingTeam = state.initialServingTeam || 'A';
+    
+    log.forEach(action => {
+        if (action.type === 'point') {
+            const scoringTeam = action.scoringTeam || (action.pattern === 'error' ? (action.team === 'A' ? 'B' : 'A') : action.team);
+            const rotationOccurred = state.servingTeam !== scoringTeam;
+            
+            if (rotationOccurred) {
+                state.servingTeam = scoringTeam;
+                
+                const lineup = scoringTeam === 'A' ? state.lineupA : state.lineupB;
+                const first = lineup.shift();
+                lineup.push(first);
+                
+                state.rotationLog.push({
+                    set: state.currentSet,
+                    team: scoringTeam,
+                    lineup: [...lineup],
+                    scoreA: state.scoreA,
+                    scoreB: state.scoreB
+                });
+            }
+            
+            action.scoreA = state.scoreA;
+            action.scoreB = state.scoreB;
+            action.servingTeam = rotationOccurred ? (scoringTeam === 'A' ? 'B' : 'A') : state.servingTeam;
+            action.rotationOccurred = rotationOccurred;
+            action.team = (action.pattern === 'error') ? (scoringTeam === 'A' ? 'B' : 'A') : scoringTeam;
+            action.scoringTeam = scoringTeam;
+            action.set = state.currentSet;
+            
+            if (scoringTeam === 'A') state.scoreA++;
+            else state.scoreB++;
+            
+        } else if (action.type === 'timeout') {
+            action.scoreA = state.scoreA;
+            action.scoreB = state.scoreB;
+            action.set = state.currentSet;
+            if (action.team === 'A') state.toA++;
+            else state.toB++;
+            
+        } else if (action.type === 'swap_courts') {
+            action.isCourtSwapped = state.isCourtSwapped;
+            state.isCourtSwapped = !state.isCourtSwapped;
+            
+        } else if (action.type === 'swap_players') {
+            const lineup = action.team === 'A' ? state.lineupA : state.lineupB;
+            const temp = lineup[action.idx1];
+            lineup[action.idx1] = lineup[action.idx2];
+            lineup[action.idx2] = temp;
+            
+        } else if (action.type === 'substitution') {
+            const lineup = action.team === 'A' ? state.lineupA : state.lineupB;
+            lineup[action.posIdx] = action.inPlayerId;
+            
+        } else if (action.type === 'set_finish') {
+            action.scoreA = state.scoreA;
+            action.scoreB = state.scoreB;
+            action.toA = state.toA;
+            action.toB = state.toB;
+            action.currentSet = state.currentSet;
+            action.setsA = state.setsA;
+            action.setsB = state.setsB;
+            action.isCourtSwapped = state.isCourtSwapped;
+            
+            state.setHistory.push({
+                set: state.currentSet,
+                winner: action.winner,
+                scoreA: state.scoreA,
+                scoreB: state.scoreB,
+                log: []
+            });
+            
+            if (action.winner === 'A') state.setsA++;
+            else state.setsB++;
+            
+            state.currentSet++;
+            state.scoreA = 0;
+            state.scoreB = 0;
+            state.toA = 0;
+            state.toB = 0;
+            state.isCourtSwapped = !state.isCourtSwapped;
+        }
+    });
+    
+    state.actionLog = log;
+    
+    state.setHistory.forEach(s => {
+        s.log = state.actionLog.filter(l => l.set === s.set);
+    });
+    
+    const matchWinnerNeeded = Math.ceil(state.maxSets / 2);
+    if (state.setsA === matchWinnerNeeded || state.setsB === matchWinnerNeeded) {
+        state.matchComplete = true;
+    } else if (state.maxSets === 2 && state.currentSet > 2) {
+        state.matchComplete = true;
+    }
+    
+    saveState();
+    updateUI();
 }
 

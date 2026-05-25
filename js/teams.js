@@ -61,12 +61,26 @@ function loadPresetToTeam(teamCode, presetName) {
     const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
     const p = presets.find(item => item.name === presetName);
     if (p && Array.isArray(p.members)) {
-        const members = Array.from({length: 14}, (_, i) => {
-            const pm = p.members[i];
-            return { id: `${teamCode}${i+1}`, number: pm ? pm.number : (i + 1), name: pm ? pm.name : `${i+1}` };
-        });
-        if (teamCode === 'A') { state.membersA = members; state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"]; }
-        else { state.membersB = members; state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"]; }
+        const members = p.members.map((pm, i) => ({
+            id: `${teamCode}${i+1}`,
+            number: pm.number,
+            name: pm.name
+        }));
+        
+        while (members.length < 6) {
+            const nextNum = members.length + 1;
+            members.push({ id: `${teamCode}${nextNum}`, number: nextNum, name: `${nextNum}` });
+        }
+        
+        if (teamCode === 'A') {
+            state.membersA = members;
+            state.lineupA = members.slice(0, 6).map(m => m.id);
+            state.isMyTeamA = !!p.isMyTeam;
+        } else {
+            state.membersB = members;
+            state.lineupB = members.slice(0, 6).map(m => m.id);
+            state.isMyTeamB = !!p.isMyTeam;
+        }
     }
 }
 
@@ -82,19 +96,24 @@ function openMasterTeamModal() {
 
 function loadMasterTeamForEdit(presetName) {
     masterEditOriginalName = presetName;
+    const myTeamEl = document.getElementById('master-team-myteam');
     if (!presetName) {
         document.getElementById('master-team-name').value = "";
         document.getElementById('master-team-color').value = "#3b82f6";
-        masterEditMembers = Array.from({length: 14}, (_, i) => ({ id: `M${i+1}`, number: i + 1, name: `${i+1}` }));
+        if (myTeamEl) myTeamEl.checked = false;
+        masterEditMembers = Array.from({length: 12}, (_, i) => ({ id: `M${i+1}`, number: i + 1, name: `${i+1}` }));
     } else {
         const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
         const p = presets.find(item => item.name === presetName);
         if (p) {
             document.getElementById('master-team-name').value = p.name;
             document.getElementById('master-team-color').value = p.color || "#3b82f6";
-            let arr = JSON.parse(JSON.stringify(p.members || []));
-            while (arr.length < 14) arr.push({ id: `M${arr.length+1}`, number: arr.length + 1, name: `${arr.length + 1}` });
-            masterEditMembers = arr.slice(0, 14);
+            if (myTeamEl) myTeamEl.checked = !!p.isMyTeam;
+            masterEditMembers = JSON.parse(JSON.stringify(p.members || []));
+            while (masterEditMembers.length < 6) {
+                const nextNum = masterEditMembers.length + 1;
+                masterEditMembers.push({ id: `M${nextNum}`, number: nextNum, name: `${nextNum}` });
+            }
         }
     }
     renderMasterMemberRows();
@@ -106,20 +125,54 @@ function renderMasterMemberRows() {
         <div class="flex gap-2 items-center">
             <span class="text-xs text-zinc-600 font-bold w-5 text-right">${idx + 1}.</span>
             <input type="number" value="${m.number}" onchange="masterEditMembers[${idx}].number = parseInt(this.value) || 0" class="w-14 bg-zinc-800 border-none p-1.5 text-white text-center rounded text-xs font-bold" placeholder="番号">
-            <input type="text" value="${m.name}" onchange="masterEditMembers[${idx}].name = this.value" class="flex-1 bg-zinc-800 border-none p-1.5 text-white rounded text-xs" placeholder="名前 (未入力可)">
+            <input type="text" value="${m.name}" onchange="masterEditMembers[${idx}].name = this.value" class="flex-1 bg-zinc-800 border-none p-1.5 text-white rounded text-xs" placeholder="名前">
+            <button onclick="deleteMasterMember(${idx})" class="p-1 text-zinc-500 hover:text-red-500 transition-colors" title="削除">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
         </div>
     `).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function addMasterMemberRow() {
+    const nextNum = masterEditMembers.length > 0 ? Math.max(...masterEditMembers.map(m => m.number)) + 1 : 1;
+    masterEditMembers.push({
+        id: `M_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        number: nextNum,
+        name: `${nextNum}`
+    });
+    renderMasterMemberRows();
+}
+
+function deleteMasterMember(idx) {
+    if (masterEditMembers.length <= 6) {
+        showToast("コート上の選手が必要なため、メンバーは最低6人必要です。");
+        return;
+    }
+    masterEditMembers.splice(idx, 1);
+    renderMasterMemberRows();
 }
 
 function saveMasterTeam() {
     const nameVal = document.getElementById('master-team-name').value.trim();
     if (!nameVal) { showCustomAlert("チーム名を入力してください。"); return; }
     const colorVal = document.getElementById('master-team-color').value;
+    const myTeamEl = document.getElementById('master-team-myteam');
+    const isMyTeamVal = myTeamEl ? myTeamEl.checked : false;
 
     let presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
+    
+    if (isMyTeamVal) {
+        presets.forEach(p => {
+            if (p.name !== masterEditOriginalName && p.name !== nameVal) {
+                p.isMyTeam = false;
+            }
+        });
+    }
+
     const newPreset = {
         id: masterEditOriginalName ? (presets.find(p => p.name === masterEditOriginalName)?.id || `p_${Date.now()}`) : `p_${Date.now()}`,
-        name: nameVal, color: colorVal, members: JSON.parse(JSON.stringify(masterEditMembers))
+        name: nameVal, color: colorVal, isMyTeam: isMyTeamVal, members: JSON.parse(JSON.stringify(masterEditMembers))
     };
 
     const existingIdx = presets.findIndex(p => p.name === nameVal);
@@ -132,7 +185,6 @@ function saveMasterTeam() {
     localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(presets));
     showToast(`チームマスター「${nameVal}」を保存しました`);
     
-    // Sync if currently active
     if (state.teamA === masterEditOriginalName || state.teamA === nameVal) {
         state.teamA = nameVal; state.colorA = colorVal;
         loadPresetToTeam('A', nameVal);

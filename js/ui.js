@@ -235,6 +235,8 @@ function toggleSettings() {
     if (isOpening) {
         document.getElementById('input-max-timeouts').value = state.maxTimeouts;
         document.getElementById('input-advanced-mode').checked = !!state.showAdvancedMode;
+        document.getElementById('input-myteam-only-stats').checked = !!state.myTeamOnlyStats;
+        toggleAdvancedSettingsVisibility();
         const durationEl = document.getElementById('input-timeout-duration');
         if (durationEl) durationEl.value = state.timeoutDuration || 30;
         const bgColorEl = document.getElementById('input-bg-color');
@@ -245,6 +247,18 @@ function toggleSettings() {
     // Return to menu if closed and we were in menu hub
     if (!isOpening && isMenuHubActive) {
         toggleMainMenu(true);
+    }
+}
+
+function toggleAdvancedSettingsVisibility() {
+    const advChecked = document.getElementById('input-advanced-mode').checked;
+    const myTeamOnlyContainer = document.getElementById('settings-myteam-only-container');
+    if (myTeamOnlyContainer) {
+        if (advChecked) {
+            myTeamOnlyContainer.classList.remove('hidden');
+        } else {
+            myTeamOnlyContainer.classList.add('hidden');
+        }
     }
 }
 
@@ -303,7 +317,14 @@ function toggleSettingsFromMenu() {
     toggleMainMenu(false);
     toggleSettings();
 }
-function toggleTimeline() { document.getElementById('timeline-modal').classList.toggle('hidden'); }
+function toggleTimeline() { 
+    const modal = document.getElementById('timeline-modal');
+    const isOpening = modal.classList.contains('hidden');
+    modal.classList.toggle('hidden');
+    if (isOpening) {
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+}
 function toggleHistory() { 
     const modal = document.getElementById('history-modal');
     const isOpening = modal.classList.contains('hidden');
@@ -369,6 +390,7 @@ function updateMatchSetupVisibility() {
 function applySettings(isInit = false) {
     state.maxTimeouts = parseInt(document.getElementById('input-max-timeouts').value);
     state.showAdvancedMode = document.getElementById('input-advanced-mode').checked;
+    state.myTeamOnlyStats = document.getElementById('input-myteam-only-stats').checked;
     const durationEl = document.getElementById('input-timeout-duration');
     if (durationEl) state.timeoutDuration = parseInt(durationEl.value) || 30;
     const bgColorEl = document.getElementById('input-bg-color');
@@ -400,6 +422,7 @@ function confirmStartMatch() {
     state.targetPoints = parseInt(document.getElementById('setup-target-points').value);
     state.finalSetTarget = parseInt(document.getElementById('setup-final-set-target').value);
     state.servingTeam = setupServingTeam;
+    state.initialServingTeam = setupServingTeam;
     
     resetMatchState();
     state.matchStartTime = Date.now();

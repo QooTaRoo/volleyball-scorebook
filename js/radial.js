@@ -258,6 +258,19 @@ function highlightOption(type) {
 
 function enterStage2(option) {
     if (radialState.stage === 2) return;
+    
+    const teamToPick = option === 'error' ? (radialState.team === 'A' ? 'B' : 'A') : radialState.team;
+    
+    const hasMyTeamInPlay = !!state.isMyTeamA || !!state.isMyTeamB;
+    const isTargetMyTeam = (teamToPick === 'A' && state.isMyTeamA) || (teamToPick === 'B' && state.isMyTeamB);
+    
+    if (state.myTeamOnlyStats && hasMyTeamInPlay && !isTargetMyTeam) {
+        addPoint(radialState.team, option, null);
+        hideRadialMenu();
+        resetRadialState();
+        return;
+    }
+
     radialState.stage = 2;
     radialState.stage2StartTime = Date.now(); // Start delay timer
     radialState.currentPlayerId = null;
@@ -270,7 +283,6 @@ function enterStage2(option) {
     const list = document.getElementById('radial-player-list');
     list.innerHTML = '';
     
-    const teamToPick = option === 'error' ? (radialState.team === 'A' ? 'B' : 'A') : radialState.team;
     document.getElementById('radial-guidance').textContent = teamToPick === 'A' ? state.teamA : state.teamB;
 
     const lineup = teamToPick === 'A' ? state.lineupA : state.lineupB;

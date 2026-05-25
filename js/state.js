@@ -20,6 +20,9 @@ let state = {
     targetPoints: 25,
     finalSetTarget: 15,
     showAdvancedMode: false,
+    myTeamOnlyStats: false,
+    isMyTeamA: false,
+    isMyTeamB: false,
     maxTimeouts: 2,
     isCourtSwapped: false,
     actionLog: [],
@@ -35,6 +38,7 @@ let state = {
     liberoA: null,
     liberoB: null,
     servingTeam: 'A',
+    initialServingTeam: null,
     rotationLog: []
 };
 
