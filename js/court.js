@@ -166,6 +166,7 @@ function performSwap(idx1, idx2) {
         team: team,
         idx1: idx1,
         idx2: idx2,
+        set: state.currentSet,
         timestamp: Date.now()
     });
     
@@ -189,6 +190,7 @@ function substitute(benchPlayerId) {
         posIdx: currentSubPosIdx,
         outPlayerId: oldPlayerId,
         inPlayerId: benchPlayerId,
+        set: state.currentSet,
         timestamp: Date.now()
     });
     

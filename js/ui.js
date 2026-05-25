@@ -61,6 +61,10 @@ function updateUI() {
     renderTimeouts('A');
     renderTimeouts('B');
 
+    // Substitutions
+    renderSubstitutions('A');
+    renderSubstitutions('B');
+
     // Header Info
     document.getElementById('current-set-num').textContent = state.currentSet;
 
@@ -216,6 +220,31 @@ function renderTimeouts(team) {
         }
     }
     container.innerHTML = html;
+}
+
+function renderSubstitutions(team) {
+    const count = state.actionLog.filter(a => a.type === 'substitution' && a.team === team && a.set === state.currentSet).length;
+    const el = document.getElementById(`sub-counter-${team.toLowerCase()}`);
+    if (el) {
+        el.textContent = `代 ${count}/6`;
+        if (count >= 6) {
+            el.className = "text-[9px] font-black bg-red-500/20 px-1.5 py-1 rounded text-red-405 select-none shadow-inner shrink-0 border border-red-500/30 transition-all";
+        } else if (count > 0) {
+            el.className = "text-[9px] font-black bg-zinc-800/90 px-1.5 py-1 rounded text-yellow-500 select-none shadow-inner shrink-0 border border-yellow-500/20 transition-all";
+        } else {
+            el.className = "text-[9px] font-black bg-zinc-800/90 px-1.5 py-1 rounded text-zinc-400 select-none shadow-inner shrink-0 border border-transparent transition-all";
+        }
+    }
+    // Also update in court modal if open
+    const modalEl = document.getElementById('court-sub-counter');
+    if (modalEl && currentCourtTeam === team) {
+        modalEl.textContent = `交代枠使用数: ${count} / 6`;
+        if (count >= 6) {
+            modalEl.className = "text-xs font-bold text-red-400 mt-1";
+        } else {
+            modalEl.className = "text-xs font-bold text-zinc-500 mt-1";
+        }
+    }
 }
 
 function showToast(msg) {

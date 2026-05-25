@@ -172,7 +172,10 @@ async function finishMatch(winnerName, scoreDetail = "") {
         setsB: state.setsB,
         setHistory: JSON.parse(JSON.stringify(state.setHistory)),
         maxSets: state.maxSets,
-        durationMinutes: Math.floor((Date.now() - state.matchStartTime) / 60000)
+        durationMinutes: Math.floor((Date.now() - state.matchStartTime) / 60000),
+        membersA: JSON.parse(JSON.stringify(state.membersA)),
+        membersB: JSON.parse(JSON.stringify(state.membersB)),
+        initialServingTeam: state.initialServingTeam
     });
     localStorage.setItem(HISTORY_KEY, JSON.stringify(matchHistory));
 

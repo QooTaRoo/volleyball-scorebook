@@ -409,6 +409,68 @@ function renderAnalysisContent(m) {
         `;
     });
 
+    // Render Rotation Stats
+    const rotData = analyzeRotations(m);
+    const rotStatsEl = document.getElementById('analysis-rotation-stats');
+    if (rotStatsEl) {
+        rotStatsEl.innerHTML = '';
+        
+        ['A', 'B'].forEach(t => {
+            const teamName = t === 'A' ? m.teamA : m.teamB;
+            const color = t === 'A' ? m.colorA : m.colorB;
+            const stats = t === 'A' ? rotData.statsA : rotData.statsB;
+            const starters = t === 'A' ? rotData.startingPlayersA : rotData.startingPlayersB;
+            const members = t === 'A' ? (m.membersA || []) : (m.membersB || []);
+            
+            const container = document.createElement('div');
+            container.className = "bg-zinc-900/30 p-4 rounded-xl border border-white/5";
+            container.innerHTML = `<h4 class="text-[11px] font-black mb-4 border-b border-zinc-800 pb-2 uppercase tracking-widest" style="color: ${color}">${teamName}</h4>`;
+            
+            const list = document.createElement('div');
+            list.className = "space-y-4";
+            
+            stats.forEach((s, idx) => {
+                const starterId = starters[idx];
+                const player = members.find(mem => mem.id === starterId);
+                const displayNum = player ? player.number : (idx + 1);
+                const displayName = player ? (player.name === String(player.number) ? '' : player.name.substring(0, 6)) : '';
+                const label = `ローテ ${idx + 1} (始動: #${displayNum}${displayName ? ' ' + displayName : ''})`;
+                
+                const soRate = s.receiveRallies > 0 ? Math.round((s.sideoutPoints / s.receiveRallies) * 100) : 0;
+                const brRate = s.serveRallies > 0 ? Math.round((s.breakPoints / s.serveRallies) * 100) : 0;
+                
+                list.innerHTML += `
+                    <div class="flex flex-col gap-1 border-b border-zinc-800/40 pb-3 last:border-0 last:pb-0">
+                        <div class="flex justify-between text-[10px] font-bold text-zinc-300">
+                            <span class="flex items-center gap-1.5"><i data-lucide="rotate-cw" class="w-3 h-3 text-zinc-500"></i> ${label}</span>
+                            <div class="flex gap-3">
+                                <span class="text-emerald-400 font-bold">SO: ${soRate}% <span class="text-[8px] text-zinc-500 font-normal">(${s.sideoutPoints}/${s.receiveRallies})</span></span>
+                                <span class="text-blue-400 font-bold">BR: ${brRate}% <span class="text-[8px] text-zinc-500 font-normal">(${s.breakPoints}/${s.serveRallies})</span></span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mt-1.5">
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-[8px] text-zinc-500 font-bold uppercase tracking-tighter"><span>サイドアウト (Receive)</span></div>
+                                <div class="h-2 w-full bg-zinc-800 rounded-full overflow-hidden flex">
+                                    <div class="h-full bg-emerald-500 transition-all duration-1000" style="width: ${soRate}%; opacity: 0.85"></div>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-[8px] text-zinc-500 font-bold uppercase tracking-tighter"><span>ブレイク (Serve)</span></div>
+                                <div class="h-2 w-full bg-zinc-800 rounded-full overflow-hidden flex">
+                                    <div class="h-full bg-blue-500 transition-all duration-1000" style="width: ${brRate}%; opacity: 0.85"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.appendChild(list);
+            rotStatsEl.appendChild(container);
+        });
+    }
+
     playerStats.innerHTML = '';
     ['A', 'B'].forEach(t => {
         const teamName = t === 'A' ? m.teamA : m.teamB;
@@ -687,16 +749,19 @@ function recalculateStateFromLog() {
         } else if (action.type === 'swap_courts') {
             action.isCourtSwapped = state.isCourtSwapped;
             state.isCourtSwapped = !state.isCourtSwapped;
+            action.set = state.currentSet;
             
         } else if (action.type === 'swap_players') {
             const lineup = action.team === 'A' ? state.lineupA : state.lineupB;
             const temp = lineup[action.idx1];
             lineup[action.idx1] = lineup[action.idx2];
             lineup[action.idx2] = temp;
+            action.set = state.currentSet;
             
         } else if (action.type === 'substitution') {
             const lineup = action.team === 'A' ? state.lineupA : state.lineupB;
             lineup[action.posIdx] = action.inPlayerId;
+            action.set = state.currentSet;
             
         } else if (action.type === 'set_finish') {
             action.scoreA = state.scoreA;
@@ -743,5 +808,194 @@ function recalculateStateFromLog() {
     
     saveState();
     updateUI();
+}
+
+function analyzeRotations(m) {
+    // 1. Determine the starting lineup of Team A and Team B for each set.
+    // We will simulate the chronological flow of actions across the entire match to track lineups and rotations.
+    
+    // Initial lineups from members or fallback defaults
+    let lineupA = (m.membersA || []).slice(0, 6).map(mem => mem.id);
+    let lineupB = (m.membersB || []).slice(0, 6).map(mem => mem.id);
+    
+    while (lineupA.length < 6) lineupA.push(`A${lineupA.length + 1}`);
+    while (lineupB.length < 6) lineupB.push(`B${lineupB.length + 1}`);
+    
+    // Starting lineup slots (1 to 6) representing the original positions of the starting lineup in each set.
+    let slotsA = [1, 2, 3, 4, 5, 6];
+    let slotsB = [1, 2, 3, 4, 5, 6];
+    
+    // Set 1 initial serve order mapping
+    // We will save set-specific lineups at the start of each set
+    const setStartLineups = {};
+    setStartLineups[1] = {
+        lineupA: [...lineupA],
+        lineupB: [...lineupB],
+        slotsA: [...slotsA],
+        slotsB: [...slotsB],
+        servingTeam: m.initialServingTeam || 'A'
+    };
+    
+    let servingTeam = m.initialServingTeam || 'A';
+    let currentSet = 1;
+    
+    // Flatten and sort all action logs chronologically across all sets
+    const allActions = [];
+    m.setHistory.forEach(s => {
+        if (s.log) {
+            s.log.forEach(action => {
+                allActions.push({ ...action, set: s.set });
+            });
+        }
+    });
+    // Ensure chronological sorting
+    allActions.sort((a, b) => a.timestamp - b.timestamp);
+    
+    // Replay all events to find the starting lineups and rotations for every set
+    allActions.forEach(action => {
+        if (action.set !== currentSet) {
+            // Set boundary crossed
+            currentSet = action.set;
+            // Record starting lineup for this new set
+            setStartLineups[currentSet] = {
+                lineupA: [...lineupA],
+                lineupB: [...lineupB],
+                slotsA: [1, 2, 3, 4, 5, 6], // Reset starting slots for the new set!
+                slotsB: [1, 2, 3, 4, 5, 6],
+                servingTeam: servingTeam
+            };
+            slotsA = [1, 2, 3, 4, 5, 6];
+            slotsB = [1, 2, 3, 4, 5, 6];
+        }
+        
+        if (action.type === 'substitution') {
+            const lineup = action.team === 'A' ? lineupA : lineupB;
+            lineup[action.posIdx] = action.inPlayerId;
+        } else if (action.type === 'swap_players') {
+            const lineup = action.team === 'A' ? lineupA : lineupB;
+            const slots = action.team === 'A' ? slotsA : slotsB;
+            
+            const tempPlayer = lineup[action.idx1];
+            lineup[action.idx1] = lineup[action.idx2];
+            lineup[action.idx2] = tempPlayer;
+            
+            const tempSlot = slots[action.idx1];
+            slots[action.idx1] = slots[action.idx2];
+            slots[action.idx2] = tempSlot;
+        } else if (action.type === 'point') {
+            const scoringTeam = action.scoringTeam || (action.pattern === 'error' ? (action.team === 'A' ? 'B' : 'A') : action.team);
+            const rotationOccurred = servingTeam !== scoringTeam;
+            if (rotationOccurred) {
+                servingTeam = scoringTeam;
+                if (scoringTeam === 'A') {
+                    const first = lineupA.shift();
+                    lineupA.push(first);
+                    const firstSlot = slotsA.shift();
+                    slotsA.push(firstSlot);
+                } else {
+                    const first = lineupB.shift();
+                    lineupB.push(first);
+                    const firstSlot = slotsB.shift();
+                    slotsB.push(firstSlot);
+                }
+            }
+        }
+    });
+    
+    // Now that we have the starting lineup and serving team for each set, we can simulate each set INDEPENDENTLY
+    // to calculate the exact Side-out and Break stats!
+    
+    const rotationStatsA = Array.from({length: 6}, () => ({ serveRallies: 0, breakPoints: 0, receiveRallies: 0, sideoutPoints: 0 }));
+    const rotationStatsB = Array.from({length: 6}, () => ({ serveRallies: 0, breakPoints: 0, receiveRallies: 0, sideoutPoints: 0 }));
+    
+    m.setHistory.forEach(s => {
+        const start = setStartLineups[s.set];
+        if (!start) return;
+        
+        let localLineupA = [...start.lineupA];
+        let localLineupB = [...start.lineupB];
+        let localSlotsA = [...start.slotsA];
+        let localSlotsB = [...start.slotsB];
+        let localServingTeam = start.servingTeam;
+        
+        // Find first point to sync servingTeam if initial serve was ambiguous
+        const firstPoint = (s.log || []).find(a => a.type === 'point');
+        if (firstPoint) {
+            localServingTeam = firstPoint.rotationOccurred ? (firstPoint.scoringTeam === 'A' ? 'B' : 'A') : firstPoint.servingTeam;
+        }
+        
+        const setLog = s.log || [];
+        setLog.forEach(action => {
+            if (action.type === 'substitution') {
+                const lineup = action.team === 'A' ? localLineupA : localLineupB;
+                lineup[action.posIdx] = action.inPlayerId;
+            } else if (action.type === 'swap_players') {
+                const lineup = action.team === 'A' ? localLineupA : localLineupB;
+                const slots = action.team === 'A' ? localSlotsA : localSlotsB;
+                
+                const tempPlayer = lineup[action.idx1];
+                lineup[action.idx1] = lineup[action.idx2];
+                lineup[action.idx2] = tempPlayer;
+                
+                const tempSlot = slots[action.idx1];
+                slots[action.idx1] = slots[action.idx2];
+                slots[action.idx2] = tempSlot;
+            } else if (action.type === 'point') {
+                const scoringTeam = action.scoringTeam || (action.pattern === 'error' ? (action.team === 'A' ? 'B' : 'A') : action.team);
+                const rotationOccurred = localServingTeam !== scoringTeam;
+                
+                if (rotationOccurred) {
+                    localServingTeam = scoringTeam;
+                    if (scoringTeam === 'A') {
+                        const first = localLineupA.shift();
+                        localLineupA.push(first);
+                        const firstSlot = localSlotsA.shift();
+                        localSlotsA.push(firstSlot);
+                    } else {
+                        const first = localLineupB.shift();
+                        localLineupB.push(first);
+                        const firstSlot = localSlotsB.shift();
+                        localSlotsB.push(firstSlot);
+                    }
+                }
+                
+                const slotA = localSlotsA[0];
+                const slotB = localSlotsB[0];
+                
+                if (localServingTeam === 'A') {
+                    // Team A served
+                    rotationStatsA[slotA - 1].serveRallies++;
+                    rotationStatsB[slotB - 1].receiveRallies++;
+                    
+                    if (scoringTeam === 'A') {
+                        rotationStatsA[slotA - 1].breakPoints++;
+                    } else {
+                        rotationStatsB[slotB - 1].sideoutPoints++;
+                    }
+                } else {
+                    // Team B served
+                    rotationStatsB[slotB - 1].serveRallies++;
+                    rotationStatsA[slotA - 1].receiveRallies++;
+                    
+                    if (scoringTeam === 'B') {
+                        rotationStatsB[slotB - 1].breakPoints++;
+                    } else {
+                        rotationStatsA[slotA - 1].sideoutPoints++;
+                    }
+                }
+            }
+        });
+    });
+    
+    // Resolve the player identity of each starting slot (from members)
+    const startingPlayersA = (m.membersA || []).slice(0, 6);
+    const startingPlayersB = (m.membersB || []).slice(0, 6);
+    
+    return {
+        statsA: rotationStatsA,
+        statsB: rotationStatsB,
+        startingPlayersA,
+        startingPlayersB
+    };
 }
 

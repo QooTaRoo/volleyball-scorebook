@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="VB Score">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1a1a'/%3E%3Ctext y='75' x='10' font-family='Arial' font-size='70' fill='yellow'%3EVB%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="manifest" href="manifest.json">
     <title>バレーボール・スコア記録</title>
     
@@ -41,6 +41,7 @@
                     <div class="absolute left-full ml-3 flex items-center gap-2 pointer-events-auto z-50">
                         <div id="sets-a" class="w-10 h-8 flex items-center justify-center text-xl font-black bg-zinc-800/90 rounded text-yellow-400 shrink-0 shadow-inner select-none">0</div>
                         <button onclick="event.stopPropagation(); toggleCourtOverlay('A');" class="w-9 h-9 flex items-center justify-center text-lg bg-zinc-800/60 rounded-full text-zinc-400 shrink-0 hover:bg-zinc-700 hover:text-white transition-all"><i data-lucide="layout" class="w-4 h-4"></i></button>
+                        <div id="sub-counter-a" class="text-[9px] font-black bg-zinc-800/90 px-1.5 py-1 rounded text-zinc-400 select-none shadow-inner shrink-0 border border-transparent transition-all" title="交代枠使用数">代 0/6</div>
                     </div>
                 </div>
             </div>
@@ -62,6 +63,7 @@
                     <div class="absolute left-full ml-3 flex items-center gap-2 pointer-events-auto z-50">
                         <div id="sets-b" class="w-10 h-8 flex items-center justify-center text-xl font-black bg-zinc-800/90 rounded text-yellow-400 shrink-0 shadow-inner select-none">0</div>
                         <button onclick="event.stopPropagation(); toggleCourtOverlay('B');" class="w-9 h-9 flex items-center justify-center text-lg bg-zinc-800/60 rounded-full text-zinc-400 shrink-0 hover:bg-zinc-700 hover:text-white transition-all"><i data-lucide="layout" class="w-4 h-4"></i></button>
+                        <div id="sub-counter-b" class="text-[9px] font-black bg-zinc-800/90 px-1.5 py-1 rounded text-zinc-400 select-none shadow-inner shrink-0 border border-transparent transition-all" title="交代枠使用数">代 0/6</div>
                     </div>
                 </div>
             </div>
@@ -262,6 +264,10 @@
                         <div id="analysis-team-stats" class="space-y-6"></div>
                     </section>
                     <section>
+                        <h3 class="text-xs font-black text-zinc-500 mb-4 uppercase tracking-widest">ローテーション分析 (サイドアウト率 / ブレイク率)</h3>
+                        <div id="analysis-rotation-stats" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                    </section>
+                    <section>
                         <h3 class="text-xs font-black text-zinc-500 mb-4 uppercase tracking-widest">選手別個人スタッツ</h3>
                         <div id="analysis-player-stats" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                     </section>
@@ -367,7 +373,10 @@
     <div id="court-modal" class="fixed inset-0 bg-black/90 z-[170] hidden p-6 flex flex-col items-center justify-center">
         <div class="max-w-md w-full flex flex-col h-full">
             <div class="flex justify-between items-center mb-6">
-                <h2 id="court-team-label" class="text-2xl font-bold">TEAM A</h2>
+                <div class="flex flex-col">
+                    <h2 id="court-team-label" class="text-2xl font-bold">TEAM A</h2>
+                    <span id="court-sub-counter" class="text-xs font-bold text-zinc-500 mt-1">交代枠使用数: 0 / 6</span>
+                </div>
                 <button onclick="toggleCourtOverlay()" class="bg-zinc-700 px-4 py-2 rounded text-sm">閉じる</button>
             </div>
             <div id="court-grid-container" class="flex-1 flex gap-2 bg-emerald-800 p-4 rounded-lg border-4 border-white/20 relative aspect-[3/2] w-full max-w-sm mx-auto transition-all">
