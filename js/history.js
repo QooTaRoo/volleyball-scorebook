@@ -528,6 +528,7 @@ async function clearAllHistory() {
     if (!confirmed) return;
     
     localStorage.removeItem(HISTORY_KEY);
+    if (typeof clearAllMatchesOnCloud === 'function') clearAllMatchesOnCloud();
     renderHistory();
     showToast("すべての試合履歴を削除しました");
 }
@@ -537,8 +538,15 @@ async function deleteHistoryItem(idx) {
     if (!confirmed) return;
     
     const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    const matchToDelete = history[idx];
     history.splice(idx, 1);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    
+    if (matchToDelete && typeof deleteMatchOnCloud === 'function') {
+        const matchId = matchToDelete.id || `${matchToDelete.date}_${matchToDelete.teamA}_${matchToDelete.teamB}`.replace(/[\/:\s]/g, '_');
+        deleteMatchOnCloud(matchId);
+    }
+    
     renderHistory();
     showToast("試合履歴を削除しました");
 }

@@ -270,6 +270,7 @@ function toggleSettings() {
         if (durationEl) durationEl.value = state.timeoutDuration || 30;
         const bgColorEl = document.getElementById('input-bg-color');
         if (bgColorEl) bgColorEl.value = state.bgColor || '#1a1a1a';
+        if (typeof updateSyncUI === 'function') updateSyncUI();
     }
     modal.classList.toggle('hidden');
     

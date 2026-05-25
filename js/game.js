@@ -178,6 +178,7 @@ async function finishMatch(winnerName, scoreDetail = "") {
         initialServingTeam: state.initialServingTeam
     });
     localStorage.setItem(HISTORY_KEY, JSON.stringify(matchHistory));
+    if (typeof pushMatchToCloud === 'function') pushMatchToCloud(matchHistory[0]);
 
     let msg = "試合終了！";
     if (winnerName) msg += ` 勝者: ${winnerName}`;
