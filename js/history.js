@@ -107,6 +107,61 @@ function showCurrentTimeline() {
     toggleTimeline();
 }
 
+let collapsedDateGroups = new Set();
+
+function getGroupKeyAndDisplayName(dateStr) {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const date = d.getDate();
+        const days = ['日', '月', '火', '水', '木', '金', '土'];
+        const dayOfWeek = days[d.getDay()];
+        const key = `${y}-${String(m).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+        const display = `${y}年${m}月${date}日(${dayOfWeek})`;
+        return { key, display };
+    }
+    const match = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (match) {
+        const y = match[1];
+        const m = parseInt(match[2]);
+        const date = parseInt(match[3]);
+        const testD = new Date(y, m - 1, date);
+        if (!isNaN(testD.getTime())) {
+            const days = ['日', '月', '火', '水', '木', '金', '土'];
+            const dayOfWeek = days[testD.getDay()];
+            const key = `${y}-${String(m).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            const display = `${y}年${m}月${date}日(${dayOfWeek})`;
+            return { key, display };
+        }
+        const key = `${y}-${String(m).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+        const display = `${y}年${m}月${date}日`;
+        return { key, display };
+    }
+    const fallbackKey = dateStr.split(' ')[0] || dateStr;
+    return { key: fallbackKey, display: fallbackKey };
+}
+
+function toggleDateGroup(dateKey) {
+    if (collapsedDateGroups.has(dateKey)) {
+        collapsedDateGroups.delete(dateKey);
+    } else {
+        collapsedDateGroups.add(dateKey);
+    }
+    const container = document.getElementById(`date-group-content-${dateKey}`);
+    const caret = document.getElementById(`date-group-caret-${dateKey}`);
+    if (container && caret) {
+        const isCollapsed = collapsedDateGroups.has(dateKey);
+        if (isCollapsed) {
+            container.classList.add('hidden');
+            caret.classList.add('-rotate-90');
+        } else {
+            container.classList.remove('hidden');
+            caret.classList.remove('-rotate-90');
+        }
+    }
+}
+
 function renderHistory() {
     const list = document.getElementById('history-list');
     list.innerHTML = "";
@@ -117,57 +172,127 @@ function renderHistory() {
         return;
     }
 
+    const groups = {};
     history.forEach((m, idx) => {
-        const item = document.createElement('div');
-        item.className = "bg-zinc-900 border border-zinc-800 p-4 mb-4 rounded-xl shadow-xl";
-        item.id = `history-item-${idx}`;
-        const cA = m.colorA || '#eab308';
-        const cB = m.colorB || '#ffffff';
-        item.innerHTML = `
-            <div class="flex justify-between items-center text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">
-                <span>${m.date}</span>
-                <div class="flex items-center gap-3">
-                    <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${m.durationMinutes || 0}分</span>
-                    <span class="flex items-center gap-1"><i data-lucide="layers" class="w-3 h-3"></i> ${m.maxSets}セット</span>
-                    <button onclick="deleteHistoryItem(${idx})" class="text-zinc-500 hover:text-red-500 transition-colors p-1" title="履歴を削除">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        const { key, display } = getGroupKeyAndDisplayName(m.date);
+        if (!groups[key]) {
+            groups[key] = {
+                display: display,
+                matches: []
+            };
+        }
+        groups[key].matches.push({ match: m, originalIndex: idx });
+    });
+
+    const sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+    sortedKeys.forEach(dateKey => {
+        const group = groups[dateKey];
+        const isCollapsed = collapsedDateGroups.has(dateKey);
+        
+        const groupEl = document.createElement('div');
+        groupEl.className = "mb-6 date-group";
+        
+        // Header
+        const headerEl = document.createElement('button');
+        headerEl.className = "w-full flex items-center justify-between bg-zinc-900/80 border border-zinc-800/80 hover:bg-zinc-850 px-4 py-3 rounded-2xl transition-all duration-200 select-none shadow-lg mb-3";
+        headerEl.onclick = () => toggleDateGroup(dateKey);
+        
+        const badgeText = `${group.matches.length}試合`;
+        const caretClass = isCollapsed ? "-rotate-90" : "";
+        
+        headerEl.innerHTML = `
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20 text-yellow-500 shadow-inner">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                </div>
+                <span class="text-sm font-black text-zinc-200 tracking-wide">${group.display}</span>
+                <span class="text-[9px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2 py-0.5 rounded-lg font-black tracking-wider shadow-inner">${badgeText}</span>
+            </div>
+            <i data-lucide="chevron-down" id="date-group-caret-${dateKey}" class="w-4 h-4 text-zinc-500 transition-transform duration-300 transform ${caretClass}"></i>
+        `;
+        groupEl.appendChild(headerEl);
+        
+        // Content container
+        const contentEl = document.createElement('div');
+        contentEl.id = `date-group-content-${dateKey}`;
+        contentEl.className = `space-y-4 pl-1 border-l border-zinc-800/40 transition-all ${isCollapsed ? 'hidden' : ''}`;
+        
+        group.matches.forEach(({ match: m, originalIndex: idx }) => {
+            const item = document.createElement('div');
+            item.className = "bg-zinc-900/60 border border-zinc-800/60 p-4 rounded-2xl shadow-xl hover:border-zinc-700/60 transition-all text-left";
+            item.id = `history-item-${idx}`;
+            
+            const cA = m.colorA || '#eab308';
+            const cB = m.colorB || '#ffffff';
+            
+            let timeStr = "";
+            const timeParts = m.date.split(' ');
+            if (timeParts.length > 1) {
+                const t = timeParts[1].split(':');
+                if (t.length >= 2) {
+                    timeStr = `${t[0]}:${t[1]}`;
+                } else {
+                    timeStr = timeParts[1];
+                }
+            } else {
+                const matchTime = m.date.match(/(\d{1,2}):(\d{2})/);
+                if (matchTime) {
+                    timeStr = matchTime[0];
+                }
+            }
+            
+            item.innerHTML = `
+                <div class="flex justify-between items-center text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">
+                    <span class="flex items-center gap-1">
+                        <i data-lucide="clock" class="w-3 h-3 text-zinc-600"></i> ${timeStr ? timeStr + ' - ' : ''}${m.durationMinutes || 0}分
+                    </span>
+                    <div class="flex items-center gap-3">
+                        <span class="flex items-center gap-1"><i data-lucide="layers" class="w-3 h-3"></i> ${m.maxSets}セット</span>
+                        <button onclick="deleteHistoryItem(${idx})" class="text-zinc-500 hover:text-red-500 transition-colors p-1" title="履歴を削除">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center mb-5 px-2">
+                    <div class="flex-1 flex flex-col items-start overflow-hidden">
+                        <div class="text-lg font-black truncate w-full" style="color: ${cA}">${m.teamA}</div>
+                        <div class="text-3xl font-black text-white">${m.setsA}</div>
+                    </div>
+                    <div class="px-4 text-[10px] font-black text-zinc-700 italic">VS</div>
+                    <div class="flex-1 flex flex-col items-end overflow-hidden text-right">
+                        <div class="text-lg font-black truncate w-full" style="color: ${cB}">${m.teamB}</div>
+                        <div class="text-3xl font-black text-white">${m.setsB}</div>
+                    </div>
+                </div>
+                <div id="history-timeline-${idx}" class="hidden mt-4 border-t border-zinc-800/85 pt-4 bg-[#1a1a1a] px-2 pb-2 rounded-xl text-left"></div>
+                <div class="flex gap-2 mt-2" data-html2canvas-ignore>
+                    <button onclick="toggleHistoryTimeline(${idx})" class="flex-1 bg-zinc-800/80 hover:bg-zinc-700 py-2.5 text-[10px] font-black rounded-lg transition-colors flex items-center justify-center gap-1 border border-white/5 text-zinc-300">
+                        <i data-lucide="activity" class="w-3 h-3"></i> 詳細
+                    </button>
+                    <button onclick="openAnalysis(${idx})" class="flex-1 bg-zinc-800/80 hover:bg-zinc-700 py-2.5 text-[10px] font-black rounded-lg transition-colors flex items-center justify-center gap-1 border border-white/5 text-zinc-300">
+                        <i data-lucide="trending-up" class="w-3 h-3"></i> 分析
+                    </button>
+                    <button onclick="shareContainerAsImage('history-item-${idx}', 'history.png')" id="share-btn-${idx}" class="hidden bg-blue-600 hover:bg-blue-500 px-4 py-2 text-[10px] font-black rounded-lg flex items-center gap-1 text-white shadow-md">
+                        <i data-lucide="share-2" class="w-3 h-3"></i> 共有
                     </button>
                 </div>
-            </div>
-            <div class="flex justify-between items-center mb-5 px-2">
-                <div class="flex-1 flex flex-col items-start overflow-hidden">
-                    <div class="text-lg font-black truncate w-full" style="color: ${cA}">${m.teamA}</div>
-                    <div class="text-3xl font-black text-white">${m.setsA}</div>
-                </div>
-                <div class="px-4 text-[10px] font-black text-zinc-700 italic">VS</div>
-                <div class="flex-1 flex flex-col items-end overflow-hidden text-right">
-                    <div class="text-lg font-black truncate w-full" style="color: ${cB}">${m.teamB}</div>
-                    <div class="text-3xl font-black text-white">${m.setsB}</div>
-                </div>
-            </div>
-            <div id="history-timeline-${idx}" class="hidden mt-4 border-t border-zinc-800 pt-4 bg-[#1a1a1a] px-2 pb-2 rounded-lg"></div>
-            <div class="flex gap-2 mt-2" data-html2canvas-ignore>
-                <button onclick="toggleHistoryTimeline(${idx})" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 text-[10px] font-black rounded-lg transition-colors flex items-center justify-center gap-1">
-                    <i data-lucide="activity" class="w-3 h-3"></i> 詳細
-                </button>
-                <button onclick="openAnalysis(${idx})" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 text-[10px] font-black rounded-lg transition-colors flex items-center justify-center gap-1">
-                    <i data-lucide="trending-up" class="w-3 h-3"></i> 分析
-                </button>
-                <button onclick="shareContainerAsImage('history-item-${idx}', 'history.png')" id="share-btn-${idx}" class="hidden bg-blue-600 hover:bg-blue-500 px-4 py-2 text-[10px] font-black rounded-lg flex items-center gap-1">
-                    <i data-lucide="share-2" class="w-3 h-3"></i> 共有
-                </button>
-            </div>
-        `;
-        list.appendChild(item);
-        
-        const tlContainer = item.querySelector(`#history-timeline-${idx}`);
-        m.setHistory.forEach(setData => {
-            const h = document.createElement('div');
-            h.className = "text-[9px] font-black text-zinc-500 mt-3 mb-1 uppercase";
-            h.textContent = `SET ${setData.set}`;
-            tlContainer.appendChild(h);
-            tlContainer.appendChild(renderTimeline(setData.log, m.teamA, m.teamB, cA, cB, setData.scoreA, setData.scoreB, false));
+            `;
+            
+            contentEl.appendChild(item);
+            
+            const tlContainer = item.querySelector(`#history-timeline-${idx}`);
+            m.setHistory.forEach(setData => {
+                const h = document.createElement('div');
+                h.className = "text-[9px] font-black text-zinc-500 mt-3 mb-1 uppercase tracking-wider";
+                h.textContent = `SET ${setData.set}`;
+                tlContainer.appendChild(h);
+                tlContainer.appendChild(renderTimeline(setData.log, m.teamA, m.teamB, cA, cB, setData.scoreA, setData.scoreB, false));
+            });
         });
+        
+        groupEl.appendChild(contentEl);
+        list.appendChild(groupEl);
     });
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
