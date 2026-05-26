@@ -4,6 +4,7 @@ const SUPABASE_ENABLED_KEY = 'vb_supabase_enabled';
 const SUPABASE_URL_KEY = 'vb_supabase_url';
 const SUPABASE_ANON_KEY_KEY = 'vb_supabase_anon_key';
 const SUPABASE_READONLY_KEY = 'vb_supabase_readonly';
+const SUPABASE_AUTOSYNC_KEY = 'vb_supabase_autosync';
 
 let supabaseInstance = null;
 
@@ -38,9 +39,10 @@ function getMatchId(match) {
 function initSync() {
     updateSyncUI();
     
-    // Perform silent background sync on startup if enabled
+    // Perform silent background sync on startup if enabled and autosync is ON
     const client = getSupabaseClient();
-    if (client) {
+    const autoSyncEnabled = localStorage.getItem(SUPABASE_AUTOSYNC_KEY) !== 'false';
+    if (client && autoSyncEnabled) {
         syncAllData(true); // silent = true
     }
 }
@@ -65,6 +67,11 @@ function updateSyncUI() {
     const readonlyToggle = document.getElementById('sync-readonly-toggle');
     if (readonlyToggle) {
         readonlyToggle.checked = localStorage.getItem(SUPABASE_READONLY_KEY) === 'true';
+    }
+
+    const autosyncToggle = document.getElementById('sync-autosync-toggle');
+    if (autosyncToggle) {
+        autosyncToggle.checked = localStorage.getItem(SUPABASE_AUTOSYNC_KEY) !== 'false';
     }
 
     toggleSyncFields();
@@ -108,13 +115,39 @@ function toggleSyncReadOnly() {
     showToast(toggle.checked ? "読み込み専用モードを有効にしました" : "読み込み専用モードを無効にしました");
 }
 
-// Trigger a manual sync on demand
-async function manualSync() {
+// Toggle Auto-Sync Mode
+function toggleSyncAutoSync() {
+    const toggle = document.getElementById('sync-autosync-toggle');
+    if (!toggle) return;
+    localStorage.setItem(SUPABASE_AUTOSYNC_KEY, toggle.checked ? 'true' : 'false');
+    showToast(toggle.checked ? "自動バックグラウンド同期を有効にしました" : "自動バックグラウンド同期を無効にしました");
+}
+
+// Trigger a manual sync on demand (opens options modal)
+function manualSync() {
     const client = getSupabaseClient();
     if (!client) {
         showCustomAlert("クラウド同期が有効になっていないか、接続設定が未完了です。先に接続テストを行ってください。");
         return;
     }
+    
+    // Open selection popup
+    const modal = document.getElementById('sync-option-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeSyncOptionModal() {
+    const modal = document.getElementById('sync-option-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Execute selected manual sync action
+async function executeSelectedSync(type) {
+    closeSyncOptionModal();
     
     const btn = document.getElementById('supabase-sync-now-btn');
     if (btn) {
@@ -123,13 +156,13 @@ async function manualSync() {
         btn.innerHTML = `<i data-lucide="loader" class="w-3 h-3 animate-spin"></i> 同期中...`;
         if (typeof lucide !== 'undefined') lucide.createIcons();
         
-        await syncAllData(false);
+        await syncSelectedData(type, false);
         
         btn.disabled = false;
         btn.innerHTML = origText;
         if (typeof lucide !== 'undefined') lucide.createIcons();
     } else {
-        await syncAllData(false);
+        await syncSelectedData(type, false);
     }
 }
 
@@ -200,7 +233,13 @@ async function testAndSyncCloud() {
 }
 
 // Bidirectional Sync Engine
+// Main entry point for syncing all data
 async function syncAllData(silent = false) {
+    await syncSelectedData('all', silent);
+}
+
+// Bidirectional Sync Engine supporting selective data categories ('all', 'matches', 'teams')
+async function syncSelectedData(type, silent = false) {
     const client = getSupabaseClient();
     if (!client) return;
 
@@ -212,105 +251,108 @@ async function syncAllData(silent = false) {
 
     try {
         // --- 1. SYNC MATCH HISTORY ---
-        let localHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-        
-        // Inject IDs into local matches that don't have them yet
-        let localChanged = false;
-        localHistory.forEach(m => {
-            if (!m.id) {
-                m.id = getMatchId(m);
-                localChanged = true;
-            }
-        });
-        if (localChanged) {
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(localHistory));
-        }
-
-        // Fetch Cloud Matches
-        const { data: cloudMatches, error: matchError } = await client.from('matches').select('*');
-        if (matchError) throw matchError;
-
-        // Merge matches
-        let mergedHistory = [...localHistory];
-        
-        // Find items in Cloud but not Local
-        cloudMatches.forEach(cloudItem => {
-            const matchData = cloudItem.data;
-            // Inject ID from DB row just in case
-            matchData.id = cloudItem.id;
+        if (type === 'all' || type === 'matches') {
+            let localHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
             
-            const isLocalPresent = mergedHistory.some(m => m.id === cloudItem.id);
-            if (!isLocalPresent) {
-                mergedHistory.push(matchData);
+            // Inject IDs into local matches that don't have them yet
+            let localChanged = false;
+            localHistory.forEach(m => {
+                if (!m.id) {
+                    m.id = getMatchId(m);
+                    localChanged = true;
+                }
+            });
+            if (localChanged) {
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(localHistory));
             }
-        });
 
-        // Sort match history by date descending
-        mergedHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        // Save back to LocalStorage
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(mergedHistory));
+            // Fetch Cloud Matches
+            const { data: cloudMatches, error: matchError } = await client.from('matches').select('*');
+            if (matchError) throw matchError;
 
-        // Find items in Local but not Cloud to upload (Skip if Read-Only Mode is active)
-        if (localStorage.getItem(SUPABASE_READONLY_KEY) !== 'true') {
-            for (const localItem of mergedHistory) {
-                const isCloudPresent = cloudMatches.some(m => m.id === localItem.id);
-                if (!isCloudPresent) {
-                    await client.from('matches').upsert({ id: localItem.id, data: localItem });
+            // Merge matches
+            let mergedHistory = [...localHistory];
+            
+            // Find items in Cloud but not Local
+            cloudMatches.forEach(cloudItem => {
+                const matchData = cloudItem.data;
+                // Inject ID from DB row just in case
+                matchData.id = cloudItem.id;
+                
+                const isLocalPresent = mergedHistory.some(m => m.id === cloudItem.id);
+                if (!isLocalPresent) {
+                    mergedHistory.push(matchData);
+                }
+            });
+
+            // Sort match history by date descending
+            mergedHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Save back to LocalStorage
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(mergedHistory));
+
+            // Find items in Local but not Cloud to upload (Skip if Read-Only Mode is active)
+            if (localStorage.getItem(SUPABASE_READONLY_KEY) !== 'true') {
+                for (const localItem of mergedHistory) {
+                    const isCloudPresent = cloudMatches.some(m => m.id === localItem.id);
+                    if (!isCloudPresent) {
+                        await client.from('matches').upsert({ id: localItem.id, data: localItem });
+                    }
                 }
             }
         }
-
 
         // --- 2. SYNC PRESET TEAMS ---
-        let localTeams = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-        
-        // Fetch Cloud Teams
-        const { data: cloudTeams, error: teamError } = await client.from('teams').select('*');
-        if (teamError) throw teamError;
+        if (type === 'all' || type === 'teams') {
+            let localTeams = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
+            
+            // Fetch Cloud Teams
+            const { data: cloudTeams, error: teamError } = await client.from('teams').select('*');
+            if (teamError) throw teamError;
 
-        // Merge teams
-        let mergedTeams = [...localTeams];
+            // Merge teams
+            let mergedTeams = [...localTeams];
 
-        // Find items in Cloud and merge/overwrite if newer or customized
-        cloudTeams.forEach(cloudItem => {
-            const teamData = cloudItem.data;
-            const localIndex = mergedTeams.findIndex(t => t.name === cloudItem.name);
-            if (localIndex < 0) {
-                mergedTeams.push(teamData);
-            } else {
-                const localItem = mergedTeams[localIndex];
-                const localTime = localItem.updatedAt || 0;
-                const cloudTime = teamData.updatedAt || 0;
-
-                // Check if one has actual player names (not just default numbers like "1", "2")
-                const localHasCustom = localItem.members && localItem.members.some(m => m.name !== String(m.number));
-                const cloudHasCustom = teamData.members && teamData.members.some(m => m.name !== String(m.number));
-
-                if (cloudTime > localTime || (cloudHasCustom && !localHasCustom)) {
-                    mergedTeams[localIndex] = teamData;
-                }
-            }
-        });
-
-        // Save back to LocalStorage
-        localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(mergedTeams));
-
-        // Find items in Local to upload (not on cloud, or local is newer/customized) (Skip if Read-Only Mode is active)
-        if (localStorage.getItem(SUPABASE_READONLY_KEY) !== 'true') {
-            for (const localTeam of mergedTeams) {
-                const cloudItem = cloudTeams.find(t => t.name === localTeam.name);
-                if (!cloudItem) {
-                    await client.from('teams').upsert({ name: localTeam.name, data: localTeam });
+            // Find items in Cloud and merge/overwrite if newer or customized
+            cloudTeams.forEach(cloudItem => {
+                const teamData = cloudItem.data;
+                const localIndex = mergedTeams.findIndex(t => t.name === cloudItem.name);
+                if (localIndex < 0) {
+                    mergedTeams.push(teamData);
                 } else {
-                    const localTime = localTeam.updatedAt || 0;
-                    const cloudTime = cloudItem.data.updatedAt || 0;
+                    const localItem = mergedTeams[localIndex];
+                    const localTime = localItem.updatedAt || 0;
+                    const cloudTime = teamData.updatedAt || 0;
 
-                    const localHasCustom = localTeam.members && localTeam.members.some(m => m.name !== String(m.number));
-                    const cloudHasCustom = cloudItem.data.members && cloudItem.data.members.some(m => m.name !== String(m.number));
+                    // Check if one has actual player names (not just default numbers like "1", "2")
+                    const localHasCustom = localItem.members && localItem.members.some(m => m.name !== String(m.number));
+                    const cloudHasCustom = teamData.members && teamData.members.some(m => m.name !== String(m.number));
 
-                    if (localTime > cloudTime || (localHasCustom && !localHasCustom)) {
+                    if (cloudTime > localTime || (cloudHasCustom && !localHasCustom)) {
+                        mergedTeams[localIndex] = teamData;
+                    }
+                }
+            });
+
+            // Save back to LocalStorage
+            localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(mergedTeams));
+
+            // Find items in Local to upload (not on cloud, or local is newer/customized) (Skip if Read-Only Mode is active)
+            if (localStorage.getItem(SUPABASE_READONLY_KEY) !== 'true') {
+                for (const localTeam of mergedTeams) {
+                    const cloudItem = cloudTeams.find(t => t.name === localTeam.name);
+                    if (!cloudItem) {
                         await client.from('teams').upsert({ name: localTeam.name, data: localTeam });
+                    } else {
+                        const localTime = localTeam.updatedAt || 0;
+                        const cloudTime = cloudItem.data.updatedAt || 0;
+
+                        const localHasCustom = localTeam.members && localTeam.members.some(m => m.name !== String(m.number));
+                        const cloudHasCustom = cloudItem.data.members && cloudItem.data.members.some(m => m.name !== String(m.number));
+
+                        if (localTime > cloudTime || (localHasCustom && !cloudHasCustom)) {
+                            await client.from('teams').upsert({ name: localTeam.name, data: localTeam });
+                        }
                     }
                 }
             }
@@ -318,7 +360,8 @@ async function syncAllData(silent = false) {
 
         // --- 3. RE-RENDER UI IF OPEN ---
         if (!silent) {
-            showToast("クラウドとの同期が完了しました");
+            const label = type === 'all' ? 'すべて' : (type === 'matches' ? '試合履歴' : 'チーム設定');
+            showToast(`${label} の同期が完了しました`);
         }
         
         // Refresh UI views if they are currently visible
@@ -335,7 +378,7 @@ async function syncAllData(silent = false) {
         }
 
     } catch (err) {
-        console.error("Background sync error:", err);
+        console.error("Selective sync error:", err);
         if (badge) {
             badge.textContent = "同期エラー";
             badge.className = "text-[9px] font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-400";
@@ -351,6 +394,7 @@ async function pushMatchToCloud(match) {
     const client = getSupabaseClient();
     if (!client) return;
     if (localStorage.getItem(SUPABASE_READONLY_KEY) === 'true') return;
+    if (localStorage.getItem(SUPABASE_AUTOSYNC_KEY) === 'false') return;
 
     if (!match.id) match.id = getMatchId(match);
 
@@ -366,6 +410,7 @@ async function pushTeamToCloud(team) {
     const client = getSupabaseClient();
     if (!client) return;
     if (localStorage.getItem(SUPABASE_READONLY_KEY) === 'true') return;
+    if (localStorage.getItem(SUPABASE_AUTOSYNC_KEY) === 'false') return;
 
     try {
         const { error } = await client.from('teams').upsert({ name: team.name, data: team });
@@ -379,6 +424,7 @@ async function deleteMatchOnCloud(matchId) {
     const client = getSupabaseClient();
     if (!client) return;
     if (localStorage.getItem(SUPABASE_READONLY_KEY) === 'true') return;
+    if (localStorage.getItem(SUPABASE_AUTOSYNC_KEY) === 'false') return;
 
     try {
         const { error } = await client.from('matches').delete().eq('id', matchId);
@@ -392,6 +438,7 @@ async function deleteTeamOnCloud(teamName) {
     const client = getSupabaseClient();
     if (!client) return;
     if (localStorage.getItem(SUPABASE_READONLY_KEY) === 'true') return;
+    if (localStorage.getItem(SUPABASE_AUTOSYNC_KEY) === 'false') return;
 
     try {
         const { error } = await client.from('teams').delete().eq('name', teamName);
@@ -405,6 +452,7 @@ async function clearAllMatchesOnCloud() {
     const client = getSupabaseClient();
     if (!client) return;
     if (localStorage.getItem(SUPABASE_READONLY_KEY) === 'true') return;
+    if (localStorage.getItem(SUPABASE_AUTOSYNC_KEY) === 'false') return;
 
     try {
         // Safe delete matching all non-empty strings (deletes everything)
