@@ -172,7 +172,8 @@ function saveMasterTeam() {
 
     const newPreset = {
         id: masterEditOriginalName ? (presets.find(p => p.name === masterEditOriginalName)?.id || `p_${Date.now()}`) : `p_${Date.now()}`,
-        name: nameVal, color: colorVal, isMyTeam: isMyTeamVal, members: JSON.parse(JSON.stringify(masterEditMembers))
+        name: nameVal, color: colorVal, isMyTeam: isMyTeamVal, members: JSON.parse(JSON.stringify(masterEditMembers)),
+        updatedAt: Date.now()
     };
 
     const existingIdx = presets.findIndex(p => p.name === nameVal);

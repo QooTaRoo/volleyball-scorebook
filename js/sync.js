@@ -231,23 +231,45 @@ async function syncAllData(silent = false) {
         // Merge teams
         let mergedTeams = [...localTeams];
 
-        // Find items in Cloud but not Local
+        // Find items in Cloud and merge/overwrite if newer or customized
         cloudTeams.forEach(cloudItem => {
             const teamData = cloudItem.data;
-            const isLocalPresent = mergedTeams.some(t => t.name === cloudItem.name);
-            if (!isLocalPresent) {
+            const localIndex = mergedTeams.findIndex(t => t.name === cloudItem.name);
+            if (localIndex < 0) {
                 mergedTeams.push(teamData);
+            } else {
+                const localItem = mergedTeams[localIndex];
+                const localTime = localItem.updatedAt || 0;
+                const cloudTime = teamData.updatedAt || 0;
+
+                // Check if one has actual player names (not just default numbers like "1", "2")
+                const localHasCustom = localItem.members && localItem.members.some(m => m.name !== String(m.number));
+                const cloudHasCustom = teamData.members && teamData.members.some(m => m.name !== String(m.number));
+
+                if (cloudTime > localTime || (cloudHasCustom && !localHasCustom)) {
+                    mergedTeams[localIndex] = teamData;
+                }
             }
         });
 
         // Save back to LocalStorage
         localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(mergedTeams));
 
-        // Find items in Local but not Cloud to upload
+        // Find items in Local to upload (not on cloud, or local is newer/customized)
         for (const localTeam of mergedTeams) {
-            const isCloudPresent = cloudTeams.some(t => t.name === localTeam.name);
-            if (!isCloudPresent) {
+            const cloudItem = cloudTeams.find(t => t.name === localTeam.name);
+            if (!cloudItem) {
                 await client.from('teams').upsert({ name: localTeam.name, data: localTeam });
+            } else {
+                const localTime = localTeam.updatedAt || 0;
+                const cloudTime = cloudItem.data.updatedAt || 0;
+
+                const localHasCustom = localTeam.members && localTeam.members.some(m => m.name !== String(m.number));
+                const cloudHasCustom = cloudItem.data.members && cloudItem.data.members.some(m => m.name !== String(m.number));
+
+                if (localTime > cloudTime || (localHasCustom && !cloudHasCustom)) {
+                    await client.from('teams').upsert({ name: localTeam.name, data: localTeam });
+                }
             }
         }
 
