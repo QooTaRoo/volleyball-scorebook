@@ -121,17 +121,48 @@ function loadMasterTeamForEdit(presetName) {
 
 function renderMasterMemberRows() {
     const list = document.getElementById('master-member-list');
-    list.innerHTML = masterEditMembers.map((m, idx) => `
-        <div class="flex gap-2 items-center">
-            <span class="text-xs text-zinc-600 font-bold w-5 text-right">${idx + 1}.</span>
-            <input type="number" value="${m.number}" onchange="masterEditMembers[${idx}].number = parseInt(this.value) || 0" class="w-14 bg-zinc-800 border-none p-1.5 text-white text-center rounded text-xs font-bold" placeholder="番号">
-            <input type="text" value="${m.name}" onchange="masterEditMembers[${idx}].name = this.value" class="flex-1 bg-zinc-800 border-none p-1.5 text-white rounded text-xs" placeholder="名前">
-            <button onclick="deleteMasterMember(${idx})" class="p-1 text-zinc-500 hover:text-red-500 transition-colors" title="削除">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-            </button>
-        </div>
-    `).join('');
+    list.innerHTML = masterEditMembers.map((m, idx) => {
+        const isStarter = idx < 6;
+        const starterBadge = isStarter 
+            ? `<span class="text-[8px] bg-yellow-500/20 text-yellow-400 font-bold px-1.5 py-0.5 rounded border border-yellow-500/25">スタメン</span>` 
+            : `<span class="text-[8px] bg-zinc-800/40 text-zinc-500 font-bold px-1.5 py-0.5 rounded border border-zinc-800">控え</span>`;
+            
+        return `
+            <div class="flex gap-2 items-center bg-zinc-900/40 p-1.5 rounded-lg border border-white/5">
+                <span class="text-xs text-zinc-500 font-bold w-4 text-center">${idx + 1}</span>
+                ${starterBadge}
+                <input type="number" value="${m.number}" onchange="masterEditMembers[${idx}].number = parseInt(this.value) || 0" class="w-10 bg-zinc-800 border-none p-1 text-white text-center rounded text-xs font-bold" placeholder="番号">
+                <input type="text" value="${m.name}" onchange="masterEditMembers[${idx}].name = this.value" class="flex-1 bg-zinc-800 border-none p-1 text-white rounded text-xs" placeholder="名前">
+                
+                <!-- Reorder buttons -->
+                <div class="flex flex-col">
+                    <button onclick="moveMasterMember(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:pointer-events-none p-0.5">
+                        <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="moveMasterMember(${idx}, 1)" ${idx === masterEditMembers.length - 1 ? 'disabled' : ''} class="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:pointer-events-none p-0.5">
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                
+                <button onclick="deleteMasterMember(${idx})" class="p-1 text-zinc-500 hover:text-red-500 transition-colors flex items-center justify-center" title="削除">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
     if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function moveMasterMember(idx, dir) {
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= masterEditMembers.length) return;
+    
+    // Swap players in the array
+    const temp = masterEditMembers[idx];
+    masterEditMembers[idx] = masterEditMembers[targetIdx];
+    masterEditMembers[targetIdx] = temp;
+    
+    renderMasterMemberRows();
 }
 
 function addMasterMemberRow() {

@@ -60,22 +60,26 @@ function renderCourt(team) {
 
         if (isLandscape) {
             container.style.flexDirection = 'row';
-            netLine.style.width = '3px'; netLine.style.height = 'auto'; netLine.style.margin = '0 6px';
+            netLine.style.width = '16px'; netLine.style.height = 'auto'; netLine.style.margin = '0';
+            netLine.className = "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.4)] transition-all shrink-0 relative flex items-center justify-center rounded-sm border-l border-r border-amber-500/30";
+            netLine.innerHTML = '<span class="absolute text-[8px] text-zinc-950 font-black uppercase select-none tracking-widest rotate-90">NET</span>';
             if (isFirstHalf) {
-                backRow.style.order = '1'; netLine.style.order = '2'; frontRow.style.order = '3';
+                backRow.style.order = '1'; frontRow.style.order = '2'; netLine.style.order = '3';
                 frontRow.style.flexDirection = 'column'; backRow.style.flexDirection = 'column';
             } else {
-                frontRow.style.order = '1'; netLine.style.order = '2'; backRow.style.order = '3';
+                netLine.style.order = '1'; frontRow.style.order = '2'; backRow.style.order = '3';
                 frontRow.style.flexDirection = 'column-reverse'; backRow.style.flexDirection = 'column-reverse';
             }
         } else {
             container.style.flexDirection = 'column';
-            netLine.style.width = 'auto'; netLine.style.height = '3px'; netLine.style.margin = '6px 0';
+            netLine.style.width = 'auto'; netLine.style.height = '16px'; netLine.style.margin = '0';
+            netLine.className = "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.4)] transition-all shrink-0 relative flex items-center justify-center rounded-sm border-t border-b border-amber-500/30";
+            netLine.innerHTML = '<span class="absolute text-[8px] text-zinc-950 font-black uppercase select-none tracking-widest">NET</span>';
             if (isFirstHalf) {
-                backRow.style.order = '1'; netLine.style.order = '2'; frontRow.style.order = '3';
+                backRow.style.order = '1'; frontRow.style.order = '2'; netLine.style.order = '3';
                 frontRow.style.flexDirection = 'row-reverse'; backRow.style.flexDirection = 'row-reverse';
             } else {
-                frontRow.style.order = '1'; netLine.style.order = '2'; backRow.style.order = '3';
+                netLine.style.order = '1'; frontRow.style.order = '2'; backRow.style.order = '3';
                 frontRow.style.flexDirection = 'row'; backRow.style.flexDirection = 'row';
             }
         }

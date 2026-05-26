@@ -376,6 +376,8 @@ function toggleMatchSetup() {
         document.getElementById('setup-final-set-target').value = state.finalSetTarget;
         setSetupServe(state.servingTeam || 'A');
         updateMatchSetupVisibility();
+        const setupAdvancedEl = document.getElementById('setup-advanced-mode');
+        if (setupAdvancedEl) setupAdvancedEl.checked = !!state.showAdvancedMode;
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
     modal.classList.toggle('hidden'); 
@@ -453,6 +455,7 @@ function confirmStartMatch() {
     state.finalSetTarget = parseInt(document.getElementById('setup-final-set-target').value);
     state.servingTeam = setupServingTeam;
     state.initialServingTeam = setupServingTeam;
+    state.showAdvancedMode = document.getElementById('setup-advanced-mode').checked;
     
     resetMatchState();
     state.matchStartTime = Date.now();
