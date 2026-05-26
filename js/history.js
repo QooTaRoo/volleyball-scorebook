@@ -950,27 +950,12 @@ function analyzeRotations(m) {
                 slots[action.idx2] = tempSlot;
             } else if (action.type === 'point') {
                 const scoringTeam = action.scoringTeam || (action.pattern === 'error' ? (action.team === 'A' ? 'B' : 'A') : action.team);
-                const rotationOccurred = localServingTeam !== scoringTeam;
-                
-                if (rotationOccurred) {
-                    localServingTeam = scoringTeam;
-                    if (scoringTeam === 'A') {
-                        const first = localLineupA.shift();
-                        localLineupA.push(first);
-                        const firstSlot = localSlotsA.shift();
-                        localSlotsA.push(firstSlot);
-                    } else {
-                        const first = localLineupB.shift();
-                        localLineupB.push(first);
-                        const firstSlot = localSlotsB.shift();
-                        localSlotsB.push(firstSlot);
-                    }
-                }
-                
+                const server = localServingTeam;
                 const slotA = localSlotsA[0];
                 const slotB = localSlotsB[0];
                 
-                if (localServingTeam === 'A') {
+                // Record stats using current server and slot positions at the start of the rally
+                if (server === 'A') {
                     // Team A served
                     rotationStatsA[slotA - 1].serveRallies++;
                     rotationStatsB[slotB - 1].receiveRallies++;
@@ -989,6 +974,23 @@ function analyzeRotations(m) {
                         rotationStatsB[slotB - 1].breakPoints++;
                     } else {
                         rotationStatsA[slotA - 1].sideoutPoints++;
+                    }
+                }
+                
+                // Rotate and update server AFTER the point is recorded
+                const rotationOccurred = server !== scoringTeam;
+                if (rotationOccurred) {
+                    localServingTeam = scoringTeam;
+                    if (scoringTeam === 'A') {
+                        const first = localLineupA.shift();
+                        localLineupA.push(first);
+                        const firstSlot = localSlotsA.shift();
+                        localSlotsA.push(firstSlot);
+                    } else {
+                        const first = localLineupB.shift();
+                        localLineupB.push(first);
+                        const firstSlot = localSlotsB.shift();
+                        localSlotsB.push(firstSlot);
                     }
                 }
             }

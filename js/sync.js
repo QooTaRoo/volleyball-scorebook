@@ -3,6 +3,7 @@
 const SUPABASE_ENABLED_KEY = 'vb_supabase_enabled';
 const SUPABASE_URL_KEY = 'vb_supabase_url';
 const SUPABASE_ANON_KEY_KEY = 'vb_supabase_anon_key';
+const SUPABASE_READONLY_KEY = 'vb_supabase_readonly';
 
 let supabaseInstance = null;
 
@@ -61,6 +62,11 @@ function updateSyncUI() {
     urlInput.value = url;
     keyInput.value = key;
 
+    const readonlyToggle = document.getElementById('sync-readonly-toggle');
+    if (readonlyToggle) {
+        readonlyToggle.checked = localStorage.getItem(SUPABASE_READONLY_KEY) === 'true';
+    }
+
     toggleSyncFields();
 }
 
@@ -91,6 +97,39 @@ function toggleSyncFields() {
         badge.textContent = "無効";
         badge.className = "text-[9px] font-bold px-2 py-0.5 rounded bg-zinc-900 text-zinc-500";
         supabaseInstance = null;
+    }
+}
+
+// Toggle Read-Only Mode
+function toggleSyncReadOnly() {
+    const toggle = document.getElementById('sync-readonly-toggle');
+    if (!toggle) return;
+    localStorage.setItem(SUPABASE_READONLY_KEY, toggle.checked ? 'true' : 'false');
+    showToast(toggle.checked ? "読み込み専用モードを有効にしました" : "読み込み専用モードを無効にしました");
+}
+
+// Trigger a manual sync on demand
+async function manualSync() {
+    const client = getSupabaseClient();
+    if (!client) {
+        showCustomAlert("クラウド同期が有効になっていないか、接続設定が未完了です。先に接続テストを行ってください。");
+        return;
+    }
+    
+    const btn = document.getElementById('supabase-sync-now-btn');
+    if (btn) {
+        btn.disabled = true;
+        const origText = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="loader" class="w-3 h-3 animate-spin"></i> 同期中...`;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        
+        await syncAllData(false);
+        
+        btn.disabled = false;
+        btn.innerHTML = origText;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    } else {
+        await syncAllData(false);
     }
 }
 
@@ -212,11 +251,13 @@ async function syncAllData(silent = false) {
         // Save back to LocalStorage
         localStorage.setItem(HISTORY_KEY, JSON.stringify(mergedHistory));
 
-        // Find items in Local but not Cloud to upload
-        for (const localItem of mergedHistory) {
-            const isCloudPresent = cloudMatches.some(m => m.id === localItem.id);
-            if (!isCloudPresent) {
-                await client.from('matches').upsert({ id: localItem.id, data: localItem });
+        // Find items in Local but not Cloud to upload (Skip if Read-Only Mode is active)
+        if (localStorage.getItem(SUPABASE_READONLY_KEY) !== 'true') {
+            for (const localItem of mergedHistory) {
+                const isCloudPresent = cloudMatches.some(m => m.id === localItem.id);
+                if (!isCloudPresent) {
+                    await client.from('matches').upsert({ id: localItem.id, data: localItem });
+                }
             }
         }
 
@@ -255,20 +296,22 @@ async function syncAllData(silent = false) {
         // Save back to LocalStorage
         localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(mergedTeams));
 
-        // Find items in Local to upload (not on cloud, or local is newer/customized)
-        for (const localTeam of mergedTeams) {
-            const cloudItem = cloudTeams.find(t => t.name === localTeam.name);
-            if (!cloudItem) {
-                await client.from('teams').upsert({ name: localTeam.name, data: localTeam });
-            } else {
-                const localTime = localTeam.updatedAt || 0;
-                const cloudTime = cloudItem.data.updatedAt || 0;
-
-                const localHasCustom = localTeam.members && localTeam.members.some(m => m.name !== String(m.number));
-                const cloudHasCustom = cloudItem.data.members && cloudItem.data.members.some(m => m.name !== String(m.number));
-
-                if (localTime > cloudTime || (localHasCustom && !cloudHasCustom)) {
+        // Find items in Local to upload (not on cloud, or local is newer/customized) (Skip if Read-Only Mode is active)
+        if (localStorage.getItem(SUPABASE_READONLY_KEY) !== 'true') {
+            for (const localTeam of mergedTeams) {
+                const cloudItem = cloudTeams.find(t => t.name === localTeam.name);
+                if (!cloudItem) {
                     await client.from('teams').upsert({ name: localTeam.name, data: localTeam });
+                } else {
+                    const localTime = localTeam.updatedAt || 0;
+                    const cloudTime = cloudItem.data.updatedAt || 0;
+
+                    const localHasCustom = localTeam.members && localTeam.members.some(m => m.name !== String(m.number));
+                    const cloudHasCustom = cloudItem.data.members && cloudItem.data.members.some(m => m.name !== String(m.number));
+
+                    if (localTime > cloudTime || (localHasCustom && !localHasCustom)) {
+                        await client.from('teams').upsert({ name: localTeam.name, data: localTeam });
+                    }
                 }
             }
         }
@@ -307,6 +350,7 @@ async function syncAllData(silent = false) {
 async function pushMatchToCloud(match) {
     const client = getSupabaseClient();
     if (!client) return;
+    if (localStorage.getItem(SUPABASE_READONLY_KEY) === 'true') return;
 
     if (!match.id) match.id = getMatchId(match);
 
@@ -321,6 +365,7 @@ async function pushMatchToCloud(match) {
 async function pushTeamToCloud(team) {
     const client = getSupabaseClient();
     if (!client) return;
+    if (localStorage.getItem(SUPABASE_READONLY_KEY) === 'true') return;
 
     try {
         const { error } = await client.from('teams').upsert({ name: team.name, data: team });
@@ -333,6 +378,7 @@ async function pushTeamToCloud(team) {
 async function deleteMatchOnCloud(matchId) {
     const client = getSupabaseClient();
     if (!client) return;
+    if (localStorage.getItem(SUPABASE_READONLY_KEY) === 'true') return;
 
     try {
         const { error } = await client.from('matches').delete().eq('id', matchId);
@@ -345,6 +391,7 @@ async function deleteMatchOnCloud(matchId) {
 async function deleteTeamOnCloud(teamName) {
     const client = getSupabaseClient();
     if (!client) return;
+    if (localStorage.getItem(SUPABASE_READONLY_KEY) === 'true') return;
 
     try {
         const { error } = await client.from('teams').delete().eq('name', teamName);
@@ -357,6 +404,7 @@ async function deleteTeamOnCloud(teamName) {
 async function clearAllMatchesOnCloud() {
     const client = getSupabaseClient();
     if (!client) return;
+    if (localStorage.getItem(SUPABASE_READONLY_KEY) === 'true') return;
 
     try {
         // Safe delete matching all non-empty strings (deletes everything)
