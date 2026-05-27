@@ -524,6 +524,19 @@ function confirmStartMatch() {
         if (savedMembersB) state.membersB = savedMembersB;
     }
 
+    // レシーブスタート（相手サーブ）の場合にローテーションを1つ戻す自動調整
+    if (state.servingTeam === 'A') {
+        if (state.lineupB && state.lineupB.length === 6) {
+            const last = state.lineupB.pop();
+            state.lineupB.unshift(last);
+        }
+    } else if (state.servingTeam === 'B') {
+        if (state.lineupA && state.lineupA.length === 6) {
+            const last = state.lineupA.pop();
+            state.lineupA.unshift(last);
+        }
+    }
+
     state.matchStartTime = Date.now();
     saveState();
     updateUI();

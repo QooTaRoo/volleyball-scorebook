@@ -528,7 +528,16 @@ create policy "Allow public delete" on teams for delete using (true);</textarea>
                     </div>
                 </div>
             </div>
-            <p class="text-zinc-500 text-xs mt-6 text-center">タップして選手交代 or 位置を入れ替え</p>
+            <!-- ローテーション操作ボタン（試合中のチームA/B表示時のみ有効） -->
+            <div id="court-rotation-controls" class="mt-5 w-full flex gap-3 justify-between hidden">
+                <button onclick="manuallyRotateTeam('back')" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 border border-white/5 transition-all text-xs active:scale-95" title="ローテーションを1つ戻す">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-zinc-400"></i> ローテ戻す
+                </button>
+                <button onclick="manuallyRotateTeam('forward')" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 border border-white/5 transition-all text-xs active:scale-95" title="ローテーションを1つ進める">
+                    <i data-lucide="rotate-cw" class="w-3.5 h-3.5 text-zinc-400"></i> ローテ進める
+                </button>
+            </div>
+            <p class="text-zinc-500 text-[10px] mt-4 text-center">※タップして選手交代 or 位置の入れ替えも可能です</p>
         </div>
     </div>
 

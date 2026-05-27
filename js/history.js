@@ -704,8 +704,14 @@ function recalculateStateFromLog() {
     state.rotationLog = [];
     state.isCourtSwapped = false;
     
-    state.lineupA = state.membersA.slice(0, 6).map(m => m.id);
-    state.lineupB = state.membersB.slice(0, 6).map(m => m.id);
+    state.lineupA = state.membersA.filter(m => m.isStarter).map(m => m.id);
+    if (state.lineupA.length !== 6) {
+        state.lineupA = state.membersA.slice(0, 6).map(m => m.id);
+    }
+    state.lineupB = state.membersB.filter(m => m.isStarter).map(m => m.id);
+    if (state.lineupB.length !== 6) {
+        state.lineupB = state.membersB.slice(0, 6).map(m => m.id);
+    }
     
     while (state.lineupA.length < 6) {
         const nextNum = state.lineupA.length + 1;
@@ -725,6 +731,19 @@ function recalculateStateFromLog() {
     }
     
     state.servingTeam = state.initialServingTeam || 'A';
+
+    // 得点再計算時にも、レシーブスタート（相手サーブ）の場合にローテーションを1つ戻す自動調整を適用
+    if (state.servingTeam === 'A') {
+        if (state.lineupB && state.lineupB.length === 6) {
+            const last = state.lineupB.pop();
+            state.lineupB.unshift(last);
+        }
+    } else if (state.servingTeam === 'B') {
+        if (state.lineupA && state.lineupA.length === 6) {
+            const last = state.lineupA.pop();
+            state.lineupA.unshift(last);
+        }
+    }
     
     log.forEach(action => {
         if (action.type === 'point') {
@@ -782,6 +801,17 @@ function recalculateStateFromLog() {
             lineup[action.posIdx] = action.inPlayerId;
             action.set = state.currentSet;
             
+        } else if (action.type === 'manual_rotation') {
+            const lineup = action.team === 'A' ? state.lineupA : state.lineupB;
+            if (action.direction === 'forward') {
+                const first = lineup.shift();
+                lineup.push(first);
+            } else {
+                const last = lineup.pop();
+                lineup.unshift(last);
+            }
+            action.set = state.currentSet;
+            
         } else if (action.type === 'set_finish') {
             action.scoreA = state.scoreA;
             action.scoreB = state.scoreB;
@@ -833,12 +863,29 @@ function analyzeRotations(m) {
     // 1. Determine the starting lineup of Team A and Team B for each set.
     // We will simulate the chronological flow of actions across the entire match to track lineups and rotations.
     
-    // Initial lineups from members or fallback defaults
-    let lineupA = (m.membersA || []).slice(0, 6).map(mem => mem.id);
-    let lineupB = (m.membersB || []).slice(0, 6).map(mem => mem.id);
+    // Initial lineups from members or fallback defaults (スターター星マークを考慮)
+    let lineupA = (m.membersA || []).filter(mem => mem.isStarter).map(mem => mem.id);
+    if (lineupA.length !== 6) lineupA = (m.membersA || []).slice(0, 6).map(mem => mem.id);
+    
+    let lineupB = (m.membersB || []).filter(mem => mem.isStarter).map(mem => mem.id);
+    if (lineupB.length !== 6) lineupB = (m.membersB || []).slice(0, 6).map(mem => mem.id);
     
     while (lineupA.length < 6) lineupA.push(`A${lineupA.length + 1}`);
     while (lineupB.length < 6) lineupB.push(`B${lineupB.length + 1}`);
+    
+    // 第1セット開始時にレシーブスタート（相手サーブ）の場合にローテーションを1つ戻す自動調整
+    const initialServing = m.initialServingTeam || 'A';
+    if (initialServing === 'A') {
+        if (lineupB.length === 6) {
+            const last = lineupB.pop();
+            lineupB.unshift(last);
+        }
+    } else {
+        if (lineupA.length === 6) {
+            const last = lineupA.pop();
+            lineupA.unshift(last);
+        }
+    }
     
     // Starting lineup slots (1 to 6) representing the original positions of the starting lineup in each set.
     let slotsA = [1, 2, 3, 4, 5, 6];
@@ -852,7 +899,7 @@ function analyzeRotations(m) {
         lineupB: [...lineupB],
         slotsA: [...slotsA],
         slotsB: [...slotsB],
-        servingTeam: m.initialServingTeam || 'A'
+        servingTeam: initialServing
     };
     
     let servingTeam = m.initialServingTeam || 'A';
@@ -890,6 +937,20 @@ function analyzeRotations(m) {
         if (action.type === 'substitution') {
             const lineup = action.team === 'A' ? lineupA : lineupB;
             lineup[action.posIdx] = action.inPlayerId;
+        } else if (action.type === 'manual_rotation') {
+            const lineup = action.team === 'A' ? lineupA : lineupB;
+            const slots = action.team === 'A' ? slotsA : slotsB;
+            if (action.direction === 'forward') {
+                const first = lineup.shift();
+                lineup.push(first);
+                const firstSlot = slots.shift();
+                slots.push(firstSlot);
+            } else {
+                const last = lineup.pop();
+                lineup.unshift(last);
+                const lastSlot = slots.pop();
+                slots.unshift(lastSlot);
+            }
         } else if (action.type === 'swap_players') {
             const lineup = action.team === 'A' ? lineupA : lineupB;
             const slots = action.team === 'A' ? slotsA : slotsB;
@@ -948,6 +1009,20 @@ function analyzeRotations(m) {
             if (action.type === 'substitution') {
                 const lineup = action.team === 'A' ? localLineupA : localLineupB;
                 lineup[action.posIdx] = action.inPlayerId;
+            } else if (action.type === 'manual_rotation') {
+                const lineup = action.team === 'A' ? localLineupA : localLineupB;
+                const slots = action.team === 'A' ? localSlotsA : localSlotsB;
+                if (action.direction === 'forward') {
+                    const first = lineup.shift();
+                    lineup.push(first);
+                    const firstSlot = slots.shift();
+                    slots.push(firstSlot);
+                } else {
+                    const last = lineup.pop();
+                    lineup.unshift(last);
+                    const lastSlot = slots.pop();
+                    slots.unshift(lastSlot);
+                }
             } else if (action.type === 'swap_players') {
                 const lineup = action.team === 'A' ? localLineupA : localLineupB;
                 const slots = action.team === 'A' ? localSlotsA : localSlotsB;

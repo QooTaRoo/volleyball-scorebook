@@ -77,13 +77,27 @@ function toggleCourtOverlay(team) {
     }
 }
 
+function getPresetLineup() {
+    const starters = masterEditMembers.filter(m => m.isStarter);
+    starters.sort((a, b) => {
+        const posA = a.starterPos !== undefined ? a.starterPos : (a.number || 0);
+        const posB = b.starterPos !== undefined ? b.starterPos : (b.number || 0);
+        return posA - posB;
+    });
+    // starerPosを1〜6に再割り当てして整合性を保つ
+    starters.forEach((s, idx) => {
+        s.starterPos = idx + 1;
+    });
+    return starters.map(m => m.id);
+}
+
 function renderCourt(team) {
     const isPreset = team === 'preset';
     const teamName = isPreset 
         ? (document.getElementById('master-team-name').value.trim() || "新規チーム") 
         : (team === 'A' ? state.teamA : state.teamB);
     const lineup = isPreset 
-        ? masterEditMembers.filter(m => m.isStarter).map(m => m.id) 
+        ? getPresetLineup() 
         : (team === 'A' ? state.lineupA : state.lineupB);
     const members = isPreset ? masterEditMembers : (team === 'A' ? state.membersA : state.membersB);
 
@@ -183,6 +197,16 @@ function renderCourt(team) {
         frontRow.style.flexDirection = 'row';
         backRow.style.flexDirection = 'row';
     }
+
+    // 手動ローテーション調整ボタンの表示制御（チームA・Bのアクティブ時のみ表示）
+    const rotControls = document.getElementById('court-rotation-controls');
+    if (rotControls) {
+        if (team === 'A' || team === 'B') {
+            rotControls.classList.remove('hidden');
+        } else {
+            rotControls.classList.add('hidden');
+        }
+    }
 }
 
 function handleCourtPosClick(posNum) {
@@ -279,16 +303,19 @@ function performSwap(idx1, idx2) {
     const team = currentCourtTeam;
     if (team === 'preset') {
         const starters = masterEditMembers.filter(m => m.isStarter);
-        const player1Id = starters[idx1].id;
-        const player2Id = starters[idx2].id;
+        starters.sort((a, b) => {
+            const posA = a.starterPos !== undefined ? a.starterPos : (a.number || 0);
+            const posB = b.starterPos !== undefined ? b.starterPos : (b.number || 0);
+            return posA - posB;
+        });
         
-        const mIdx1 = masterEditMembers.findIndex(m => m.id === player1Id);
-        const mIdx2 = masterEditMembers.findIndex(m => m.id === player2Id);
+        const player1 = starters[idx1];
+        const player2 = starters[idx2];
         
-        if (mIdx1 >= 0 && mIdx2 >= 0) {
-            const temp = masterEditMembers[mIdx1];
-            masterEditMembers[mIdx1] = masterEditMembers[mIdx2];
-            masterEditMembers[mIdx2] = temp;
+        if (player1 && player2) {
+            const temp = player1.starterPos !== undefined ? player1.starterPos : (idx1 + 1);
+            player1.starterPos = player2.starterPos !== undefined ? player2.starterPos : (idx2 + 1);
+            player2.starterPos = temp;
         }
         
         renderCourt(team);
@@ -326,19 +353,24 @@ function substitute(benchPlayerId) {
     
     if (team === 'preset') {
         const starters = masterEditMembers.filter(m => m.isStarter);
-        const oldPlayerId = starters[currentSubPosIdx].id;
+        starters.sort((a, b) => {
+            const posA = a.starterPos !== undefined ? a.starterPos : (a.number || 0);
+            const posB = b.starterPos !== undefined ? b.starterPos : (b.number || 0);
+            return posA - posB;
+        });
         
-        const mStarterIdx = masterEditMembers.findIndex(m => m.id === oldPlayerId);
-        const mBenchIdx = masterEditMembers.findIndex(m => m.id === benchPlayerId);
+        const oldPlayer = starters[currentSubPosIdx];
+        const newPlayer = masterEditMembers.find(m => m.id === benchPlayerId);
         
-        if (mStarterIdx >= 0 && mBenchIdx >= 0) {
-            const temp = masterEditMembers[mStarterIdx];
-            masterEditMembers[mStarterIdx] = masterEditMembers[mBenchIdx];
-            masterEditMembers[mBenchIdx] = temp;
+        if (oldPlayer && newPlayer) {
+            const savedPos = oldPlayer.starterPos !== undefined ? oldPlayer.starterPos : (currentSubPosIdx + 1);
             
-            masterEditMembers[mStarterIdx].isStarter = true;
+            oldPlayer.isStarter = false;
+            oldPlayer.starterPos = undefined;
             
-            masterEditMembers[mBenchIdx].isStarter = false;
+            newPlayer.isStarter = true;
+            newPlayer.starterPos = savedPos;
+            newPlayer.isLibero = false; // スタメンになるためリベロは解除
         }
         
         renderCourt(team);
@@ -382,8 +414,65 @@ function closeSubModal() {
     if (currentCourtTeam) renderCourt(currentCourtTeam);
 }
 
+function manuallyRotateTeam(direction) {
+    if (!currentCourtTeam || (currentCourtTeam !== 'A' && currentCourtTeam !== 'B')) return;
+    const team = currentCourtTeam;
+    
+    vibrate(30);
+    const lineup = team === 'A' ? state.lineupA : state.lineupB;
+    
+    if (direction === 'forward') {
+        const first = lineup.shift();
+        lineup.push(first);
+        
+        state.rotationLog.push({
+            set: state.currentSet,
+            team: team,
+            lineup: [...lineup],
+            scoreA: state.scoreA,
+            scoreB: state.scoreB,
+            manual: true
+        });
+        
+        state.actionLog.push({
+            type: 'manual_rotation',
+            team: team,
+            direction: 'forward',
+            set: state.currentSet,
+            timestamp: Date.now()
+        });
+        showToast("ローテーションを進めました");
+    } else {
+        const last = lineup.pop();
+        lineup.unshift(last);
+        
+        state.rotationLog.push({
+            set: state.currentSet,
+            team: team,
+            lineup: [...lineup],
+            scoreA: state.scoreA,
+            scoreB: state.scoreB,
+            manual: true
+        });
+        
+        state.actionLog.push({
+            type: 'manual_rotation',
+            team: team,
+            direction: 'backward',
+            set: state.currentSet,
+            timestamp: Date.now()
+        });
+        showToast("ローテーションを戻しました");
+    }
+    
+    saveState();
+    updateUI();
+    renderCourt(team);
+}
+
 window.handleCourtPosClick = handleCourtPosClick;
 window.performSwap = performSwap;
 window.substitute = substitute;
 window.closeSubModal = closeSubModal;
 window.toggleCourtOverlay = toggleCourtOverlay;
+window.manuallyRotateTeam = manuallyRotateTeam;

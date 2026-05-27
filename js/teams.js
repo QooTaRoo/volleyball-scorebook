@@ -61,13 +61,23 @@ function loadPresetToTeam(teamCode, presetName) {
     const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
     const p = presets.find(item => item.name === presetName);
     if (p && Array.isArray(p.members)) {
+        // 既存のプリセットスターターに starterPos が設定されていない場合、現在の配列順（カスタムコート配置順）のまま割り当てる
+        const hasPresetStarterPos = p.members.some(m => m.isStarter && m.starterPos !== undefined);
+        if (!hasPresetStarterPos) {
+            const presetStarters = p.members.filter(m => m.isStarter);
+            presetStarters.forEach((s, idx) => {
+                s.starterPos = idx + 1;
+            });
+        }
+
         const sortedPresetMembers = [...p.members].sort((a, b) => a.number - b.number);
         const members = sortedPresetMembers.map((pm, i) => ({
             id: `${teamCode}${i+1}`,
             number: pm.number,
             name: pm.name,
             isStarter: !!pm.isStarter,
-            isLibero: !!pm.isLibero
+            isLibero: !!pm.isLibero,
+            starterPos: pm.starterPos
         }));
         
         while (members.length < 6) {
@@ -80,6 +90,12 @@ function loadPresetToTeam(teamCode, presetName) {
         const activeLiberos = [presetLiberos[0] || null, presetLiberos[1] || null];
         
         const starters = members.filter(m => m.isStarter);
+        starters.sort((a, b) => {
+            const posA = a.starterPos !== undefined ? a.starterPos : (a.number || 0);
+            const posB = b.starterPos !== undefined ? b.starterPos : (b.number || 0);
+            return posA - posB;
+        });
+        
         const lineupIds = starters.length === 6 
             ? starters.map(m => m.id)
             : members.slice(0, 6).map(m => m.id);
@@ -115,7 +131,14 @@ function loadMasterTeamForEdit(presetName) {
         document.getElementById('master-team-name').value = "";
         document.getElementById('master-team-color').value = "#3b82f6";
         if (myTeamEl) myTeamEl.checked = false;
-        masterEditMembers = Array.from({length: 12}, (_, i) => ({ id: `M${i+1}`, number: i + 1, name: `${i+1}`, isStarter: i < 6, isLibero: false }));
+        masterEditMembers = Array.from({length: 12}, (_, i) => ({ 
+            id: `M${i+1}`, 
+            number: i + 1, 
+            name: `${i+1}`, 
+            isStarter: i < 6, 
+            starterPos: i < 6 ? i + 1 : undefined,
+            isLibero: false 
+        }));
     } else {
         const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
         const p = presets.find(item => item.name === presetName);
@@ -139,6 +162,18 @@ function loadMasterTeamForEdit(presetName) {
                     m.isLibero = false;
                 }
             });
+
+            // 既存データ（下位互換性確保）：スターター全員に starterPos を自動で順番に付与する
+            const starters = masterEditMembers.filter(m => m.isStarter);
+            const hasStarterPos = starters.some(s => s.starterPos !== undefined);
+            if (hasStarterPos) {
+                // すでに位置が確定している場合は starterPos 順に並び替え
+                starters.sort((a, b) => (a.starterPos || 0) - (b.starterPos || 0));
+            }
+            // 既存の並び順（配列内の順番 ＝ カスタム配置順）のまま starterPos を 1〜6 で確定する！
+            starters.forEach((s, idx) => {
+                s.starterPos = idx + 1;
+            });
         }
     }
     masterEditMembers.sort((a, b) => a.number - b.number);
@@ -148,6 +183,24 @@ function loadMasterTeamForEdit(presetName) {
 function toggleMasterStarter(idx) {
     if (masterEditMembers[idx]) {
         masterEditMembers[idx].isStarter = !masterEditMembers[idx].isStarter;
+        if (masterEditMembers[idx].isStarter) {
+            // 空いている1〜6のポジションを探して割り当て
+            const usedPos = masterEditMembers.filter(m => m.isStarter && m.starterPos).map(m => m.starterPos);
+            let assigned = false;
+            for (let p = 1; p <= 6; p++) {
+                if (!usedPos.includes(p)) {
+                    masterEditMembers[idx].starterPos = p;
+                    assigned = true;
+                    break;
+                }
+            }
+            if (!assigned) {
+                masterEditMembers[idx].starterPos = 6;
+            }
+            masterEditMembers[idx].isLibero = false; // スタメンになる場合はリベロは解除
+        } else {
+            masterEditMembers[idx].starterPos = undefined;
+        }
     }
     renderMasterMemberRows();
 }
