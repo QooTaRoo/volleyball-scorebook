@@ -496,13 +496,33 @@ function confirmStartMatch() {
     
     resetMatchState();
 
-    // Restore preserved lineups, liberos, and members
-    if (savedLineupA.length) state.lineupA = savedLineupA;
-    if (savedLineupB.length) state.lineupB = savedLineupB;
-    if (savedLiberosA.length) state.liberosA = savedLiberosA;
-    if (savedLiberosB.length) state.liberosB = savedLiberosB;
-    if (savedMembersA) state.membersA = savedMembersA;
-    if (savedMembersB) state.membersB = savedMembersB;
+    // Auto-load preset data from master if team names match existing presets
+    // This guarantees that any changes made in the team master are automatically loaded for the new match.
+    const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
+    let loadedA = false;
+    let loadedB = false;
+
+    if (state.teamA && presets.some(p => p.name === state.teamA)) {
+        loadPresetToTeam('A', state.teamA);
+        loadedA = true;
+    }
+    if (state.teamB && presets.some(p => p.name === state.teamB)) {
+        loadPresetToTeam('B', state.teamB);
+        loadedB = true;
+    }
+
+    // Restore preserved lineups, liberos, and members ONLY IF we didn't auto-load them
+    // (This preserves temporary modifications made in the Match Setup config modal if no preset matches)
+    if (!loadedA) {
+        if (savedLineupA.length) state.lineupA = savedLineupA;
+        if (savedLiberosA.length) state.liberosA = savedLiberosA;
+        if (savedMembersA) state.membersA = savedMembersA;
+    }
+    if (!loadedB) {
+        if (savedLineupB.length) state.lineupB = savedLineupB;
+        if (savedLiberosB.length) state.liberosB = savedLiberosB;
+        if (savedMembersB) state.membersB = savedMembersB;
+    }
 
     state.matchStartTime = Date.now();
     saveState();

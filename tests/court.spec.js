@@ -221,4 +221,92 @@ test.describe('Court starting lineup & click interaction E2E Tests', () => {
     // Clean up
     await page.locator('#court-modal button:has-text("閉じる")').click();
   });
+
+  test('Auto-load registered libero on starting a new match without manual re-selection', async ({ page }) => {
+    // 1. Setup a master team preset (TestTeam with No.7 as libero) and state.teamA = "TestTeam" (without liberos loaded yet)
+    await page.evaluate(() => {
+      const presetTeam = {
+        id: 'p_test_789',
+        name: 'TestTeam',
+        color: '#ff0000',
+        isMyTeam: true,
+        members: Array.from({ length: 12 }, (_, i) => ({
+          id: `M${i+1}`,
+          number: i + 1,
+          name: `Player ${i+1}`,
+          isStarter: i < 6,
+          isLibero: i === 6 // No.7 is Libero
+        }))
+      };
+      localStorage.setItem('vb_preset_teams', JSON.stringify([presetTeam]));
+
+      // Active state before the match: teamA is "TestTeam", but state.liberosA is empty
+      // mimics the state where the match was reset but not re-applied
+      const activeState = {
+        teamA: 'TestTeam',
+        teamB: 'TEAM B',
+        colorA: '#ff0000',
+        colorB: '#ffffff',
+        scoreA: 0,
+        scoreB: 0,
+        setsA: 0,
+        setsB: 0,
+        toA: 0,
+        toB: 0,
+        currentSet: 1,
+        maxSets: 3,
+        targetPoints: 25,
+        finalSetTarget: 15,
+        showAdvancedMode: false,
+        myTeamOnlyStats: false,
+        isMyTeamA: true,
+        isMyTeamB: false,
+        membersA: Array.from({length: 12}, (_, i) => ({ id: `A${i+1}`, number: i + 1, name: `${i+1}`, isStarter: i < 6, isLibero: false })),
+        membersB: Array.from({length: 12}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}`, isStarter: i < 6, isLibero: false })),
+        lineupA: ["A1", "A2", "A3", "A4", "A5", "A6"],
+        lineupB: ["B1", "B2", "B3", "B4", "B5", "B6"],
+        liberosA: [], // Empty!
+        liberosB: [],
+        servingTeam: 'A'
+      };
+      localStorage.setItem('volleyball_score_state', JSON.stringify(activeState));
+    });
+
+    // Reload the page
+    await page.reload();
+
+    // 2. Open setup modal by starting a new match (directly from main menu, no need to click Settings)
+    await page.locator('button:has-text("新規試合開始")').click();
+
+    // Confirm custom dialog if visible
+    const confirmModal = page.locator('#custom-confirm-modal');
+    if (await confirmModal.isVisible()) {
+      await page.locator('#custom-confirm-yes').click();
+    }
+
+    // Match Setup modal should show up with "TestTeam" already filled
+    const setupModal = page.locator('#match-setup-modal');
+    await expect(setupModal).toBeVisible();
+    await expect(page.locator('#setup-name-a')).toHaveText('TestTeam');
+
+    // 3. DO NOT select/apply the team. Just click "試合開始 ➔" immediately!
+    const startMatchBtn = page.locator('#match-setup-modal button:has-text("試合開始")');
+    await startMatchBtn.click();
+    await expect(setupModal).toBeHidden();
+
+    // 4. Open the court overlay to verify that the libero was automatically loaded from the preset
+    const courtOverlayBtn = page.locator('#area-a button').first();
+    await expect(courtOverlayBtn).toBeVisible();
+    await courtOverlayBtn.click();
+
+    const courtModal = page.locator('#court-modal');
+    await expect(courtModal).toBeVisible();
+
+    // Dropdown should now automatically have 'A7' selected (No.7 Libero loaded)
+    const liberoSelect = page.locator('#court-libero-select-1');
+    await expect(liberoSelect).toHaveValue('A7');
+
+    // Clean up
+    await page.locator('#court-modal button:has-text("閉じる")').click();
+  });
 });

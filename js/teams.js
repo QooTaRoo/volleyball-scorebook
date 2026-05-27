@@ -174,7 +174,6 @@ function openPresetCourtSetting() {
     if (starters.length !== 6) {
         masterEditMembers.forEach((m, idx) => {
             m.isStarter = idx < 6;
-            if (idx < 6) m.isLibero = false;
         });
         renderMasterMemberRows();
         showToast("スタメン配置用に上位6名を点灯しました。");
