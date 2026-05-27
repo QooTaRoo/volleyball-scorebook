@@ -105,4 +105,72 @@ test.describe('Court starting lineup & click interaction E2E Tests', () => {
     await page.locator('#court-modal button:has-text("閉じる")').click();
     await expect(courtModal).toBeHidden();
   });
+
+  test('Preserve registered libero on starting a new match', async ({ page }) => {
+    // 1. Setup a master team preset in LocalStorage with a Libero player
+    await page.evaluate(() => {
+      const presetTeam = {
+        id: 'p_test_123',
+        name: 'Libero Team',
+        color: '#ff0000',
+        isMyTeam: true,
+        members: [
+          { id: 'M1', number: 1, name: 'P1', isStarter: true },
+          { id: 'M2', number: 2, name: 'P2', isStarter: true },
+          { id: 'M3', number: 3, name: 'P3', isStarter: true },
+          { id: 'M4', number: 4, name: 'P4', isStarter: true },
+          { id: 'M5', number: 5, name: 'P5', isStarter: true },
+          { id: 'M6', number: 6, name: 'P6', isStarter: true },
+          { id: 'M7', number: 7, name: 'P7-Libero', isStarter: false, isLibero: true }
+        ]
+      };
+      localStorage.setItem('vb_preset_teams', JSON.stringify([presetTeam]));
+    });
+
+    // Reload the page to ensure the LocalStorage state is loaded
+    await page.reload();
+
+    // 2. Open "新規試合開始" (Start new match) dialog
+    const newMatchBtn = page.locator('button:has-text("新規試合開始")');
+    await newMatchBtn.click();
+
+    // Verify Match Setup modal is open
+    const setupModal = page.locator('#match-setup-modal');
+    await expect(setupModal).toBeVisible();
+
+    // 3. Open Team A settings inside Match Setup
+    await page.locator('#setup-name-a').click();
+
+    // Select the "Libero Team" preset in dropdown
+    const presetSelect = page.locator('#config-preset-select');
+    await expect(presetSelect).toBeVisible();
+    await presetSelect.selectOption('Libero Team');
+
+    // Click "適用" to confirm team configuration
+    await page.locator('button:has-text("適用")').click();
+
+    // 4. Click "試合開始 ➔" button inside match-setup-modal
+    const startMatchBtn = page.locator('#match-setup-modal button:has-text("試合開始")');
+    await expect(startMatchBtn).toBeVisible();
+    await startMatchBtn.click();
+
+    // Setup modal should close and match starts
+    await expect(setupModal).toBeHidden();
+
+    // 5. Open the court overlay to verify that the libero was successfully preserved!
+    const courtOverlayBtn = page.locator('#area-a button').first();
+    await expect(courtOverlayBtn).toBeVisible();
+    await courtOverlayBtn.click();
+
+    // Court modal should open
+    const courtModal = page.locator('#court-modal');
+    await expect(courtModal).toBeVisible();
+
+    // Verify that the Libero select dropdown has player M7 (mapped to A7) selected!
+    const liberoSelect = page.locator('#court-libero-select-1');
+    await expect(liberoSelect).toHaveValue('A7');
+    
+    // Clean up
+    await page.locator('#court-modal button:has-text("閉じる")').click();
+  });
 });

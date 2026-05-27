@@ -476,6 +476,14 @@ async function startNewMatch() {
 }
 
 function confirmStartMatch() {
+    // Preserve loaded preset lineups, liberos, and members before resetting score state
+    const savedLineupA = state.lineupA ? [...state.lineupA] : [];
+    const savedLineupB = state.lineupB ? [...state.lineupB] : [];
+    const savedLiberosA = state.liberosA ? [...state.liberosA] : [];
+    const savedLiberosB = state.liberosB ? [...state.liberosB] : [];
+    const savedMembersA = state.membersA ? JSON.parse(JSON.stringify(state.membersA)) : null;
+    const savedMembersB = state.membersB ? JSON.parse(JSON.stringify(state.membersB)) : null;
+
     state.maxSets = parseInt(document.getElementById('setup-sets-format').value);
     state.targetPoints = parseInt(document.getElementById('setup-target-points').value);
     state.finalSetTarget = parseInt(document.getElementById('setup-final-set-target').value);
@@ -487,6 +495,15 @@ function confirmStartMatch() {
     state.myTeamOnlyStats = myTeamOnlyEl ? myTeamOnlyEl.checked : false;
     
     resetMatchState();
+
+    // Restore preserved lineups, liberos, and members
+    if (savedLineupA.length) state.lineupA = savedLineupA;
+    if (savedLineupB.length) state.lineupB = savedLineupB;
+    if (savedLiberosA.length) state.liberosA = savedLiberosA;
+    if (savedLiberosB.length) state.liberosB = savedLiberosB;
+    if (savedMembersA) state.membersA = savedMembersA;
+    if (savedMembersB) state.membersB = savedMembersB;
+
     state.matchStartTime = Date.now();
     saveState();
     updateUI();
