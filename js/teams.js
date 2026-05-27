@@ -77,12 +77,13 @@ function loadPresetToTeam(teamCode, presetName) {
             name: pm.name,
             isStarter: !!pm.isStarter,
             isLibero: !!pm.isLibero,
+            isLiberoTarget: !!pm.isLiberoTarget,
             starterPos: pm.starterPos
         }));
         
         while (members.length < 6) {
             const nextNum = members.length + 1;
-            members.push({ id: `${teamCode}${nextNum}`, number: nextNum, name: `${nextNum}`, isStarter: false, isLibero: false });
+            members.push({ id: `${teamCode}${nextNum}`, number: nextNum, name: `${nextNum}`, isStarter: false, isLibero: false, isLiberoTarget: false });
         }
         
         // Retrieve pre-configured Liberoes from preset
@@ -149,7 +150,7 @@ function loadMasterTeamForEdit(presetName) {
             masterEditMembers = JSON.parse(JSON.stringify(p.members || []));
             while (masterEditMembers.length < 6) {
                 const nextNum = masterEditMembers.length + 1;
-                masterEditMembers.push({ id: `M${nextNum}`, number: nextNum, name: `${nextNum}`, isStarter: false, isLibero: false });
+                masterEditMembers.push({ id: `M${nextNum}`, number: nextNum, name: `${nextNum}`, isStarter: false, isLibero: false, isLiberoTarget: false });
             }
             
             // Backwards compatibility: if no starters are marked, default the first 6
@@ -160,6 +161,9 @@ function loadMasterTeamForEdit(presetName) {
                 }
                 if (typeof m.isLibero === 'undefined') {
                     m.isLibero = false;
+                }
+                if (typeof m.isLiberoTarget === 'undefined') {
+                    m.isLiberoTarget = false;
                 }
             });
 
@@ -216,6 +220,7 @@ function toggleMasterLibero(idx) {
                 return;
             }
             masterEditMembers[idx].isLibero = true;
+            masterEditMembers[idx].isLiberoTarget = false; // リベロなら自動交代対象から外す
         } else {
             masterEditMembers[idx].isLibero = false;
         }
@@ -223,6 +228,17 @@ function toggleMasterLibero(idx) {
     renderMasterMemberRows();
 }
 window.toggleMasterLibero = toggleMasterLibero;
+
+function toggleMasterLiberoTarget(idx) {
+    if (masterEditMembers[idx]) {
+        masterEditMembers[idx].isLiberoTarget = !masterEditMembers[idx].isLiberoTarget;
+        if (masterEditMembers[idx].isLiberoTarget) {
+            masterEditMembers[idx].isLibero = false; // 自動交代対象ならリベロから外す
+        }
+    }
+    renderMasterMemberRows();
+}
+window.toggleMasterLiberoTarget = toggleMasterLiberoTarget;
 
 function openPresetCourtSetting() {
     const starters = masterEditMembers.filter(m => m.isStarter);
@@ -258,6 +274,7 @@ function renderMasterMemberRows() {
     list.innerHTML = masterEditMembers.map((m, idx) => {
         const isStarter = !!m.isStarter;
         const isLibero = !!m.isLibero;
+        const isLiberoTarget = !!m.isLiberoTarget;
         
         const starterBadge = isStarter 
             ? `<button onclick="toggleMasterStarter(${idx})" class="p-1 hover:scale-125 transition-transform flex items-center justify-center shrink-0" title="スタメン解除"><i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i></button>` 
@@ -267,11 +284,16 @@ function renderMasterMemberRows() {
             ? `<button onclick="toggleMasterLibero(${idx})" class="p-1 hover:scale-125 transition-transform flex items-center justify-center shrink-0" title="リベロ解除"><i data-lucide="shield" class="w-4 h-4 fill-purple-500 text-purple-500"></i></button>` 
             : `<button onclick="toggleMasterLibero(${idx})" class="p-1 text-zinc-600 hover:scale-125 hover:text-purple-400 transition-all flex items-center justify-center shrink-0" title="リベロ登録"><i data-lucide="shield" class="w-4 h-4 text-zinc-600"></i></button>`;
             
+        const liberoTargetBadge = isLiberoTarget 
+            ? `<button onclick="toggleMasterLiberoTarget(${idx})" class="p-1 hover:scale-125 transition-transform flex items-center justify-center shrink-0" title="自動交代解除（MBなど）"><i data-lucide="arrow-left-right" class="w-4 h-4 text-emerald-400"></i></button>` 
+            : `<button onclick="toggleMasterLiberoTarget(${idx})" class="p-1 text-zinc-600 hover:scale-125 hover:text-emerald-400 transition-all flex items-center justify-center shrink-0" title="自動交代設定（MBなど）"><i data-lucide="arrow-left-right" class="w-4 h-4 text-zinc-600"></i></button>`;
+            
         return `
             <div class="flex gap-2 items-center bg-zinc-900/40 p-1.5 rounded-lg border border-white/5">
                 <span class="text-xs text-zinc-500 font-bold w-4 text-center">${idx + 1}</span>
                 ${starterBadge}
                 ${liberoBadge}
+                ${liberoTargetBadge}
                 <input type="number" value="${m.number}" onchange="updateMasterMemberNumber(${idx}, this.value)" class="w-10 bg-zinc-800 border-none p-1 text-white text-center rounded text-xs font-bold" placeholder="番号">
                 <input type="text" value="${m.name}" onchange="updateMasterMemberName(${idx}, this.value)" class="flex-1 bg-zinc-800 border-none p-1 text-white rounded text-xs" placeholder="名前">
                 
@@ -290,7 +312,9 @@ function addMasterMemberRow() {
         id: `M_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         number: nextNum,
         name: `${nextNum}`,
-        isStarter: false
+        isStarter: false,
+        isLibero: false,
+        isLiberoTarget: false
     });
     masterEditMembers.sort((a, b) => a.number - b.number);
     renderMasterMemberRows();

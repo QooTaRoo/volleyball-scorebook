@@ -475,7 +475,7 @@ async function startNewMatch() {
     return true;
 }
 
-function confirmStartMatch() {
+async function confirmStartMatch() {
     // Preserve loaded preset lineups, liberos, and members before resetting score state
     const savedLineupA = state.lineupA ? [...state.lineupA] : [];
     const savedLineupB = state.lineupB ? [...state.lineupB] : [];
@@ -564,6 +564,11 @@ function confirmStartMatch() {
     toggleMatchSetup();
     if (typeof keepScreenOn === 'function') keepScreenOn();
     showToast("試合開始！");
+
+    if (typeof checkAutoLiberoSubstitutions === 'function') {
+        await checkAutoLiberoSubstitutions('A', true);
+        await checkAutoLiberoSubstitutions('B', true);
+    }
 }
 
 function getContrastColor(hex) {

@@ -63,6 +63,7 @@ global.loadApp = () => {
   const scripts = [
     'js/state.js',
     'js/ui.js',
+    'js/libero.js',
     'js/game.js',
     'js/radial.js',
     'js/court.js',

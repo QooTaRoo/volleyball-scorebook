@@ -152,28 +152,41 @@ function renderCourt(team) {
         el.classList.toggle('ring-4', swapSelectionIdx === idx);
         el.classList.toggle('ring-yellow-400', swapSelectionIdx === idx);
 
-        // Highlight if Libero
+        // Highlight if Libero or Libero Target (MB)
         const liberos = isPreset 
             ? masterEditMembers.filter(m => m.isLibero).map(m => m.id)
             : (team === 'A' ? (state.liberosA || []) : (state.liberosB || []));
         const isLibero = liberos.includes(playerId) || (player && !!player.isLibero);
+        const isLiberoTarget = player && !!player.isLiberoTarget;
+        
         let badge = el.querySelector('.libero-badge');
+        let mbBadge = el.querySelector('.mb-badge');
         
         if (isLibero) {
             el.classList.add('relative', 'bg-purple-900/30', 'border-purple-500/50', 'shadow-[0_0_8px_rgba(168,85,247,0.3)]');
-            el.classList.remove('bg-white/10', 'border-white/20');
+            el.classList.remove('bg-white/10', 'border-white/20', 'bg-emerald-950/20', 'border-emerald-600/30', 'shadow-[0_0_8px_rgba(16,185,129,0.2)]');
+            if (mbBadge) mbBadge.remove();
             if (!badge) {
                 badge = document.createElement('span');
                 badge.className = 'libero-badge absolute top-1 right-1.5 bg-purple-500 text-[8px] text-white font-black px-1.5 py-0.5 rounded-sm shadow-md pointer-events-none select-none animate-pulse';
                 badge.textContent = 'L';
                 el.appendChild(badge);
             }
-        } else {
-            el.classList.remove('relative', 'bg-purple-900/30', 'border-purple-500/50', 'shadow-[0_0_8px_rgba(168,85,247,0.3)]');
-            el.classList.add('bg-white/10', 'border-white/20');
-            if (badge) {
-                badge.remove();
+        } else if (isLiberoTarget) {
+            el.classList.add('relative', 'bg-emerald-950/20', 'border-emerald-600/30', 'shadow-[0_0_8px_rgba(16,185,129,0.2)]');
+            el.classList.remove('bg-white/10', 'border-white/20', 'bg-purple-900/30', 'border-purple-500/50', 'shadow-[0_0_8px_rgba(168,85,247,0.3)]');
+            if (badge) badge.remove();
+            if (!mbBadge) {
+                mbBadge = document.createElement('span');
+                mbBadge.className = 'mb-badge absolute top-1 right-1.5 bg-emerald-500 text-[8px] text-white font-black px-1.5 py-0.5 rounded-sm shadow-md pointer-events-none select-none';
+                mbBadge.textContent = '⇄';
+                el.appendChild(mbBadge);
             }
+        } else {
+            el.classList.remove('relative', 'bg-purple-900/30', 'border-purple-500/50', 'shadow-[0_0_8px_rgba(168,85,247,0.3)]', 'bg-emerald-950/20', 'border-emerald-600/30', 'shadow-[0_0_8px_rgba(16,185,129,0.2)]');
+            el.classList.add('bg-white/10', 'border-white/20');
+            if (badge) badge.remove();
+            if (mbBadge) mbBadge.remove();
         }
     });
 
@@ -468,6 +481,10 @@ function manuallyRotateTeam(direction) {
     saveState();
     updateUI();
     renderCourt(team);
+
+    if (typeof checkAutoLiberoSubstitutions === 'function') {
+        checkAutoLiberoSubstitutions(team);
+    }
 }
 
 window.handleCourtPosClick = handleCourtPosClick;

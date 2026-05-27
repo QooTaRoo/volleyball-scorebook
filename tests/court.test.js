@@ -372,5 +372,85 @@ describe('Volleyball Scorebook - Court & Player Management (court.js)', () => {
       expect(benchListEl.innerHTML).not.toContain('A-Player 1<span class="text-blue-400 text-xs font-bold">IN');
     });
   });
+
+  describe('Automatic Libero Substitutions (js/libero.js)', () => {
+    beforeEach(() => {
+      // Mock checkAutoLiberoSubstitutions dependencies in state
+      window.showCustomConfirm = vi.fn().mockResolvedValue(true);
+      window.state = {
+        scoreA: 0,
+        scoreB: 0,
+        currentSet: 1,
+        servingTeam: 'A',
+        actionLog: [],
+        lineupA: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6'],
+        liberosA: ['A7', null],
+        membersA: [
+          { id: 'A1', number: 1, name: 'P1', isStarter: true, isLiberoTarget: false },
+          { id: 'A2', number: 2, name: 'P2', isStarter: true, isLiberoTarget: true }, // MB1
+          { id: 'A3', number: 3, name: 'P3', isStarter: true, isLiberoTarget: false },
+          { id: 'A4', number: 4, name: 'P4', isStarter: true, isLiberoTarget: false },
+          { id: 'A5', number: 5, name: 'P5', isStarter: true, isLiberoTarget: true }, // MB2
+          { id: 'A6', number: 6, name: 'P6', isStarter: true, isLiberoTarget: false },
+          { id: 'A7', number: 7, name: 'L1', isStarter: false, isLibero: true }
+        ]
+      };
+    });
+
+    it('should automatically substitute Libero in when a target MB rotates to the back row (idx 5 or 4) on our serve', () => {
+      // Setup: A5 (MB2) is at index 4 (Position 5)
+      // Serving team is A. Since L is not on court, L should sub in for A5.
+      window.checkAutoLiberoSubstitutions('A');
+
+      expect(window.state.lineupA[4]).toBe('A7');
+      
+      const lastAction = window.state.actionLog[window.state.actionLog.length - 1];
+      expect(lastAction.type).toBe('substitution');
+      expect(lastAction.inPlayerId).toBe('A7');
+      expect(lastAction.outPlayerId).toBe('A5');
+      expect(lastAction.isLibero).toBe(true);
+      expect(lastAction.isAuto).toBe(true);
+    });
+
+    it('should automatically pull Libero out when Libero rotates to the front row (idx 1, 2, or 3)', () => {
+      // Setup: Libero A7 is at Index 2 (Position 3)
+      // Bench has target MBs: A2 and A5. Both are NOT on court.
+      // We will mock lineupA so A7 is at index 2, and A5 is benched.
+      window.state.lineupA = ['A1', 'A2', 'A7', 'A4', 'A8', 'A6']; // A7 at idx 2
+      window.state.membersA.push({ id: 'A8', number: 8, name: 'P8', isStarter: true, isLiberoTarget: false });
+      
+      window.checkAutoLiberoSubstitutions('A');
+
+      // The benched target MB (A5) should swap in for A7
+      expect(window.state.lineupA[2]).toBe('A5');
+      
+      const lastAction = window.state.actionLog[window.state.actionLog.length - 1];
+      expect(lastAction.type).toBe('substitution');
+      expect(lastAction.inPlayerId).toBe('A5');
+      expect(lastAction.outPlayerId).toBe('A7');
+      expect(lastAction.isLibero).toBe(true);
+      expect(lastAction.isAuto).toBe(true);
+    });
+
+    it('should automatically prompt and substitute Libero in at match start when confirmed', async () => {
+      window.showCustomConfirm = vi.fn().mockResolvedValue(true);
+      
+      // A5 (MB2) is at index 4 (Position 5) -> Back row
+      await window.checkAutoLiberoSubstitutions('A', true);
+
+      expect(window.showCustomConfirm).toHaveBeenCalledWith(expect.stringContaining('代わりにリベロ'));
+      expect(window.state.lineupA[4]).toBe('A7'); // substituted!
+    });
+
+    it('should NOT substitute Libero in at match start when canceled by the user', async () => {
+      window.showCustomConfirm = vi.fn().mockResolvedValue(false);
+      
+      // A5 (MB2) is at index 4 (Position 5) -> Back row
+      await window.checkAutoLiberoSubstitutions('A', true);
+
+      expect(window.showCustomConfirm).toHaveBeenCalledWith(expect.stringContaining('代わりにリベロ'));
+      expect(window.state.lineupA[4]).toBe('A5'); // remained unchanged!
+    });
+  });
 });
 

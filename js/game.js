@@ -56,6 +56,10 @@ function rotateTeam(team) {
         scoreA: state.scoreA,
         scoreB: state.scoreB
     });
+
+    if (typeof checkAutoLiberoSubstitutions === 'function') {
+        checkAutoLiberoSubstitutions(team);
+    }
 }
 
 async function checkSetEnd() {
