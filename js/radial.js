@@ -317,12 +317,16 @@ function enterStage2(option) {
             displayStr = player.name.substring(0, 4);
         }
 
+        const liberos = teamToPick === 'A' ? (state.liberosA || []) : (state.liberosB || []);
+        const isLibero = liberos.includes(playerId) || (player && !!player.isLibero);
+        const badgeHtml = isLibero ? `<span class="absolute top-0.5 right-1 bg-purple-500 text-[6px] text-white font-black px-1 rounded-sm shadow-md animate-pulse">L</span>` : '';
+
         const opt = document.createElement('div');
         opt.id = `radial-player-opt-${p}`;
         opt.className = 'radial-player-opt absolute flex flex-col items-center justify-center w-14 h-14 rounded-xl bg-zinc-800 border border-white/20 text-white font-black text-xs shadow-lg transition-all overflow-hidden';
         opt.style.left = '50%'; opt.style.top = '50%';
         opt.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
-        opt.innerHTML = `<span class="leading-none text-[11px]">${displayStr}</span><span class="absolute bottom-0.5 text-[6px] opacity-40 font-normal">P${p}</span>`;
+        opt.innerHTML = `<span class="leading-none text-[11px]">${displayStr}</span><span class="absolute bottom-0.5 text-[6px] opacity-40 font-normal">P${p}</span>${badgeHtml}`;
         list.appendChild(opt);
     });
 }

@@ -146,9 +146,6 @@ function loadMasterTeamForEdit(presetName) {
 function toggleMasterStarter(idx) {
     if (masterEditMembers[idx]) {
         masterEditMembers[idx].isStarter = !masterEditMembers[idx].isStarter;
-        if (masterEditMembers[idx].isStarter) {
-            masterEditMembers[idx].isLibero = false; // Cannot be libero if starter
-        }
     }
     renderMasterMemberRows();
 }
@@ -164,7 +161,6 @@ function toggleMasterLibero(idx) {
                 return;
             }
             masterEditMembers[idx].isLibero = true;
-            masterEditMembers[idx].isStarter = false; // Cannot be starter if libero
         } else {
             masterEditMembers[idx].isLibero = false;
         }

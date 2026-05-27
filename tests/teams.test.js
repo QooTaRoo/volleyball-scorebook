@@ -28,25 +28,25 @@ describe('Volleyball Scorebook - Teams Preset, Starters & Libero Configuration (
   });
 
   describe('toggleMasterStarter()', () => {
-    it('should toggle isStarter property of the clicked player and turn off libero if starter', () => {
+    it('should toggle isStarter property of the clicked player and keep libero status', () => {
       window.masterEditMembers[6].isLibero = true; // M7 is libero
 
       window.toggleMasterStarter(6);
       expect(window.masterEditMembers[6].isStarter).toBe(true);
-      expect(window.masterEditMembers[6].isLibero).toBe(false); // Libero cleared!
+      expect(window.masterEditMembers[6].isLibero).toBe(true); // Libero preserved!
     });
   });
 
   describe('toggleMasterLibero()', () => {
-    it('should toggle isLibero property and turn off isStarter', () => {
-      // Toggle Bench 1 (index 6, player M7) to Libero
-      window.toggleMasterLibero(6);
-      expect(window.masterEditMembers[6].isLibero).toBe(true);
-      expect(window.masterEditMembers[6].isStarter).toBe(false);
+    it('should toggle isLibero property and keep isStarter status', () => {
+      // Toggle Starter 1 (index 0, player M1) to Libero
+      window.toggleMasterLibero(0);
+      expect(window.masterEditMembers[0].isLibero).toBe(true);
+      expect(window.masterEditMembers[0].isStarter).toBe(true); // Starter preserved!
 
       // Toggle off
-      window.toggleMasterLibero(6);
-      expect(window.masterEditMembers[6].isLibero).toBe(false);
+      window.toggleMasterLibero(0);
+      expect(window.masterEditMembers[0].isLibero).toBe(false);
     });
 
     it('should restrict team to maximum of 2 Liberos', () => {

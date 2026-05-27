@@ -142,7 +142,7 @@ function renderCourt(team) {
         const liberos = isPreset 
             ? masterEditMembers.filter(m => m.isLibero).map(m => m.id)
             : (team === 'A' ? (state.liberosA || []) : (state.liberosB || []));
-        const isLibero = liberos.includes(playerId);
+        const isLibero = liberos.includes(playerId) || (player && !!player.isLibero);
         let badge = el.querySelector('.libero-badge');
         
         if (isLibero) {
@@ -337,7 +337,6 @@ function substitute(benchPlayerId) {
             masterEditMembers[mBenchIdx] = temp;
             
             masterEditMembers[mStarterIdx].isStarter = true;
-            masterEditMembers[mStarterIdx].isLibero = false; // Starter cannot be libero
             
             masterEditMembers[mBenchIdx].isStarter = false;
         }

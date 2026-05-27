@@ -173,4 +173,52 @@ test.describe('Court starting lineup & click interaction E2E Tests', () => {
     // Clean up
     await page.locator('#court-modal button:has-text("閉じる")').click();
   });
+
+  test('Display L badge on court when Libero is in the starting lineup', async ({ page }) => {
+    // 1. Setup a master team preset in LocalStorage with Player 1 as both a starter and a Libero
+    await page.evaluate(() => {
+      const presetTeam = {
+        id: 'p_test_456',
+        name: 'Starter Libero Team',
+        color: '#00ff00',
+        isMyTeam: true,
+        members: [
+          { id: 'M1', number: 1, name: 'P1-LibStarter', isStarter: true, isLibero: true },
+          { id: 'M2', number: 2, name: 'P2', isStarter: true, isLibero: false },
+          { id: 'M3', number: 3, name: 'P3', isStarter: true, isLibero: false },
+          { id: 'M4', number: 4, name: 'P4', isStarter: true, isLibero: false },
+          { id: 'M5', number: 5, name: 'P5', isStarter: true, isLibero: false },
+          { id: 'M6', number: 6, name: 'P6', isStarter: true, isLibero: false }
+        ]
+      };
+      localStorage.setItem('vb_preset_teams', JSON.stringify([presetTeam]));
+    });
+
+    // Reload the page to ensure the LocalStorage state is loaded
+    await page.reload();
+
+    // 2. Open settings and team management
+    await page.locator('button:has-text("アプリ設定")').click();
+    await page.locator('button:has-text("チーム・メンバーの管理")').click();
+
+    // 3. Load the "Starter Libero Team" preset
+    const presetSelect = page.locator('#master-team-select');
+    await presetSelect.selectOption('Starter Libero Team');
+
+    // 4. Open Court starter setting modal
+    await page.locator('button:has-text("コートでスタメン設定")').click();
+
+    // Verify Court modal is open
+    const courtModal = page.locator('#court-modal');
+    await expect(courtModal).toBeVisible();
+
+    // Player 1 at position 1 should display '1' and have the 'L' badge!
+    await expect(page.locator('#pos-1 .player-num')).toHaveText('1');
+    const lBadge = page.locator('#pos-1 .libero-badge');
+    await expect(lBadge).toBeVisible();
+    await expect(lBadge).toHaveText('L');
+
+    // Clean up
+    await page.locator('#court-modal button:has-text("閉じる")').click();
+  });
 });
