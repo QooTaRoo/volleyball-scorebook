@@ -143,21 +143,35 @@ function updateScoreDigits(team, currentScore) {
 function showCustomConfirm(message, confirmText = "OK", cancelText = "キャンセル") {
     return new Promise(resolve => {
         const modal = document.getElementById('custom-confirm-modal');
-        document.getElementById('custom-confirm-msg').textContent = message;
-        document.getElementById('custom-confirm-ok').textContent = confirmText;
-        document.getElementById('custom-confirm-cancel').textContent = cancelText;
-        
+        if (!modal) {
+            console.error("custom-confirm-modal not found!");
+            resolve(false);
+            return;
+        }
+        const msgEl = document.getElementById('custom-confirm-msg');
         const okBtn = document.getElementById('custom-confirm-ok');
         const cancelBtn = document.getElementById('custom-confirm-cancel');
         
+        if (msgEl) msgEl.textContent = message;
+        if (okBtn) okBtn.textContent = confirmText;
+        if (cancelBtn) cancelBtn.textContent = cancelText;
+        
         const cleanup = () => {
             modal.classList.add('hidden');
-            okBtn.onclick = null;
-            cancelBtn.onclick = null;
+            if (okBtn) okBtn.onclick = null;
+            if (cancelBtn) cancelBtn.onclick = null;
         };
         
-        okBtn.onclick = () => { cleanup(); resolve(true); };
-        cancelBtn.onclick = () => { cleanup(); resolve(false); };
+        if (okBtn) {
+            okBtn.onclick = () => { cleanup(); resolve(true); };
+        } else {
+            resolve(true);
+        }
+        if (cancelBtn) {
+            cancelBtn.onclick = () => { cleanup(); resolve(false); };
+        } else {
+            resolve(false);
+        }
         
         modal.classList.remove('hidden');
     });
@@ -166,17 +180,27 @@ function showCustomConfirm(message, confirmText = "OK", cancelText = "キャン�
 function showCustomAlert(message, okText = "OK") {
     return new Promise(resolve => {
         const modal = document.getElementById('custom-alert-modal');
-        document.getElementById('custom-alert-msg').textContent = message;
-        document.getElementById('custom-alert-ok').textContent = okText;
-        
+        if (!modal) {
+            console.error("custom-alert-modal not found!");
+            resolve();
+            return;
+        }
+        const msgEl = document.getElementById('custom-alert-msg');
         const okBtn = document.getElementById('custom-alert-ok');
+        
+        if (msgEl) msgEl.textContent = message;
+        if (okBtn) okBtn.textContent = okText;
         
         const cleanup = () => {
             modal.classList.add('hidden');
-            okBtn.onclick = null;
+            if (okBtn) okBtn.onclick = null;
         };
         
-        okBtn.onclick = () => { cleanup(); resolve(); };
+        if (okBtn) {
+            okBtn.onclick = () => { cleanup(); resolve(); };
+        } else {
+            resolve();
+        }
         
         modal.classList.remove('hidden');
     });
@@ -206,6 +230,7 @@ function animateDigit(wrapperId, spanId, newText, isUndo) {
 
 function renderTimeouts(team) {
     const container = document.getElementById(team === 'A' ? 'to-indicator-a' : 'to-indicator-b');
+    if (!container) return;
     const max = state.maxTimeouts || 2;
     const used = team === 'A' ? state.toA : state.toB;
     const remain = Math.max(0, max - used);
@@ -223,21 +248,23 @@ function renderTimeouts(team) {
 }
 
 function renderSubstitutions(team) {
-    const count = state.actionLog.filter(a => a.type === 'substitution' && a.team === team && a.set === state.currentSet).length;
+    if (!state.actionLog) return;
+    const count = state.actionLog.filter(a => a.type === 'substitution' && a.team === team && a.set === state.currentSet && !a.isLibero).length;
     const el = document.getElementById(`sub-counter-${team.toLowerCase()}`);
     if (el) {
-        el.textContent = `代 ${count}/6`;
+        el.innerHTML = `<span class="flex items-center gap-1"><i data-lucide="arrow-left-right" class="w-3 h-3 text-current"></i><span>${count}/6</span></span>`;
         if (count >= 6) {
-            el.className = "text-[9px] font-black bg-red-500/20 px-1.5 py-1 rounded text-red-405 select-none shadow-inner shrink-0 border border-red-500/30 transition-all";
+            el.className = "text-[9px] font-black bg-red-500/20 px-1.5 py-1 rounded text-red-400 select-none shadow-inner shrink-0 border border-red-500/30 transition-all";
         } else if (count > 0) {
             el.className = "text-[9px] font-black bg-zinc-800/90 px-1.5 py-1 rounded text-yellow-500 select-none shadow-inner shrink-0 border border-yellow-500/20 transition-all";
         } else {
             el.className = "text-[9px] font-black bg-zinc-800/90 px-1.5 py-1 rounded text-zinc-400 select-none shadow-inner shrink-0 border border-transparent transition-all";
         }
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
     // Also update in court modal if open
     const modalEl = document.getElementById('court-sub-counter');
-    if (modalEl && currentCourtTeam === team) {
+    if (modalEl && typeof currentCourtTeam !== 'undefined' && currentCourtTeam === team) {
         modalEl.textContent = `交代枠使用数: ${count} / 6`;
         if (count >= 6) {
             modalEl.className = "text-xs font-bold text-red-400 mt-1";
@@ -263,9 +290,6 @@ function toggleSettings() {
     const isOpening = modal.classList.contains('hidden');
     if (isOpening) {
         document.getElementById('input-max-timeouts').value = state.maxTimeouts;
-        document.getElementById('input-advanced-mode').checked = !!state.showAdvancedMode;
-        document.getElementById('input-myteam-only-stats').checked = !!state.myTeamOnlyStats;
-        toggleAdvancedSettingsVisibility();
         const durationEl = document.getElementById('input-timeout-duration');
         if (durationEl) durationEl.value = state.timeoutDuration || 30;
         const bgColorEl = document.getElementById('input-bg-color');
@@ -280,9 +304,10 @@ function toggleSettings() {
     }
 }
 
-function toggleAdvancedSettingsVisibility() {
-    const advChecked = document.getElementById('input-advanced-mode').checked;
-    const myTeamOnlyContainer = document.getElementById('settings-myteam-only-container');
+function toggleSetupAdvancedSettingsVisibility() {
+    const advEl = document.getElementById('setup-advanced-mode');
+    const advChecked = advEl ? advEl.checked : false;
+    const myTeamOnlyContainer = document.getElementById('setup-myteam-only-container');
     if (myTeamOnlyContainer) {
         if (advChecked) {
             myTeamOnlyContainer.classList.remove('hidden');
@@ -378,6 +403,9 @@ function toggleMatchSetup() {
         updateMatchSetupVisibility();
         const setupAdvancedEl = document.getElementById('setup-advanced-mode');
         if (setupAdvancedEl) setupAdvancedEl.checked = !!state.showAdvancedMode;
+        const setupMyTeamOnlyEl = document.getElementById('setup-myteam-only-stats');
+        if (setupMyTeamOnlyEl) setupMyTeamOnlyEl.checked = !!state.myTeamOnlyStats;
+        if (typeof toggleSetupAdvancedSettingsVisibility === 'function') toggleSetupAdvancedSettingsVisibility();
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
     modal.classList.toggle('hidden'); 
@@ -421,8 +449,6 @@ function updateMatchSetupVisibility() {
 // --- Settings Application ---
 function applySettings(isInit = false) {
     state.maxTimeouts = parseInt(document.getElementById('input-max-timeouts').value);
-    state.showAdvancedMode = document.getElementById('input-advanced-mode').checked;
-    state.myTeamOnlyStats = document.getElementById('input-myteam-only-stats').checked;
     const durationEl = document.getElementById('input-timeout-duration');
     if (durationEl) state.timeoutDuration = parseInt(durationEl.value) || 30;
     const bgColorEl = document.getElementById('input-bg-color');
@@ -456,6 +482,9 @@ function confirmStartMatch() {
     state.servingTeam = setupServingTeam;
     state.initialServingTeam = setupServingTeam;
     state.showAdvancedMode = document.getElementById('setup-advanced-mode').checked;
+    
+    const myTeamOnlyEl = document.getElementById('setup-myteam-only-stats');
+    state.myTeamOnlyStats = myTeamOnlyEl ? myTeamOnlyEl.checked : false;
     
     resetMatchState();
     state.matchStartTime = Date.now();

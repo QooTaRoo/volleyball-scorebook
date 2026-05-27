@@ -64,21 +64,34 @@ function loadPresetToTeam(teamCode, presetName) {
         const members = p.members.map((pm, i) => ({
             id: `${teamCode}${i+1}`,
             number: pm.number,
-            name: pm.name
+            name: pm.name,
+            isStarter: !!pm.isStarter,
+            isLibero: !!pm.isLibero
         }));
         
         while (members.length < 6) {
             const nextNum = members.length + 1;
-            members.push({ id: `${teamCode}${nextNum}`, number: nextNum, name: `${nextNum}` });
+            members.push({ id: `${teamCode}${nextNum}`, number: nextNum, name: `${nextNum}`, isStarter: false, isLibero: false });
         }
+        
+        // Retrieve pre-configured Liberoes from preset
+        const presetLiberos = members.filter(m => m.isLibero).map(m => m.id);
+        const activeLiberos = [presetLiberos[0] || null, presetLiberos[1] || null];
+        
+        const starters = members.filter(m => m.isStarter);
+        const lineupIds = starters.length === 6 
+            ? starters.map(m => m.id)
+            : members.slice(0, 6).map(m => m.id);
         
         if (teamCode === 'A') {
             state.membersA = members;
-            state.lineupA = members.slice(0, 6).map(m => m.id);
+            state.lineupA = lineupIds;
+            state.liberosA = activeLiberos;
             state.isMyTeamA = !!p.isMyTeam;
         } else {
             state.membersB = members;
-            state.lineupB = members.slice(0, 6).map(m => m.id);
+            state.lineupB = lineupIds;
+            state.liberosB = activeLiberos;
             state.isMyTeamB = !!p.isMyTeam;
         }
     }
@@ -101,7 +114,7 @@ function loadMasterTeamForEdit(presetName) {
         document.getElementById('master-team-name').value = "";
         document.getElementById('master-team-color').value = "#3b82f6";
         if (myTeamEl) myTeamEl.checked = false;
-        masterEditMembers = Array.from({length: 12}, (_, i) => ({ id: `M${i+1}`, number: i + 1, name: `${i+1}` }));
+        masterEditMembers = Array.from({length: 12}, (_, i) => ({ id: `M${i+1}`, number: i + 1, name: `${i+1}`, isStarter: i < 6, isLibero: false }));
     } else {
         const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
         const p = presets.find(item => item.name === presetName);
@@ -112,25 +125,87 @@ function loadMasterTeamForEdit(presetName) {
             masterEditMembers = JSON.parse(JSON.stringify(p.members || []));
             while (masterEditMembers.length < 6) {
                 const nextNum = masterEditMembers.length + 1;
-                masterEditMembers.push({ id: `M${nextNum}`, number: nextNum, name: `${nextNum}` });
+                masterEditMembers.push({ id: `M${nextNum}`, number: nextNum, name: `${nextNum}`, isStarter: false, isLibero: false });
             }
+            
+            // Backwards compatibility: if no starters are marked, default the first 6
+            const hasAnyStarters = masterEditMembers.some(m => m.isStarter);
+            masterEditMembers.forEach((m, i) => {
+                if (typeof m.isStarter === 'undefined') {
+                    m.isStarter = !hasAnyStarters && i < 6;
+                }
+                if (typeof m.isLibero === 'undefined') {
+                    m.isLibero = false;
+                }
+            });
         }
     }
     renderMasterMemberRows();
 }
 
+function toggleMasterStarter(idx) {
+    if (masterEditMembers[idx]) {
+        masterEditMembers[idx].isStarter = !masterEditMembers[idx].isStarter;
+        if (masterEditMembers[idx].isStarter) {
+            masterEditMembers[idx].isLibero = false; // Cannot be libero if starter
+        }
+    }
+    renderMasterMemberRows();
+}
+window.toggleMasterStarter = toggleMasterStarter;
+
+function toggleMasterLibero(idx) {
+    if (masterEditMembers[idx]) {
+        const isCurrentlyLibero = !!masterEditMembers[idx].isLibero;
+        if (!isCurrentlyLibero) {
+            const liberoCount = masterEditMembers.filter(m => m.isLibero).length;
+            if (liberoCount >= 2) {
+                showToast("リベロは最大2人まで登録可能です。");
+                return;
+            }
+            masterEditMembers[idx].isLibero = true;
+            masterEditMembers[idx].isStarter = false; // Cannot be starter if libero
+        } else {
+            masterEditMembers[idx].isLibero = false;
+        }
+    }
+    renderMasterMemberRows();
+}
+window.toggleMasterLibero = toggleMasterLibero;
+
+function openPresetCourtSetting() {
+    const starters = masterEditMembers.filter(m => m.isStarter);
+    if (starters.length !== 6) {
+        masterEditMembers.forEach((m, idx) => {
+            m.isStarter = idx < 6;
+            if (idx < 6) m.isLibero = false;
+        });
+        renderMasterMemberRows();
+        showToast("スタメン配置用に上位6名を点灯しました。");
+    }
+    toggleCourtOverlay('preset');
+}
+window.openPresetCourtSetting = openPresetCourtSetting;
+
 function renderMasterMemberRows() {
     const list = document.getElementById('master-member-list');
     list.innerHTML = masterEditMembers.map((m, idx) => {
-        const isStarter = idx < 6;
+        const isStarter = !!m.isStarter;
+        const isLibero = !!m.isLibero;
+        
         const starterBadge = isStarter 
-            ? `<span class="text-[8px] bg-yellow-500/20 text-yellow-400 font-bold px-1.5 py-0.5 rounded border border-yellow-500/25">スタメン</span>` 
-            : `<span class="text-[8px] bg-zinc-800/40 text-zinc-500 font-bold px-1.5 py-0.5 rounded border border-zinc-800">控え</span>`;
+            ? `<button onclick="toggleMasterStarter(${idx})" class="p-1 hover:scale-125 transition-transform flex items-center justify-center shrink-0" title="スタメン解除"><i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i></button>` 
+            : `<button onclick="toggleMasterStarter(${idx})" class="p-1 text-zinc-600 hover:scale-125 hover:text-yellow-400 transition-all flex items-center justify-center shrink-0" title="スタメン登録"><i data-lucide="star" class="w-4 h-4 text-zinc-600"></i></button>`;
+            
+        const liberoBadge = isLibero 
+            ? `<button onclick="toggleMasterLibero(${idx})" class="p-1 hover:scale-125 transition-transform flex items-center justify-center shrink-0" title="リベロ解除"><i data-lucide="shield" class="w-4 h-4 fill-purple-500 text-purple-500"></i></button>` 
+            : `<button onclick="toggleMasterLibero(${idx})" class="p-1 text-zinc-600 hover:scale-125 hover:text-purple-400 transition-all flex items-center justify-center shrink-0" title="リベロ登録"><i data-lucide="shield" class="w-4 h-4 text-zinc-600"></i></button>`;
             
         return `
             <div class="flex gap-2 items-center bg-zinc-900/40 p-1.5 rounded-lg border border-white/5">
                 <span class="text-xs text-zinc-500 font-bold w-4 text-center">${idx + 1}</span>
                 ${starterBadge}
+                ${liberoBadge}
                 <input type="number" value="${m.number}" onchange="masterEditMembers[${idx}].number = parseInt(this.value) || 0" class="w-10 bg-zinc-800 border-none p-1 text-white text-center rounded text-xs font-bold" placeholder="番号">
                 <input type="text" value="${m.name}" onchange="masterEditMembers[${idx}].name = this.value" class="flex-1 bg-zinc-800 border-none p-1 text-white rounded text-xs" placeholder="名前">
                 
@@ -170,7 +245,8 @@ function addMasterMemberRow() {
     masterEditMembers.push({
         id: `M_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         number: nextNum,
-        name: `${nextNum}`
+        name: `${nextNum}`,
+        isStarter: false
     });
     renderMasterMemberRows();
 }
@@ -187,6 +263,13 @@ function deleteMasterMember(idx) {
 function saveMasterTeam() {
     const nameVal = document.getElementById('master-team-name').value.trim();
     if (!nameVal) { showCustomAlert("チーム名を入力してください。"); return; }
+    
+    const starterCount = masterEditMembers.filter(m => m.isStarter).length;
+    if (starterCount !== 6) {
+        showCustomAlert(`スタメン（星マーク）はちょうど6人選択してください。（現在は ${starterCount} 人選択されています）`);
+        return;
+    }
+
     const colorVal = document.getElementById('master-team-color').value;
     const myTeamEl = document.getElementById('master-team-myteam');
     const isMyTeamVal = myTeamEl ? myTeamEl.checked : false;

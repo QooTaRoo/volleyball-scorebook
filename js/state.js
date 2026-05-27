@@ -35,8 +35,8 @@ let state = {
     membersB: Array.from({length: 14}, (_, i) => ({ id: `B${i+1}`, number: i + 1, name: `${i+1}` })),
     lineupA: ["A1", "A2", "A3", "A4", "A5", "A6"],
     lineupB: ["B1", "B2", "B3", "B4", "B5", "B6"],
-    liberoA: null,
-    liberoB: null,
+    liberosA: [],
+    liberosB: [],
     servingTeam: 'A',
     initialServingTeam: null,
     rotationLog: []

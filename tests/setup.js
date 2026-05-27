@@ -89,7 +89,8 @@ global.loadApp = () => {
       .replace(/^let currentSubPosIdx\s*=/m, 'var currentSubPosIdx =')
       .replace(/^let swapSelectionIdx\s*=/m, 'var swapSelectionIdx =')
       .replace(/^let radialState\s*=/m, 'var radialState =')
-      .replace(/^let currentEditingActionIdx\s*=/m, 'var currentEditingActionIdx =');
+      .replace(/^let currentEditingActionIdx\s*=/m, 'var currentEditingActionIdx =')
+      .replace(/^let masterEditMembers\s*=/m, 'var masterEditMembers =');
 
     combinedCode += code + '\n;';
   });

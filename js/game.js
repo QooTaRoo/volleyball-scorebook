@@ -4,40 +4,44 @@ function addPoint(winningTeam, pattern = 'unknown', playerId = null) {
     if (state.matchComplete) return;
     if (isAnyModalOpen()) return;
 
-    vibrate(50);
-    
-    const scoringTeam = winningTeam;
-    const rotationOccurred = state.servingTeam !== scoringTeam;
-    const actor = (pattern === 'error') ? (winningTeam === 'A' ? 'B' : 'A') : winningTeam;
+    try {
+        vibrate(50);
+        
+        const scoringTeam = winningTeam;
+        const rotationOccurred = state.servingTeam !== scoringTeam;
+        const actor = (pattern === 'error') ? (winningTeam === 'A' ? 'B' : 'A') : winningTeam;
 
-    // Record action
-    state.actionLog.push({
-        type: 'point',
-        team: actor,
-        scoringTeam: scoringTeam,
-        scoreA: state.scoreA,
-        scoreB: state.scoreB,
-        set: state.currentSet,
-        servingTeam: state.servingTeam,
-        rotationOccurred: rotationOccurred,
-        pattern: pattern,
-        playerId: playerId,
-        timestamp: Date.now()
-    });
+        // Record action
+        state.actionLog.push({
+            type: 'point',
+            team: actor,
+            scoringTeam: scoringTeam,
+            scoreA: state.scoreA,
+            scoreB: state.scoreB,
+            set: state.currentSet,
+            servingTeam: state.servingTeam,
+            rotationOccurred: rotationOccurred,
+            pattern: pattern,
+            playerId: playerId,
+            timestamp: Date.now()
+        });
 
-    if (rotationOccurred) {
-        state.servingTeam = scoringTeam;
-        rotateTeam(scoringTeam);
+        if (rotationOccurred) {
+            state.servingTeam = scoringTeam;
+            rotateTeam(scoringTeam);
+        }
+
+        if (scoringTeam === 'A') state.scoreA++;
+        else state.scoreB++;
+
+        // Ensure state is saved immediately to prevent data loss
+        saveState();
+        
+        checkSetEnd();
+        updateUI();
+    } catch (err) {
+        console.error("Error in addPoint:", err);
     }
-
-    if (scoringTeam === 'A') state.scoreA++;
-    else state.scoreB++;
-
-    // Ensure state is saved immediately to prevent data loss
-    saveState();
-    
-    checkSetEnd();
-    updateUI();
 }
 
 function rotateTeam(team) {
@@ -159,46 +163,54 @@ function prepareNextSet() {
 }
 
 async function finishMatch(winnerName, scoreDetail = "") {
-    // CRITICAL: Ensure last set is in setHistory (already handled by finishSet)
-    
-    const matchHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-    matchHistory.unshift({
-        date: new Date().toLocaleString(),
-        teamA: state.teamA,
-        teamB: state.teamB,
-        colorA: state.colorA,
-        colorB: state.colorB,
-        setsA: state.setsA,
-        setsB: state.setsB,
-        setHistory: JSON.parse(JSON.stringify(state.setHistory)),
-        maxSets: state.maxSets,
-        durationMinutes: Math.floor((Date.now() - state.matchStartTime) / 60000),
-        membersA: JSON.parse(JSON.stringify(state.membersA)),
-        membersB: JSON.parse(JSON.stringify(state.membersB)),
-        initialServingTeam: state.initialServingTeam
-    });
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(matchHistory));
-    if (typeof pushMatchToCloud === 'function') pushMatchToCloud(matchHistory[0]);
-
-    let msg = "試合終了！";
-    if (winnerName) msg += ` 勝者: ${winnerName}`;
-    if (scoreDetail) msg += `\n${scoreDetail}`;
-    
-    await showCustomAlert(msg);
-
-    // Reset for new match
-    resetMatchState();
-    saveState();
-    updateUI();
-    // Ensure only the main menu is shown
-    if (typeof toggleMainMenu === 'function') {
-        // Hide other major modals first
-        const modalsToHide = ['match-setup-modal', 'settings-modal', 'history-modal', 'timeline-modal'];
-        modalsToHide.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
+    try {
+        const matchHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        matchHistory.unshift({
+            date: new Date().toLocaleString(),
+            teamA: state.teamA || "TEAM A",
+            teamB: state.teamB || "TEAM B",
+            colorA: state.colorA || "#eab308",
+            colorB: state.colorB || "#ffffff",
+            setsA: state.setsA || 0,
+            setsB: state.setsB || 0,
+            setHistory: JSON.parse(JSON.stringify(state.setHistory || [])),
+            maxSets: state.maxSets || 3,
+            durationMinutes: state.matchStartTime ? Math.floor((Date.now() - state.matchStartTime) / 60000) : 0,
+            membersA: JSON.parse(JSON.stringify(state.membersA || [])),
+            membersB: JSON.parse(JSON.stringify(state.membersB || [])),
+            initialServingTeam: state.initialServingTeam || 'A'
         });
-        toggleMainMenu(true);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(matchHistory));
+        if (typeof pushMatchToCloud === 'function') {
+            try {
+                pushMatchToCloud(matchHistory[0]);
+            } catch (cloudErr) {
+                console.error("Cloud push failed during finish:", cloudErr);
+            }
+        }
+
+        let msg = "試合終了！";
+        if (winnerName) msg += ` 勝者: ${winnerName}`;
+        if (scoreDetail) msg += `\n${scoreDetail}`;
+        
+        await showCustomAlert(msg);
+    } catch (err) {
+        console.error("Error during finishMatch:", err);
+        await showCustomAlert("試合記録の保存中にエラーが発生しました。\n" + err.message);
+    } finally {
+        // Reset for new match and ensure main menu is shown
+        resetMatchState();
+        saveState();
+        updateUI();
+        if (typeof toggleMainMenu === 'function') {
+            // Hide other major modals first
+            const modalsToHide = ['match-setup-modal', 'settings-modal', 'history-modal', 'timeline-modal'];
+            modalsToHide.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            toggleMainMenu(true);
+        }
     }
 }
 
@@ -221,6 +233,8 @@ function resetMatchState() {
     // Let's reset to basic for new match.
     state.lineupA = ["A1", "A2", "A3", "A4", "A5", "A6"];
     state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
+    state.liberosA = [];
+    state.liberosB = [];
 }
 
 function undo() {

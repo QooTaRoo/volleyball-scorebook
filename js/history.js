@@ -534,21 +534,32 @@ async function clearAllHistory() {
 }
 
 async function deleteHistoryItem(idx) {
-    const confirmed = await showCustomConfirm("この試合履歴を削除しますか？\n(この操作は取り消せません)");
-    if (!confirmed) return;
-    
-    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-    const matchToDelete = history[idx];
-    history.splice(idx, 1);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-    
-    if (matchToDelete && typeof deleteMatchOnCloud === 'function') {
-        const matchId = matchToDelete.id || `${matchToDelete.date}_${matchToDelete.teamA}_${matchToDelete.teamB}`.replace(/[\/:\s]/g, '_');
-        deleteMatchOnCloud(matchId);
+    try {
+        const confirmed = await showCustomConfirm("この試合履歴を削除しますか？\n(この操作は取り消せません)");
+        if (!confirmed) return;
+        
+        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        const matchToDelete = history[idx];
+        if (matchToDelete) {
+            history.splice(idx, 1);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            
+            if (typeof deleteMatchOnCloud === 'function') {
+                const matchId = matchToDelete.id || `${matchToDelete.date}_${matchToDelete.teamA}_${matchToDelete.teamB}`.replace(/[\/:\s]/g, '_');
+                try {
+                    deleteMatchOnCloud(matchId);
+                } catch (cloudErr) {
+                    console.error("Cloud delete failed during local delete:", cloudErr);
+                }
+            }
+        }
+        
+        renderHistory();
+        showToast("試合履歴を削除しました");
+    } catch (err) {
+        console.error("Error during deleteHistoryItem:", err);
+        showToast("履歴の削除中にエラーが発生しました");
     }
-    
-    renderHistory();
-    showToast("試合履歴を削除しました");
 }
 
 let currentEditingActionIdx = null;
