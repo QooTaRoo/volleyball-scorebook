@@ -95,6 +95,182 @@ describe('Volleyball Scorebook - Court & Player Management (court.js)', () => {
       expect(lastAction.type).toBe('substitution');
       expect(lastAction.isLibero).toBe(true); // marked as libero replacement!
     });
+
+    it('should correctly substitute players in preset mode when masterEditMembers is sorted', () => {
+      window.currentCourtTeam = 'preset';
+      
+      // 1. masterEditMembers を初期化する（12名、最初の6名がスタメン、背番号順）
+      window.masterEditMembers = Array.from({length: 12}, (_, i) => ({ 
+          id: `M${i+1}`, 
+          number: i + 1, 
+          name: `Player ${i+1}`, 
+          isStarter: i < 6, 
+          starterPos: i < 6 ? i + 1 : undefined,
+          isLibero: false 
+      }));
+
+      // mock DOM element for renderCourt to work
+      document.body.innerHTML = `
+        <input id="master-team-name" value="Preset Team">
+        <input id="master-team-color" value="#3b82f6">
+        <div id="court-team-label"></div>
+        <select id="court-libero-select-1"></select>
+        <select id="court-libero-select-2"></select>
+        <div id="pos-1"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-2"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-3"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-4"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-5"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-6"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="court-grid-container"></div>
+        <div id="court-front-row"></div>
+        <div id="court-back-row"></div>
+        <div id="court-net-line"></div>
+        <div id="court-rotation-controls"></div>
+        <div id="master-member-list"></div>
+        <div id="sub-modal" class="hidden"><div id="bench-list"></div></div>
+      `;
+
+      // 2. renderCourt を呼んでコートを表示（これにより M3 (idx=2) の starterPos は 3 に確定される）
+      window.renderCourt('preset');
+
+      // 3. pos-3 (idx=2) をクリック
+      window.currentSubPosIdx = 2; // pos-3
+
+      // 4. ベンチ選手 M10 と交代する
+      window.substitute('M10');
+
+      // 5. 期待値の検証
+      // M3 はスタメンから外れ、starterPos は undefined になるはず
+      const m3 = window.masterEditMembers.find(m => m.id === 'M3');
+      expect(m3.isStarter).toBe(false);
+      expect(m3.starterPos).toBeUndefined();
+
+      // M10 はスタメンになり、starterPos は 3 になるはず
+      const m10 = window.masterEditMembers.find(m => m.id === 'M10');
+      expect(m10.isStarter).toBe(true);
+      expect(m10.starterPos).toBe(3);
+    });
+
+    it('should correctly substitute players in preset mode when masterEditMembers is sorted by number and positions are custom', () => {
+      window.currentCourtTeam = 'preset';
+      
+      // masterEditMembers を初期化する（背番号をシャッフルした状態で登録）
+      window.masterEditMembers = [
+        { id: 'M1', number: 12, name: 'P12', isStarter: true, starterPos: 1 },
+        { id: 'M2', number: 2, name: 'P2', isStarter: true, starterPos: 2 },
+        { id: 'M3', number: 99, name: 'P99', isStarter: true, starterPos: 3 },
+        { id: 'M4', number: 5, name: 'P5', isStarter: true, starterPos: 4 },
+        { id: 'M5', number: 1, name: 'P1', isStarter: true, starterPos: 5 },
+        { id: 'M6', number: 7, name: 'P7', isStarter: true, starterPos: 6 },
+        { id: 'M7', number: 20, name: 'P20', isStarter: false },
+        { id: 'M8', number: 8, name: 'P8', isStarter: false }
+      ];
+
+      // loadMasterTeamForEdit の挙動を再現するため、背番号順にソートする
+      window.masterEditMembers.sort((a, b) => a.number - b.number);
+
+      // mock DOM
+      document.body.innerHTML = `
+        <input id="master-team-name" value="Preset Team">
+        <input id="master-team-color" value="#3b82f6">
+        <div id="court-team-label"></div>
+        <select id="court-libero-select-1"></select>
+        <select id="court-libero-select-2"></select>
+        <div id="pos-1"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-2"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-3"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-4"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-5"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-6"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="court-grid-container"></div>
+        <div id="court-front-row"></div>
+        <div id="court-back-row"></div>
+        <div id="court-net-line"></div>
+        <div id="court-rotation-controls"></div>
+        <div id="master-member-list"></div>
+        <div id="sub-modal" class="hidden"><div id="bench-list"></div></div>
+      `;
+
+      // renderCourt を呼ぶ（コート表示）
+      window.renderCourt('preset');
+
+      // 前衛中央 (pos-3, lineup インデックス 2) の選手を交代する
+      window.currentSubPosIdx = 2; // pos-3
+
+      // ベンチ選手 P20 (id="M7") と交代する
+      window.substitute('M7');
+
+      // 期待値の検証
+      // P99 (M3) はスタメンから外れ、starterPos は undefined になるはず
+      const m3 = window.masterEditMembers.find(m => m.id === 'M3');
+      expect(m3.isStarter).toBe(false);
+      expect(m3.starterPos).toBeUndefined();
+
+      // P20 (M7) はスタメンになり、starterPos は 3 になるはず
+      const m7 = window.masterEditMembers.find(m => m.id === 'M7');
+      expect(m7.isStarter).toBe(true);
+      expect(m7.starterPos).toBe(3);
+    });
+
+    it('should correctly substitute players in preset mode after performing a swap', () => {
+      window.currentCourtTeam = 'preset';
+      
+      // 1. masterEditMembers を初期化（背番号順）
+      window.masterEditMembers = Array.from({length: 12}, (_, i) => ({ 
+          id: `M${i+1}`, 
+          number: i + 1, 
+          name: `Player ${i+1}`, 
+          isStarter: i < 6, 
+          starterPos: i < 6 ? i + 1 : undefined,
+          isLibero: false 
+      }));
+
+      // mock DOM
+      document.body.innerHTML = `
+        <input id="master-team-name" value="Preset Team">
+        <input id="master-team-color" value="#3b82f6">
+        <div id="court-team-label"></div>
+        <select id="court-libero-select-1"></select>
+        <select id="court-libero-select-2"></select>
+        <div id="pos-1"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-2"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-3"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-4"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-5"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-6"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="court-grid-container"></div>
+        <div id="court-front-row"></div>
+        <div id="court-back-row"></div>
+        <div id="court-net-line"></div>
+        <div id="court-rotation-controls"></div>
+        <div id="master-member-list"></div>
+        <div id="sub-modal" class="hidden"><div id="bench-list"></div></div>
+      `;
+
+      // 2. コートを表示
+      window.renderCourt('preset');
+
+      // 3. ポジションの SWAP を行う（例：pos-3 (idx=2, M3) と pos-4 (idx=3, M4) を入れ替える）
+      window.performSwap(2, 3);
+
+      // 4. 前衛中央 (pos-3, lineup インデックス 2) の選手を交代する
+      window.currentSubPosIdx = 2; // pos-3
+
+      // ベンチ選手 M10 と交代する
+      window.substitute('M10');
+
+      // 期待値の検証：
+      // コートの pos-3 に表示されていた M4 (id="M4") がスタメンから外れなければならない！！！
+      const m4 = window.masterEditMembers.find(m => m.id === 'M4');
+      expect(m4.isStarter).toBe(false);
+      expect(m4.starterPos).toBeUndefined();
+
+      // M10 はスタメンになり、starterPos は 3 になるはず
+      const m10 = window.masterEditMembers.find(m => m.id === 'M10');
+      expect(m10.isStarter).toBe(true);
+      expect(m10.starterPos).toBe(3);
+    });
   });
 
   describe('handleCourtPosClick() Interaction flow', () => {

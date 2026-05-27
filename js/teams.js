@@ -59,7 +59,7 @@ function applyTeamConfig() {
 
 function loadPresetToTeam(teamCode, presetName) {
     const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
-    const p = presets.find(item => item.name === presetName);
+    const p = presets.find(item => item.name.trim().toLowerCase() === presetName.trim().toLowerCase());
     if (p && Array.isArray(p.members)) {
         // 既存のプリセットスターターに starterPos が設定されていない場合、現在の配列順（カスタムコート配置順）のまま割り当てる
         const hasPresetStarterPos = p.members.some(m => m.isStarter && m.starterPos !== undefined);

@@ -238,7 +238,7 @@ function openSubModal(posIdx) {
     currentSubPosIdx = posIdx;
     const team = currentCourtTeam;
     const lineup = team === 'preset'
-        ? masterEditMembers.filter(m => m.isStarter).map(m => m.id)
+        ? getPresetLineup()
         : (team === 'A' ? state.lineupA : state.lineupB);
     const members = team === 'preset'
         ? masterEditMembers

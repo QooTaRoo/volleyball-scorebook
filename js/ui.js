@@ -502,25 +502,45 @@ function confirmStartMatch() {
     let loadedA = false;
     let loadedB = false;
 
-    if (state.teamA && presets.some(p => p.name === state.teamA)) {
-        loadPresetToTeam('A', state.teamA);
-        loadedA = true;
+    const normalizeName = (name) => name ? name.trim().toLowerCase() : "";
+
+    if (state.teamA) {
+        const normA = normalizeName(state.teamA);
+        const matchA = presets.find(p => normalizeName(p.name) === normA);
+        if (matchA) {
+            loadPresetToTeam('A', matchA.name);
+            loadedA = true;
+        }
     }
-    if (state.teamB && presets.some(p => p.name === state.teamB)) {
-        loadPresetToTeam('B', state.teamB);
-        loadedB = true;
+    if (state.teamB) {
+        const normB = normalizeName(state.teamB);
+        const matchB = presets.find(p => normalizeName(p.name) === normB);
+        if (matchB) {
+            loadPresetToTeam('B', matchB.name);
+            loadedB = true;
+        }
     }
 
     // Restore preserved lineups, liberos, and members ONLY IF we didn't auto-load them
     // (This preserves temporary modifications made in the Match Setup config modal if no preset matches)
     if (!loadedA) {
         if (savedLineupA.length) state.lineupA = savedLineupA;
-        if (savedLiberosA.length) state.liberosA = savedLiberosA;
+        if (savedLiberosA.length && savedLiberosA.some(l => l !== null)) {
+            state.liberosA = savedLiberosA;
+        } else if (savedMembersA) {
+            const presetLiberos = savedMembersA.filter(m => m.isLibero).map(m => m.id);
+            state.liberosA = [presetLiberos[0] || null, presetLiberos[1] || null];
+        }
         if (savedMembersA) state.membersA = savedMembersA;
     }
     if (!loadedB) {
         if (savedLineupB.length) state.lineupB = savedLineupB;
-        if (savedLiberosB.length) state.liberosB = savedLiberosB;
+        if (savedLiberosB.length && savedLiberosB.some(l => l !== null)) {
+            state.liberosB = savedLiberosB;
+        } else if (savedMembersB) {
+            const presetLiberos = savedMembersB.filter(m => m.isLibero).map(m => m.id);
+            state.liberosB = [presetLiberos[0] || null, presetLiberos[1] || null];
+        }
         if (savedMembersB) state.membersB = savedMembersB;
     }
 

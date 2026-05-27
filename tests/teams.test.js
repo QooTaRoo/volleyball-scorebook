@@ -28,12 +28,12 @@ describe('Volleyball Scorebook - Teams Preset, Starters & Libero Configuration (
   });
 
   describe('toggleMasterStarter()', () => {
-    it('should toggle isStarter property of the clicked player and keep libero status', () => {
+    it('should toggle isStarter property of the clicked player and reset libero status', () => {
       window.masterEditMembers[6].isLibero = true; // M7 is libero
 
       window.toggleMasterStarter(6);
       expect(window.masterEditMembers[6].isStarter).toBe(true);
-      expect(window.masterEditMembers[6].isLibero).toBe(true); // Libero preserved!
+      expect(window.masterEditMembers[6].isLibero).toBe(false); // Libero reset!
     });
   });
 
