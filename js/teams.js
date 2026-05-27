@@ -61,7 +61,8 @@ function loadPresetToTeam(teamCode, presetName) {
     const presets = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
     const p = presets.find(item => item.name === presetName);
     if (p && Array.isArray(p.members)) {
-        const members = p.members.map((pm, i) => ({
+        const sortedPresetMembers = [...p.members].sort((a, b) => a.number - b.number);
+        const members = sortedPresetMembers.map((pm, i) => ({
             id: `${teamCode}${i+1}`,
             number: pm.number,
             name: pm.name,
@@ -140,6 +141,7 @@ function loadMasterTeamForEdit(presetName) {
             });
         }
     }
+    masterEditMembers.sort((a, b) => a.number - b.number);
     renderMasterMemberRows();
 }
 
@@ -182,6 +184,22 @@ function openPresetCourtSetting() {
 }
 window.openPresetCourtSetting = openPresetCourtSetting;
 
+function updateMasterMemberNumber(idx, val) {
+    if (masterEditMembers[idx]) {
+        masterEditMembers[idx].number = parseInt(val) || 0;
+        masterEditMembers.sort((a, b) => a.number - b.number);
+        renderMasterMemberRows();
+    }
+}
+window.updateMasterMemberNumber = updateMasterMemberNumber;
+
+function updateMasterMemberName(idx, val) {
+    if (masterEditMembers[idx]) {
+        masterEditMembers[idx].name = val;
+    }
+}
+window.updateMasterMemberName = updateMasterMemberName;
+
 function renderMasterMemberRows() {
     const list = document.getElementById('master-member-list');
     list.innerHTML = masterEditMembers.map((m, idx) => {
@@ -201,18 +219,8 @@ function renderMasterMemberRows() {
                 <span class="text-xs text-zinc-500 font-bold w-4 text-center">${idx + 1}</span>
                 ${starterBadge}
                 ${liberoBadge}
-                <input type="number" value="${m.number}" onchange="masterEditMembers[${idx}].number = parseInt(this.value) || 0" class="w-10 bg-zinc-800 border-none p-1 text-white text-center rounded text-xs font-bold" placeholder="番号">
-                <input type="text" value="${m.name}" onchange="masterEditMembers[${idx}].name = this.value" class="flex-1 bg-zinc-800 border-none p-1 text-white rounded text-xs" placeholder="名前">
-                
-                <!-- Reorder buttons -->
-                <div class="flex flex-col">
-                    <button onclick="moveMasterMember(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:pointer-events-none p-0.5">
-                        <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <button onclick="moveMasterMember(${idx}, 1)" ${idx === masterEditMembers.length - 1 ? 'disabled' : ''} class="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:pointer-events-none p-0.5">
-                        <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>
+                <input type="number" value="${m.number}" onchange="updateMasterMemberNumber(${idx}, this.value)" class="w-10 bg-zinc-800 border-none p-1 text-white text-center rounded text-xs font-bold" placeholder="番号">
+                <input type="text" value="${m.name}" onchange="updateMasterMemberName(${idx}, this.value)" class="flex-1 bg-zinc-800 border-none p-1 text-white rounded text-xs" placeholder="名前">
                 
                 <button onclick="deleteMasterMember(${idx})" class="p-1 text-zinc-500 hover:text-red-500 transition-colors flex items-center justify-center" title="削除">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -223,18 +231,6 @@ function renderMasterMemberRows() {
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-function moveMasterMember(idx, dir) {
-    const targetIdx = idx + dir;
-    if (targetIdx < 0 || targetIdx >= masterEditMembers.length) return;
-    
-    // Swap players in the array
-    const temp = masterEditMembers[idx];
-    masterEditMembers[idx] = masterEditMembers[targetIdx];
-    masterEditMembers[targetIdx] = temp;
-    
-    renderMasterMemberRows();
-}
-
 function addMasterMemberRow() {
     const nextNum = masterEditMembers.length > 0 ? Math.max(...masterEditMembers.map(m => m.number)) + 1 : 1;
     masterEditMembers.push({
@@ -243,6 +239,7 @@ function addMasterMemberRow() {
         name: `${nextNum}`,
         isStarter: false
     });
+    masterEditMembers.sort((a, b) => a.number - b.number);
     renderMasterMemberRows();
 }
 

@@ -97,4 +97,80 @@ describe('Volleyball Scorebook - Teams Preset, Starters & Libero Configuration (
       expect(window.state.liberosA[1]).toBe('A7'); // T7's generated ID
     });
   });
+
+  describe('Automatic Member Sorting', () => {
+    it('should sort members by number when loadMasterTeamForEdit is called', () => {
+      const presetTeam = {
+        name: "UnsortedTeam",
+        members: [
+          { id: 'M1', number: 12, name: 'P12', isStarter: true },
+          { id: 'M2', number: 2, name: 'P2', isStarter: true },
+          { id: 'M3', number: 99, name: 'P99', isStarter: true },
+          { id: 'M4', number: 5, name: 'P5', isStarter: true },
+          { id: 'M5', number: 1, name: 'P1', isStarter: true },
+          { id: 'M6', number: 7, name: 'P7', isStarter: true },
+        ]
+      };
+      localStorage.setItem('vb_preset_teams', JSON.stringify([presetTeam]));
+
+      window.loadMasterTeamForEdit('UnsortedTeam');
+
+      // Check that masterEditMembers is sorted by number ascending
+      const numbers = window.masterEditMembers.map(m => m.number);
+      expect(numbers).toEqual([1, 2, 5, 7, 12, 99]);
+    });
+
+    it('should sort members and re-render when a member number is updated via updateMasterMemberNumber', () => {
+      window.masterEditMembers = [
+        { id: 'M1', number: 1, name: 'P1' },
+        { id: 'M2', number: 5, name: 'P5' },
+        { id: 'M3', number: 10, name: 'P10' },
+      ];
+      const spyRender = vi.spyOn(window, 'renderMasterMemberRows');
+
+      // Update P1 (index 0) number to 99
+      window.updateMasterMemberNumber(0, '99');
+
+      // Check updated number and that list is sorted
+      const numbers = window.masterEditMembers.map(m => m.number);
+      expect(numbers).toEqual([5, 10, 99]);
+      expect(spyRender).toHaveBeenCalled();
+    });
+
+    it('should sort members when a new member is added via addMasterMemberRow', () => {
+      window.masterEditMembers = [
+        { id: 'M1', number: 10, name: 'P10' },
+        { id: 'M2', number: 5, name: 'P5' },
+      ];
+      // Note: addMasterMemberRow sorts. We should initialize it sorted just to be clean
+      window.masterEditMembers.sort((a, b) => a.number - b.number);
+
+      window.addMasterMemberRow();
+
+      // The new number should be Math.max(5, 10) + 1 = 11, and it should remain sorted
+      const numbers = window.masterEditMembers.map(m => m.number);
+      expect(numbers).toEqual([5, 10, 11]);
+    });
+
+    it('should sort unsorted legacy preset teams by number when loadPresetToTeam is called', () => {
+      const presetTeam = {
+        name: "LegacyUnsorted",
+        members: [
+          { number: 99, name: "P99", isStarter: true },
+          { number: 2, name: "P2", isStarter: true },
+          { number: 1, name: "P1", isStarter: true },
+          { number: 4, name: "P4", isStarter: true },
+          { number: 3, name: "P3", isStarter: true },
+          { number: 5, name: "P5", isStarter: true },
+        ]
+      };
+      localStorage.setItem('vb_preset_teams', JSON.stringify([presetTeam]));
+
+      window.loadPresetToTeam('A', 'LegacyUnsorted');
+
+      const numbers = window.state.membersA.map(m => m.number);
+      expect(numbers).toEqual([1, 2, 3, 4, 5, 99]);
+    });
+  });
 });
+
