@@ -20,6 +20,7 @@ let state = {
     targetPoints: 25,
     finalSetTarget: 15,
     showAdvancedMode: false,
+    advancedInputMethod: 'dialog',
     myTeamOnlyStats: false,
     isMyTeamA: false,
     isMyTeamB: false,

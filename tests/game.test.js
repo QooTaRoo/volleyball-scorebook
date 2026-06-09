@@ -190,7 +190,7 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
       expect(window.state.lineupB).toEqual(initialLineupB);
     });
 
-    it('should revert set finish and return to previous set and scores', async () => {
+    it('should revert set finish and return to previous set and scores in a single undo', async () => {
       window.state.maxSets = 3;
       window.state.currentSet = 1;
       window.state.scoreA = 24;
@@ -203,18 +203,42 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
       expect(window.state.currentSet).toBe(2);
       expect(window.state.setsA).toBe(1);
 
-      // First undo: Undo the set-finish event. This moves back to Set 1 and restores the ending score (25-20).
+      // Single undo: Undo the set-finish event and the winning point.
+      // This moves back to Set 1 and restores the score back to (24-20).
       window.undo(); 
       expect(window.state.currentSet).toBe(1);
-      expect(window.state.scoreA).toBe(25);
+      expect(window.state.scoreA).toBe(24);
       expect(window.state.scoreB).toBe(20);
       expect(window.state.setsA).toBe(0);
       expect(window.state.setHistory.length).toBe(0);
+    });
 
-      // Second undo: Undo the final point scored. This restores the score back to (24-20).
-      window.undo();
-      expect(window.state.scoreA).toBe(24);
+    it('should not allow adding more points once the set winning condition is met (match end cancelled)', async () => {
+      // Mock match end confirmation to return false (cancel)
+      window.showCustomConfirm = vi.fn().mockResolvedValue(false);
+
+      window.state.maxSets = 3;
+      window.state.currentSet = 2; // Set 2
+      window.state.scoreA = 24;
+      window.state.scoreB = 20;
+      window.state.setsA = 1; // Team A already won 1 set, so winning this set will win the match
+
+      // Team A scores winning point (25-20), triggers match finish confirmation
+      window.addPoint('A');
+      await tick();
+
+      expect(window.state.scoreA).toBe(25);
       expect(window.state.scoreB).toBe(20);
+      expect(window.state.setsA).toBe(2); // In-memory setsA is incremented
+      expect(window.state.currentSet).toBe(2); // Since cancelled, currentSet is still 2
+
+      // Try to add another point to Team A
+      window.addPoint('A');
+      expect(window.state.scoreA).toBe(25); // Score remains 25
+
+      // Try to add a point to Team B
+      window.addPoint('B');
+      expect(window.state.scoreB).toBe(20); // Score remains 20
     });
   });
 

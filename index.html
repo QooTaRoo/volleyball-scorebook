@@ -180,6 +180,19 @@
                     </div>
                 </div>
 
+                <div class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-bold text-zinc-300">詳細スタッツ入力形式</span>
+                        <span class="text-[8px] text-zinc-500">※詳細スタッツ記録時の操作UIを選択します</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="input-advanced-method" class="bg-zinc-800 border-none p-2 rounded text-xs font-bold text-white">
+                            <option value="dialog">ダイアログ形式 (推奨)</option>
+                            <option value="radial">ラジアルメニュー</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="space-y-4 pt-4 border-t border-zinc-800">
                     <label class="block text-[10px] font-black text-zinc-600 uppercase tracking-widest">データ管理</label>
                     
@@ -365,15 +378,15 @@ create policy "Allow public delete" on teams for delete using (true);</textarea>
                 <div id="analysis-header" class="mb-8"></div>
                 <div class="space-y-12">
                     <section>
-                        <h3 class="text-xs font-black text-zinc-500 mb-4 uppercase tracking-widest">チーム得点内訳</h3>
+                        <h3 class="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider">チーム得点内訳</h3>
                         <div id="analysis-team-stats" class="space-y-6"></div>
                     </section>
                     <section>
-                        <h3 class="text-xs font-black text-zinc-500 mb-4 uppercase tracking-widest">ローテーション分析 (サイドアウト率 / ブレイク率)</h3>
+                        <h3 class="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider">ローテーション分析 (サイドアウト率 / ブレイク率)</h3>
                         <div id="analysis-rotation-stats" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                     </section>
                     <section>
-                        <h3 class="text-xs font-black text-zinc-500 mb-4 uppercase tracking-widest">選手別個人スタッツ</h3>
+                        <h3 class="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider">選手別個人スタッツ</h3>
                         <div id="analysis-player-stats" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                     </section>
                 </div>
@@ -476,6 +489,99 @@ create policy "Allow public delete" on teams for delete using (true);</textarea>
             <div class="flex gap-3">
                 <button id="edit-action-cancel" onclick="closeEditActionModal()" class="flex-1 bg-zinc-800 text-white font-bold py-3 rounded-xl text-xs hover:bg-zinc-700 transition-all">キャンセル</button>
                 <button id="edit-action-save" onclick="saveEditedAction()" class="flex-1 bg-yellow-500 text-black font-black py-3 rounded-xl text-xs hover:bg-yellow-400 transition-all">修正を保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Stats Input Modal -->
+    <div id="detailed-stats-modal" class="hidden fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-zinc-900 rounded-3xl p-6 w-full max-w-sm md:max-w-xl border border-zinc-800 flex flex-col gap-4 shadow-2xl relative select-none max-h-[95vh] overflow-y-auto">
+            <h3 id="detailed-stats-title" class="text-lg font-bold text-yellow-400 flex items-center gap-2 shrink-0">
+                <i data-lucide="sliders" class="w-5 h-5"></i>
+                <span id="detailed-stats-team-label">得点詳細入力</span>
+            </h3>
+            
+            <div id="detailed-stats-layout" class="flex flex-col md:grid md:grid-cols-2 gap-4 w-full">
+                <!-- Left Column on Large Screen: Pattern & Main Action Buttons -->
+                <div id="detailed-stats-left-col" class="flex flex-col gap-4">
+                    <div class="space-y-2 shrink-0">
+                        <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">得点原因</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="ds-pattern-spike" onclick="selectDsPattern('spike')" class="flex flex-col items-center justify-center py-3.5 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1.5 transition-all">
+                                <i data-lucide="swords" class="w-4 h-4"></i>
+                                <span>スパイク</span>
+                            </button>
+                            <button id="ds-pattern-block" onclick="selectDsPattern('block')" class="flex flex-col items-center justify-center py-3.5 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1.5 transition-all">
+                                <i data-lucide="shield" class="w-4 h-4"></i>
+                                <span>ブロック</span>
+                            </button>
+                            <button id="ds-pattern-ace" onclick="selectDsPattern('ace')" class="flex flex-col items-center justify-center py-3.5 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1.5 transition-all">
+                                <i data-lucide="zap" class="w-4 h-4"></i>
+                                <span>エース</span>
+                            </button>
+                            <button id="ds-pattern-error" onclick="selectDsPattern('error')" class="flex flex-col items-center justify-center py-3.5 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1.5 transition-all">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                                <span>相手ミス</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Buttons block (Bottom for left column in md) -->
+                    <div class="hidden md:flex flex-col gap-2 shrink-0 w-full mt-auto">
+                        <button id="ds-btn-ok-md" onclick="confirmDetailedStats()" class="w-full bg-yellow-500 text-black font-black py-3.5 rounded-xl text-xs hover:bg-yellow-400 transition-all">決定 (OK)</button>
+                        <div class="flex gap-2 w-full">
+                            <button onclick="simpleDsScore()" class="flex-1 bg-zinc-800 text-zinc-300 font-bold py-2.5 rounded-xl text-xs hover:bg-zinc-750 transition-all">簡易得点のみ</button>
+                            <button onclick="closeDetailedStatsModal()" class="flex-1 bg-zinc-900 border border-zinc-850 text-zinc-500 font-bold py-2.5 rounded-xl text-xs hover:text-zinc-400 transition-all">キャンセル</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Court Member Selector -->
+                <div id="detailed-stats-court-container" class="flex flex-col gap-2 w-full max-w-xs mx-auto">
+                    <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center" id="detailed-stats-court-label">スタッツ対象選手</label>
+                    <div id="detailed-stats-court-grid" class="flex flex-col gap-2 bg-emerald-800 p-3 rounded-xl border-4 border-white/20 relative aspect-[3/2] w-full max-w-xs mx-auto transition-all">
+                        <div id="detailed-stats-front-row" class="flex gap-2 flex-1 transition-all">
+                            <div id="ds-pos-4" onclick="selectDsPlayerByPos(4)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 text-white px-0.5 overflow-hidden cursor-pointer transition-all">
+                                <span class="text-2xl font-bold player-num">-</span>
+                                <span class="text-[8px] truncate player-name"></span>
+                            </div>
+                            <div id="ds-pos-3" onclick="selectDsPlayerByPos(3)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 text-white px-0.5 overflow-hidden cursor-pointer transition-all">
+                                <span class="text-2xl font-bold player-num">-</span>
+                                <span class="text-[8px] truncate player-name"></span>
+                            </div>
+                            <div id="ds-pos-2" onclick="selectDsPlayerByPos(2)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 text-white px-0.5 overflow-hidden cursor-pointer transition-all">
+                                <span class="text-2xl font-bold player-num">-</span>
+                                <span class="text-[8px] truncate player-name"></span>
+                            </div>
+                        </div>
+                        <div id="detailed-stats-net-line" class="bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.4)] transition-all shrink-0 relative flex items-center justify-center rounded-sm h-3 border-t border-b border-amber-500/20">
+                            <span class="absolute text-[8px] text-zinc-950 font-black uppercase select-none tracking-widest">NET</span>
+                        </div>
+                        <div id="detailed-stats-back-row" class="flex gap-2 flex-1 transition-all">
+                            <div id="ds-pos-5" onclick="selectDsPlayerByPos(5)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 text-white px-0.5 overflow-hidden cursor-pointer transition-all">
+                                <span class="text-2xl font-bold player-num">-</span>
+                                <span class="text-[8px] truncate player-name"></span>
+                            </div>
+                            <div id="ds-pos-6" onclick="selectDsPlayerByPos(6)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 text-white px-0.5 overflow-hidden cursor-pointer transition-all">
+                                <span class="text-2xl font-bold player-num">-</span>
+                                <span class="text-[8px] truncate player-name"></span>
+                            </div>
+                            <div id="ds-pos-1" onclick="selectDsPlayerByPos(1)" class="flex-1 bg-white/10 rounded flex flex-col items-center justify-center border border-white/20 active:bg-white/30 text-white px-0.5 overflow-hidden cursor-pointer transition-all">
+                                <span class="text-2xl font-bold player-num">-</span>
+                                <span class="text-[8px] truncate player-name"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visible only on Mobile/Vertical screen below the layout -->
+                <div class="flex md:hidden flex-col gap-2 shrink-0 w-full mt-2" style="order: 99;">
+                    <button id="ds-btn-ok-mobile" onclick="confirmDetailedStats()" class="w-full bg-yellow-500 text-black font-black py-3 rounded-xl text-xs hover:bg-yellow-400 transition-all">決定 (OK)</button>
+                    <div class="flex gap-2 w-full">
+                        <button onclick="simpleDsScore()" class="flex-1 bg-zinc-800 text-zinc-300 font-bold py-2.5 rounded-xl text-xs hover:bg-zinc-750 transition-all">簡易得点のみ</button>
+                        <button onclick="closeDetailedStatsModal()" class="flex-1 bg-zinc-900 border border-zinc-850 text-zinc-500 font-bold py-2.5 rounded-xl text-xs hover:text-zinc-400 transition-all">キャンセル</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

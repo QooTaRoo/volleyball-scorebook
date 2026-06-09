@@ -89,7 +89,7 @@ function showCurrentTimeline() {
     header.innerHTML = `
         <span style="color: ${state.colorA}">${state.teamA}</span>
         <span class="bg-zinc-800 px-3 py-1 rounded text-white shadow-inner">${state.setsA}</span>
-        <span class="text-zinc-600 font-normal">vs</span>
+        <span class="text-zinc-400 font-normal">vs</span>
         <span class="bg-zinc-800 px-3 py-1 rounded text-white shadow-inner">${state.setsB}</span>
         <span style="color: ${state.colorB}">${state.teamB}</span>
     `;
@@ -98,8 +98,8 @@ function showCurrentTimeline() {
     allSets.forEach(setData => {
         const isCurrent = setData.set === state.currentSet && !state.matchComplete;
         const sh = document.createElement('div');
-        sh.className = "text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-4 flex items-center gap-2";
-        sh.innerHTML = `<span class="w-1 h-1 bg-zinc-700 rounded-full"></span> 第${setData.set}セット`;
+        sh.className = "text-xs font-bold text-zinc-400 uppercase tracking-wider mt-4 flex items-center gap-2";
+        sh.innerHTML = `<span class="w-1.5 h-1.5 bg-zinc-500 rounded-full"></span> 第${setData.set}セット`;
         content.appendChild(sh);
         content.appendChild(renderTimeline(setData.log, state.teamA, state.teamB, state.colorA, state.colorB, isCurrent ? state.scoreA : setData.scoreA, isCurrent ? state.scoreB : setData.scoreB, isCurrent));
     });
@@ -168,7 +168,7 @@ function renderHistory() {
     const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
 
     if (history.length === 0) {
-        list.innerHTML = "<div class='text-zinc-600 py-10 text-center text-xs'>試合履歴がありません。</div>";
+        list.innerHTML = "<div class='text-zinc-450 py-10 text-center text-sm font-medium'>試合履歴がありません。</div>";
         return;
     }
 
@@ -207,9 +207,9 @@ function renderHistory() {
                     <i data-lucide="calendar" class="w-4 h-4"></i>
                 </div>
                 <span class="text-sm font-black text-zinc-200 tracking-wide">${group.display}</span>
-                <span class="text-[9px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2 py-0.5 rounded-lg font-black tracking-wider shadow-inner">${badgeText}</span>
+                <span class="text-xs bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2 py-0.5 rounded-lg font-bold tracking-wide shadow-inner">${badgeText}</span>
             </div>
-            <i data-lucide="chevron-down" id="date-group-caret-${dateKey}" class="w-4 h-4 text-zinc-500 transition-transform duration-300 transform ${caretClass}"></i>
+            <i data-lucide="chevron-down" id="date-group-caret-${dateKey}" class="w-4 h-4 text-zinc-400 transition-transform duration-300 transform ${caretClass}"></i>
         `;
         groupEl.appendChild(headerEl);
         
@@ -243,14 +243,14 @@ function renderHistory() {
             }
             
             item.innerHTML = `
-                <div class="flex justify-between items-center text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">
-                    <span class="flex items-center gap-1">
-                        <i data-lucide="clock" class="w-3 h-3 text-zinc-600"></i> ${timeStr ? timeStr + ' - ' : ''}${m.durationMinutes || 0}分
+                <div class="flex justify-between items-center text-xs text-zinc-400 font-bold mb-3 uppercase tracking-wide">
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-zinc-400"></i> ${timeStr ? timeStr + ' - ' : ''}${m.durationMinutes || 0}分
                     </span>
                     <div class="flex items-center gap-3">
-                        <span class="flex items-center gap-1"><i data-lucide="layers" class="w-3 h-3"></i> ${m.maxSets}セット</span>
-                        <button onclick="deleteHistoryItem(${idx})" class="text-zinc-500 hover:text-red-500 transition-colors p-1" title="履歴を削除">
-                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span class="flex items-center gap-1.5"><i data-lucide="layers" class="w-3.5 h-3.5 text-zinc-400"></i> ${m.maxSets}セット</span>
+                        <button onclick="deleteHistoryItem(${idx})" class="text-zinc-400 hover:text-red-400 transition-colors p-1" title="履歴を削除">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
                 </div>
@@ -259,7 +259,7 @@ function renderHistory() {
                         <div class="text-lg font-black truncate w-full" style="color: ${cA}">${m.teamA}</div>
                         <div class="text-3xl font-black text-white">${m.setsA}</div>
                     </div>
-                    <div class="px-4 text-[10px] font-black text-zinc-700 italic">VS</div>
+                    <div class="px-4 text-xs font-bold text-zinc-450 italic">VS</div>
                     <div class="flex-1 flex flex-col items-end overflow-hidden text-right">
                         <div class="text-lg font-black truncate w-full" style="color: ${cB}">${m.teamB}</div>
                         <div class="text-3xl font-black text-white">${m.setsB}</div>
@@ -267,14 +267,14 @@ function renderHistory() {
                 </div>
                 <div id="history-timeline-${idx}" class="hidden mt-4 border-t border-zinc-800/85 pt-4 bg-[#1a1a1a] px-2 pb-2 rounded-xl text-left"></div>
                 <div class="flex gap-2 mt-2" data-html2canvas-ignore>
-                    <button onclick="toggleHistoryTimeline(${idx})" class="flex-1 bg-zinc-800/80 hover:bg-zinc-700 py-2.5 text-[10px] font-black rounded-lg transition-colors flex items-center justify-center gap-1 border border-white/5 text-zinc-300">
-                        <i data-lucide="activity" class="w-3 h-3"></i> 詳細
+                    <button onclick="toggleHistoryTimeline(${idx})" class="flex-1 bg-zinc-800/80 hover:bg-zinc-700 py-2.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-white/5 text-zinc-200">
+                        <i data-lucide="activity" class="w-3.5 h-3.5"></i> 詳細
                     </button>
-                    <button onclick="openAnalysis(${idx})" class="flex-1 bg-zinc-800/80 hover:bg-zinc-700 py-2.5 text-[10px] font-black rounded-lg transition-colors flex items-center justify-center gap-1 border border-white/5 text-zinc-300">
-                        <i data-lucide="trending-up" class="w-3 h-3"></i> 分析
+                    <button onclick="openAnalysis(${idx})" class="flex-1 bg-zinc-800/80 hover:bg-zinc-700 py-2.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-white/5 text-zinc-200">
+                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> 分析
                     </button>
-                    <button onclick="shareContainerAsImage('history-item-${idx}', 'history.png')" id="share-btn-${idx}" class="hidden bg-blue-600 hover:bg-blue-500 px-4 py-2 text-[10px] font-black rounded-lg flex items-center gap-1 text-white shadow-md">
-                        <i data-lucide="share-2" class="w-3 h-3"></i> 共有
+                    <button onclick="shareContainerAsImage('history-item-${idx}', 'history.png')" id="share-btn-${idx}" class="hidden bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 text-white shadow-md">
+                        <i data-lucide="share-2" class="w-3.5 h-3.5"></i> 共有
                     </button>
                 </div>
             `;
@@ -284,7 +284,7 @@ function renderHistory() {
             const tlContainer = item.querySelector(`#history-timeline-${idx}`);
             m.setHistory.forEach(setData => {
                 const h = document.createElement('div');
-                h.className = "text-[9px] font-black text-zinc-500 mt-3 mb-1 uppercase tracking-wider";
+                h.className = "text-xs font-bold text-zinc-400 mt-3 mb-1 uppercase tracking-wider";
                 h.textContent = `SET ${setData.set}`;
                 tlContainer.appendChild(h);
                 tlContainer.appendChild(renderTimeline(setData.log, m.teamA, m.teamB, cA, cB, setData.scoreA, setData.scoreB, false));
@@ -333,31 +333,31 @@ function renderAnalysisContent(m) {
     const setScoresHtml = m.setHistory.map(s => {
         const isLastSet = m.isLiveMatch && s.set === state.currentSet;
         const statusText = isLastSet ? 'LIVE' : 'FINAL';
-        const statusColor = isLastSet ? 'text-emerald-500' : 'text-zinc-500';
+        const statusColor = isLastSet ? 'text-emerald-500 font-bold' : 'text-zinc-400';
         return `
             <div class="flex items-center justify-center gap-3 w-full">
-                <span class="text-[10px] text-zinc-500 font-black w-10 text-right tracking-wider">SET ${s.set}</span>
+                <span class="text-xs text-zinc-400 font-black w-10 text-right tracking-wider">SET ${s.set}</span>
                 <div class="flex items-center justify-center gap-2 px-4 py-1.5 rounded-xl ${isLastSet ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800/50 text-zinc-200 border border-white/5'} text-base sm:text-lg font-black min-w-[90px] shadow-inner">
-                    <span>${s.scoreA}</span><span class="text-zinc-600 px-0.5">-</span><span>${s.scoreB}</span>
+                    <span>${s.scoreA}</span><span class="text-zinc-400 px-0.5">-</span><span>${s.scoreB}</span>
                 </div>
-                <div class="w-10 italic text-[9px] ${statusColor} font-bold tracking-widest">${statusText}</div>
+                <div class="w-10 italic text-xs ${statusColor} tracking-widest">${statusText}</div>
             </div>
         `;
     }).join('');
 
     header.innerHTML = `
-        <div class="bg-zinc-900/50 p-6 rounded-3xl border border-white/5 shadow-2xl overflow-hidden relative">
+        <div class="bg-zinc-900/50 p-6 rounded-3xl border border-zinc-850 shadow-2xl overflow-hidden relative">
             <div class="flex items-stretch justify-between gap-2">
                 <div class="flex-1 flex flex-col items-center justify-center py-2">
-                    <div class="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Sets</div>
+                    <div class="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Sets</div>
                     <div class="text-6xl font-black mb-2" style="color: ${m.colorA}">${m.setsA}</div>
-                    <div class="text-xs font-bold text-center px-1" style="color: ${m.colorA}">${m.teamA}</div>
+                    <div class="text-sm font-bold text-center px-1" style="color: ${m.colorA}">${m.teamA}</div>
                 </div>
-                <div class="flex-[1.2] flex flex-col items-center justify-center gap-2 border-x border-white/5 px-2">${setScoresHtml}</div>
+                <div class="flex-[1.2] flex flex-col items-center justify-center gap-2 border-x border-zinc-850 px-2">${setScoresHtml}</div>
                 <div class="flex-1 flex flex-col items-center justify-center py-2">
-                    <div class="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Sets</div>
+                    <div class="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Sets</div>
                     <div class="text-6xl font-black mb-2" style="color: ${m.colorB}">${m.setsB}</div>
-                    <div class="text-xs font-bold text-center px-1" style="color: ${m.colorB}">${m.teamB}</div>
+                    <div class="text-sm font-bold text-center px-1" style="color: ${m.colorB}">${m.teamB}</div>
                 </div>
             </div>
         </div>
@@ -397,13 +397,13 @@ function renderAnalysisContent(m) {
         const max = Math.max(valA + valB, 1);
         teamStats.innerHTML += `
             <div class="space-y-2">
-                <div class="flex justify-between text-[10px] font-bold text-zinc-500 uppercase">
-                    <span class="flex items-center gap-1"><i data-lucide="${cat.icon}" class="w-3 h-3"></i> ${cat.label}</span>
-                    <div class="flex gap-4"><span style="color: ${m.colorA}">${valA}</span><span style="color: ${m.colorB}">${valB}</span></div>
+                <div class="flex justify-between text-xs sm:text-sm font-bold text-zinc-300 uppercase">
+                    <span class="flex items-center gap-1.5"><i data-lucide="${cat.icon}" class="w-4 h-4 text-zinc-400"></i> ${cat.label}</span>
+                    <div class="flex gap-4 font-black"><span style="color: ${m.colorA}">${valA}</span><span style="color: ${m.colorB}">${valB}</span></div>
                 </div>
-                <div class="h-2 w-full bg-zinc-800 rounded-full flex overflow-hidden">
-                    <div class="h-full transition-all duration-1000" style="width: ${(valA/max)*100}%; background: ${m.colorA}; opacity: 0.8"></div>
-                    <div class="h-full transition-all duration-1000" style="width: ${(valB/max)*100}%; background: ${m.colorB}; opacity: 0.8; margin-left: auto"></div>
+                <div class="h-2.5 w-full bg-zinc-800/80 border border-white/5 rounded-full flex overflow-hidden">
+                    <div class="h-full transition-all duration-1000" style="width: ${(valA/max)*100}%; background: ${m.colorA}; opacity: 0.9"></div>
+                    <div class="h-full transition-all duration-1000" style="width: ${(valB/max)*100}%; background: ${m.colorB}; opacity: 0.9; margin-left: auto"></div>
                 </div>
             </div>
         `;
@@ -423,8 +423,8 @@ function renderAnalysisContent(m) {
             const members = t === 'A' ? (m.membersA || []) : (m.membersB || []);
             
             const container = document.createElement('div');
-            container.className = "bg-zinc-900/30 p-4 rounded-xl border border-white/5";
-            container.innerHTML = `<h4 class="text-[11px] font-black mb-4 border-b border-zinc-800 pb-2 uppercase tracking-widest" style="color: ${color}">${teamName}</h4>`;
+            container.className = "bg-zinc-900/30 p-4 rounded-xl border border-white/5 shadow-md";
+            container.innerHTML = `<h4 class="text-sm font-bold mb-4 border-b border-zinc-800 pb-2 uppercase tracking-wide" style="color: ${color}">${teamName}</h4>`;
             
             const list = document.createElement('div');
             list.className = "space-y-4";
@@ -433,32 +433,31 @@ function renderAnalysisContent(m) {
                 const starterId = starters[idx];
                 const player = members.find(mem => mem.id === starterId);
                 const displayNum = player ? player.number : (idx + 1);
-                const displayName = player ? (player.name === String(player.number) ? '' : player.name.substring(0, 6)) : '';
-                const label = `ローテ ${idx + 1} (始動: #${displayNum}${displayName ? ' ' + displayName : ''})`;
+                const label = `ローテ ${idx + 1} (#${displayNum})`;
                 
                 const soRate = s.receiveRallies > 0 ? Math.round((s.sideoutPoints / s.receiveRallies) * 100) : 0;
                 const brRate = s.serveRallies > 0 ? Math.round((s.breakPoints / s.serveRallies) * 100) : 0;
                 
                 list.innerHTML += `
-                    <div class="flex flex-col gap-1 border-b border-zinc-800/40 pb-3 last:border-0 last:pb-0">
-                        <div class="flex justify-between text-[10px] font-bold text-zinc-300">
-                            <span class="flex items-center gap-1.5"><i data-lucide="rotate-cw" class="w-3 h-3 text-zinc-500"></i> ${label}</span>
+                    <div class="flex flex-col gap-1.5 border-b border-zinc-800/80 pb-3 last:border-0 last:pb-0">
+                        <div class="flex justify-between text-[11px] sm:text-xs font-bold text-zinc-200">
+                            <span class="flex items-center gap-1"><i data-lucide="rotate-cw" class="w-3 h-3 text-zinc-450"></i> ${label}</span>
                             <div class="flex gap-3">
-                                <span class="text-emerald-400 font-bold">SO: ${soRate}% <span class="text-[8px] text-zinc-500 font-normal">(${s.sideoutPoints}/${s.receiveRallies})</span></span>
-                                <span class="text-blue-400 font-bold">BR: ${brRate}% <span class="text-[8px] text-zinc-500 font-normal">(${s.breakPoints}/${s.serveRallies})</span></span>
+                                <span class="text-emerald-400 font-black">SO: ${soRate}% <span class="text-[10px] text-zinc-400 font-medium">(${s.sideoutPoints}/${s.receiveRallies})</span></span>
+                                <span class="text-blue-400 font-black">BR: ${brRate}% <span class="text-[10px] text-zinc-400 font-medium">(${s.breakPoints}/${s.serveRallies})</span></span>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3 mt-1.5">
+                        <div class="grid grid-cols-2 gap-3 mt-1">
                             <div class="space-y-1">
-                                <div class="flex justify-between text-[8px] text-zinc-500 font-bold uppercase tracking-tighter"><span>サイドアウト (Receive)</span></div>
-                                <div class="h-2 w-full bg-zinc-800 rounded-full overflow-hidden flex">
-                                    <div class="h-full bg-emerald-500 transition-all duration-1000" style="width: ${soRate}%; opacity: 0.85"></div>
+                                <div class="flex justify-between text-[10px] text-zinc-400 font-bold uppercase tracking-tight"><span>サイドアウト (Receive)</span></div>
+                                <div class="h-2 w-full bg-zinc-800/80 border border-white/5 rounded-full overflow-hidden flex">
+                                    <div class="h-full bg-emerald-500 transition-all duration-1000" style="width: ${soRate}%; opacity: 0.9"></div>
                                 </div>
                             </div>
                             <div class="space-y-1">
-                                <div class="flex justify-between text-[8px] text-zinc-500 font-bold uppercase tracking-tighter"><span>ブレイク (Serve)</span></div>
-                                <div class="h-2 w-full bg-zinc-800 rounded-full overflow-hidden flex">
-                                    <div class="h-full bg-blue-500 transition-all duration-1000" style="width: ${brRate}%; opacity: 0.85"></div>
+                                <div class="flex justify-between text-[10px] text-zinc-400 font-bold uppercase tracking-tight"><span>ブレイク (Serve)</span></div>
+                                <div class="h-2 w-full bg-zinc-800/80 border border-white/5 rounded-full overflow-hidden flex">
+                                    <div class="h-full bg-blue-500 transition-all duration-1000" style="width: ${brRate}%; opacity: 0.9"></div>
                                 </div>
                             </div>
                         </div>
@@ -478,9 +477,9 @@ function renderAnalysisContent(m) {
         const pData = stats[t].players;
         const sortedIds = Object.keys(pData).sort((a,b) => (pData[b].spike + pData[b].block + pData[b].ace) - (pData[a].spike + pData[a].block + pData[a].ace));
         const container = document.createElement('div');
-        container.className = "bg-zinc-900/30 p-4 rounded-xl border border-white/5";
-        container.innerHTML = `<h4 class="text-[11px] font-black mb-4 border-b border-zinc-800 pb-2 uppercase tracking-widest" style="color: ${color}">${teamName}</h4>`;
-        if (sortedIds.length === 0) container.innerHTML += `<div class="text-[10px] text-zinc-600 italic">データなし</div>`;
+        container.className = "bg-zinc-900/30 p-4 rounded-xl border border-white/5 shadow-md";
+        container.innerHTML = `<h4 class="text-sm font-bold mb-4 border-b border-zinc-800 pb-2 uppercase tracking-wide" style="color: ${color}">${teamName}</h4>`;
+        if (sortedIds.length === 0) container.innerHTML += `<div class="text-xs text-zinc-500 italic">データなし</div>`;
         else {
             const table = document.createElement('div');
             table.className = "space-y-3";
@@ -490,28 +489,28 @@ function renderAnalysisContent(m) {
                 const members = t === 'A' ? (m.membersA || []) : (m.membersB || []);
                 const player = members.find(mem => mem.id === pId);
                 const displayNum = player ? player.number : pId.replace(/[AB]/, '');
-                const displayName = player ? (player.name === String(player.number) ? '' : player.name.substring(0,6)) : '';
+                const displayName = player ? (player.name === String(player.number) ? '' : player.name.substring(0, 6)) : '';
                 table.innerHTML += `
-                    <div class="group flex flex-col gap-1 p-2 hover:bg-white/5 rounded-xl transition-all cursor-pointer border border-transparent hover:border-white/5" onclick="const d = this.querySelector('.player-detail'); d.classList.toggle('hidden'); if(typeof lucide!=='undefined')lucide.createIcons();">
+                    <div class="group flex flex-col gap-1.5 p-2 hover:bg-white/5 rounded-xl transition-all cursor-pointer border border-transparent hover:border-white/5" onclick="const d = this.querySelector('.player-detail'); d.classList.toggle('hidden'); if(typeof lucide!=='undefined')lucide.createIcons();">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-lg bg-zinc-800 flex flex-col items-center justify-center text-[11px] font-black text-zinc-400 border border-white/5 shadow-inner">
-                                <span class="leading-none text-white">${displayNum}</span>
-                                ${displayName ? `<span class="text-[7px] opacity-60 truncate w-full text-center px-0.5">${displayName}</span>` : ''}
+                            <div class="w-9 h-9 rounded-lg bg-zinc-800/80 flex flex-col items-center justify-center text-xs font-bold text-zinc-350 border border-zinc-700 shadow-inner">
+                                <span class="leading-none text-white text-xs font-extrabold">${displayNum}</span>
+                                ${displayName ? `<span class="text-[9px] opacity-90 text-zinc-300 font-medium truncate w-full text-center px-0.5">${displayName}</span>` : ''}
                             </div>
                             <div class="flex-1">
-                                <div class="flex justify-between text-[9px] mb-1 font-black uppercase tracking-tighter"><span class="text-zinc-300">Total: ${total}</span><span class="text-red-500/70">Err: ${p.error}</span></div>
-                                <div class="flex h-1.5 rounded-full overflow-hidden bg-zinc-800">
+                                <div class="flex justify-between text-xs mb-1 font-bold uppercase tracking-tight"><span class="text-zinc-200">Total: ${total}</span><span class="text-red-400 font-bold">Err: ${p.error}</span></div>
+                                <div class="flex h-2 rounded-full overflow-hidden bg-zinc-800/80">
                                     <div style="width: ${(p.spike/Math.max(total,1))*100}%; background: #10b981"></div>
                                     <div style="width: ${(p.block/Math.max(total,1))*100}%; background: #3b82f6"></div>
                                     <div style="width: ${(p.ace/Math.max(total,1))*100}%; background: #eab308"></div>
                                 </div>
                             </div>
                         </div>
-                        <div class="player-detail hidden pl-12 pr-2 py-3 grid grid-cols-4 gap-2 text-[9px] font-black border-t border-white/5 mt-2 bg-black/20 rounded-b-lg">
-                            <div class="flex flex-col"><span class="text-zinc-600 text-[6px] uppercase tracking-tighter mb-1">Spike</span><span class="text-emerald-400 text-xs">${p.spike}</span></div>
-                            <div class="flex flex-col"><span class="text-zinc-600 text-[6px] uppercase tracking-tighter mb-1">Block</span><span class="text-blue-400 text-xs">${p.block}</span></div>
-                            <div class="flex flex-col"><span class="text-zinc-600 text-[6px] uppercase tracking-tighter mb-1">Ace</span><span class="text-yellow-400 text-xs">${p.ace}</span></div>
-                            <div class="flex flex-col"><span class="text-zinc-600 text-[6px] uppercase tracking-tighter mb-1">Error</span><span class="text-red-400 text-xs">${p.error}</span></div>
+                        <div class="player-detail hidden pl-12 pr-2 py-3 grid grid-cols-4 gap-2 border border-white/5 mt-2 bg-zinc-950/80 rounded-lg">
+                            <div class="flex flex-col"><span class="text-emerald-400/85 text-[10px] sm:text-xs uppercase tracking-wider mb-1 font-bold">Spike</span><span class="text-emerald-400 text-base sm:text-lg font-black">${p.spike}</span></div>
+                            <div class="flex flex-col"><span class="text-blue-400/85 text-[10px] sm:text-xs uppercase tracking-wider mb-1 font-bold">Block</span><span class="text-blue-400 text-base sm:text-lg font-black">${p.block}</span></div>
+                            <div class="flex flex-col"><span class="text-yellow-400/85 text-[10px] sm:text-xs uppercase tracking-wider mb-1 font-bold">Ace</span><span class="text-yellow-400 text-base sm:text-lg font-black">${p.ace}</span></div>
+                            <div class="flex flex-col"><span class="text-red-400/85 text-[10px] sm:text-xs uppercase tracking-wider mb-1 font-bold">Error</span><span class="text-red-400 text-base sm:text-lg font-black">${p.error}</span></div>
                         </div>
                     </div>
                 `;

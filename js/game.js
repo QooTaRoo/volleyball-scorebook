@@ -4,6 +4,16 @@ function addPoint(winningTeam, pattern = 'unknown', playerId = null) {
     if (state.matchComplete) return;
     if (isAnyModalOpen()) return;
 
+    // Prevent adding points if the current set has already finished
+    let maxPoints = state.targetPoints;
+    let requiredDifference = 2;
+    if (state.maxSets >= 3 && state.currentSet === state.maxSets) {
+        maxPoints = state.finalSetTarget;
+    }
+    if ((state.scoreA >= maxPoints || state.scoreB >= maxPoints) && Math.abs(state.scoreA - state.scoreB) >= requiredDifference) {
+        return;
+    }
+
     try {
         vibrate(50);
         
@@ -168,6 +178,21 @@ function prepareNextSet() {
 
 async function finishMatch(winnerName, scoreDetail = "") {
     try {
+        let winner = winnerName;
+        if (!winner) {
+            winner = state.scoreA > state.scoreB ? state.teamA : state.teamB;
+        }
+
+        let confirmMsg = `試合を終了して記録しますか？\n(勝者: ${winner}`;
+        if (scoreDetail) {
+            confirmMsg += `, ${scoreDetail})`;
+        } else {
+            confirmMsg += `, 得点: ${state.scoreA} - ${state.scoreB})`;
+        }
+        
+        const confirmed = await showCustomConfirm(confirmMsg);
+        if (!confirmed) return;
+
         const matchHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
         matchHistory.unshift({
             date: new Date().toLocaleString(),
@@ -198,10 +223,7 @@ async function finishMatch(winnerName, scoreDetail = "") {
         if (scoreDetail) msg += `\n${scoreDetail}`;
         
         await showCustomAlert(msg);
-    } catch (err) {
-        console.error("Error during finishMatch:", err);
-        await showCustomAlert("試合記録の保存中にエラーが発生しました。\n" + err.message);
-    } finally {
+
         // Reset for new match and ensure main menu is shown
         resetMatchState();
         saveState();
@@ -215,6 +237,9 @@ async function finishMatch(winnerName, scoreDetail = "") {
             });
             toggleMainMenu(true);
         }
+    } catch (err) {
+        console.error("Error during finishMatch:", err);
+        await showCustomAlert("試合記録の保存中にエラーが発生しました。\n" + err.message);
     }
 }
 
@@ -282,6 +307,19 @@ function undo() {
         state.setsB = last.setsB;
         state.isCourtSwapped = last.isCourtSwapped;
         state.setHistory.pop();
+
+        // Recursively undo the point that triggered the set finish
+        let hasPrecedingScoreAction = false;
+        for (let i = state.actionLog.length - 1; i >= 0; i--) {
+            if (['point', 'timeout', 'set_finish'].includes(state.actionLog[i].type)) {
+                hasPrecedingScoreAction = true;
+                break;
+            }
+        }
+        if (hasPrecedingScoreAction) {
+            undo();
+            return;
+        }
     }
     
     saveState();

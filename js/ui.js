@@ -294,6 +294,8 @@ function toggleSettings() {
         if (durationEl) durationEl.value = state.timeoutDuration || 30;
         const bgColorEl = document.getElementById('input-bg-color');
         if (bgColorEl) bgColorEl.value = state.bgColor || '#1a1a1a';
+        const methodEl = document.getElementById('input-advanced-method');
+        if (methodEl) methodEl.value = state.advancedInputMethod || 'dialog';
         if (typeof updateSyncUI === 'function') updateSyncUI();
     }
     modal.classList.toggle('hidden');
@@ -453,6 +455,8 @@ function applySettings(isInit = false) {
     if (durationEl) state.timeoutDuration = parseInt(durationEl.value) || 30;
     const bgColorEl = document.getElementById('input-bg-color');
     if (bgColorEl) state.bgColor = bgColorEl.value;
+    const methodEl = document.getElementById('input-advanced-method');
+    if (methodEl) state.advancedInputMethod = methodEl.value;
     
     if (isInit) {
         resetMatchState();

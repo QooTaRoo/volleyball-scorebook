@@ -42,9 +42,14 @@ function initRadialEvents() {
             radialState.startTime = Date.now();
 
             if (state.showAdvancedMode) {
-                radialState.timer = setTimeout(() => {
+                if (state.advancedInputMethod === 'radial') {
                     showRadialMenu(e.clientX, e.clientY);
-                }, RADIAL_HOLD_TIME);
+                } else {
+                    const targetTeam = radialState.team;
+                    resetRadialState();
+                    radialState.team = null; // Prevent pointerup/endInteraction from adding a simple point
+                    openDetailedStatsModal(targetTeam);
+                }
             }
 
             // Create visual ripple feedback
@@ -349,3 +354,276 @@ function resetStillnessTimer() {
         }, 500); // 0.5秒静止で選手選択へ
     }
 }
+
+// --- Detailed Stats Dialog Modal logic ---
+
+let dsState = {
+    team: null,        // 'A' or 'B' (scoring team)
+    pattern: 'spike',  // 'spike', 'block', 'ace', 'error'
+    playerId: null,    // selected player ID
+    displayTeam: null  // 'A' or 'B' (the team currently being displayed on the court)
+};
+
+function openDetailedStatsModal(team) {
+    dsState.team = team;
+    dsState.pattern = 'spike';
+    dsState.playerId = null;
+    dsState.displayTeam = team;
+
+    // Set title
+    const teamName = team === 'A' ? state.teamA : state.teamB;
+    const titleEl = document.getElementById('detailed-stats-team-label');
+    if (titleEl) {
+        titleEl.textContent = `詳細スタッツ入力 (${teamName}の得点)`;
+        titleEl.style.color = team === 'A' ? state.colorA : state.colorB;
+    }
+
+    // Show modal
+    const modal = document.getElementById('detailed-stats-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+
+    // Render options and layout
+    updateDsPatternUI();
+    renderDsCourt();
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function closeDetailedStatsModal() {
+    const modal = document.getElementById('detailed-stats-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function selectDsPattern(pattern) {
+    dsState.pattern = pattern;
+    
+    // If pattern is 'error', we display the opponent team members. Otherwise we display the scoring team members.
+    const teamToPick = pattern === 'error' ? (dsState.team === 'A' ? 'B' : 'A') : dsState.team;
+    dsState.displayTeam = teamToPick;
+    
+    // Reset player selection since the roster changed
+    dsState.playerId = null;
+    
+    updateDsPatternUI();
+    renderDsCourt();
+}
+
+function updateDsPatternUI() {
+    const patterns = ['spike', 'block', 'ace', 'error'];
+    patterns.forEach(p => {
+        const btn = document.getElementById(`ds-pattern-${p}`);
+        if (!btn) return;
+        
+        const isMatch = dsState.pattern === p;
+        if (isMatch) {
+            btn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-400');
+            btn.classList.remove('bg-zinc-800', 'text-white', 'border-white/5');
+            if (p === 'error') {
+                btn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-400');
+                btn.classList.add('bg-red-500', 'text-black', 'border-red-400');
+            }
+        } else {
+            btn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-400', 'bg-red-500', 'border-red-400');
+            btn.classList.add('bg-zinc-800', 'text-white', 'border-white/5');
+        }
+    });
+}
+
+function selectDsPlayerByPos(posNum) {
+    const lineup = dsState.displayTeam === 'A' ? state.lineupA : state.lineupB;
+    const selectedPlayerId = lineup[posNum - 1];
+    
+    // Toggle selection
+    if (dsState.playerId === selectedPlayerId) {
+        dsState.playerId = null; // deselect
+    } else {
+        dsState.playerId = selectedPlayerId;
+    }
+    
+    highlightDsCourtPlayers();
+}
+
+function highlightDsCourtPlayers() {
+    const lineup = dsState.displayTeam === 'A' ? state.lineupA : state.lineupB;
+    [1, 2, 3, 4, 5, 6].forEach(p => {
+        const el = document.getElementById(`ds-pos-${p}`);
+        if (!el) return;
+        
+        const playerId = lineup[p - 1];
+        const isMatch = dsState.playerId === playerId;
+        
+        if (isMatch) {
+            el.classList.add('ring-4', 'ring-yellow-400', 'bg-yellow-500/20', 'border-yellow-400/50');
+            el.classList.remove('bg-white/10', 'border-white/20');
+        } else {
+            el.classList.remove('ring-4', 'ring-yellow-400', 'bg-yellow-500/20', 'border-yellow-400/50');
+            
+            // Check if player is Libero
+            const members = dsState.displayTeam === 'A' ? state.membersA : state.membersB;
+            const player = members.find(m => m.id === playerId);
+            const liberos = dsState.displayTeam === 'A' ? (state.liberosA || []) : (state.liberosB || []);
+            const isLibero = liberos.includes(playerId) || (player && !!player.isLibero);
+            
+            if (isLibero) {
+                el.classList.add('bg-purple-900/30', 'border-purple-500/50');
+                el.classList.remove('bg-white/10', 'border-white/20');
+            } else {
+                el.classList.remove('bg-purple-900/30', 'border-purple-500/50');
+                el.classList.add('bg-white/10', 'border-white/20');
+            }
+        }
+    });
+}
+
+function renderDsCourt() {
+    const team = dsState.displayTeam;
+    const lineup = team === 'A' ? state.lineupA : state.lineupB;
+    const members = team === 'A' ? state.membersA : state.membersB;
+    const liberos = team === 'A' ? (state.liberosA || []) : (state.liberosB || []);
+
+    const courtLabel = document.getElementById('detailed-stats-court-label');
+    if (courtLabel) {
+        const teamName = team === 'A' ? state.teamA : state.teamB;
+        courtLabel.textContent = `スタッツ対象選手 (${teamName})`;
+    }
+
+    [1, 2, 3, 4, 5, 6].forEach(p => {
+        const el = document.getElementById(`ds-pos-${p}`);
+        if (!el) return;
+        
+        const numSpan = el.querySelector('.player-num');
+        const nameSpan = el.querySelector('.player-name');
+        
+        const playerId = lineup[p - 1];
+        const player = members.find(m => m.id === playerId);
+        
+        if (numSpan) numSpan.textContent = player ? player.number : '-';
+        if (nameSpan) {
+            const name = player ? player.name : '';
+            nameSpan.textContent = (name && name !== String(player?.number)) ? name : '';
+        }
+        
+        // Remove existing libero badges
+        let badge = el.querySelector('.libero-badge');
+        if (badge) badge.remove();
+        
+        const isLibero = liberos.includes(playerId) || (player && !!player.isLibero);
+        if (isLibero) {
+            badge = document.createElement('span');
+            badge.className = 'libero-badge absolute top-1 right-1 bg-purple-500 text-[6px] text-white font-black px-1 rounded-sm shadow-md pointer-events-none select-none animate-pulse';
+            badge.textContent = 'L';
+            el.appendChild(badge);
+        }
+    });
+
+    highlightDsCourtPlayers();
+
+    // Symmetrical Layout calculation
+    const isLandscape = window.innerWidth > window.innerHeight;
+    const isTeamAFirst = !state.isCourtSwapped;
+    const isDisplayTeamFirst = (team === 'A' ? isTeamAFirst : !isTeamAFirst);
+
+    const leftCol = document.getElementById('detailed-stats-left-col');
+    const courtContainer = document.getElementById('detailed-stats-court-container');
+    const layout = document.getElementById('detailed-stats-layout');
+    
+    const courtGrid = document.getElementById('detailed-stats-court-grid');
+    const frontRow = document.getElementById('detailed-stats-front-row');
+    const backRow = document.getElementById('detailed-stats-back-row');
+    const netLine = document.getElementById('detailed-stats-net-line');
+
+    if (courtGrid && frontRow && backRow && netLine) {
+        if (isLandscape) {
+            // Horizontal layout
+            courtGrid.style.flexDirection = 'row';
+            netLine.style.width = '12px';
+            netLine.style.height = 'auto';
+            netLine.style.margin = '0';
+            frontRow.style.flexDirection = 'column';
+            backRow.style.flexDirection = 'column';
+            
+            if (isDisplayTeamFirst) {
+                // Team is on the left. Net is on the right. Buttons are on the left.
+                netLine.style.order = '4';
+                frontRow.style.order = '3';
+                backRow.style.order = '2';
+                
+                if (leftCol && courtContainer) {
+                    leftCol.style.order = '1';
+                    courtContainer.style.order = '2';
+                }
+            } else {
+                // Team is on the right. Net is on the left. Buttons are on the right.
+                netLine.style.order = '1';
+                frontRow.style.order = '2';
+                backRow.style.order = '3';
+                
+                if (leftCol && courtContainer) {
+                    leftCol.style.order = '2';
+                    courtContainer.style.order = '1';
+                }
+            }
+        } else {
+            // Vertical layout
+            courtGrid.style.flexDirection = 'column';
+            netLine.style.width = 'auto';
+            netLine.style.height = '12px';
+            netLine.style.margin = '0';
+            frontRow.style.flexDirection = 'row';
+            backRow.style.flexDirection = 'row';
+
+            if (isDisplayTeamFirst) {
+                // Team is at the top. Net is at the bottom. Buttons are at the top.
+                netLine.style.order = '4';
+                frontRow.style.order = '3';
+                backRow.style.order = '2';
+
+                if (leftCol && courtContainer) {
+                    leftCol.style.order = '1';
+                    courtContainer.style.order = '2';
+                }
+            } else {
+                // Team is at the bottom. Net is at the top. Buttons are at the bottom.
+                netLine.style.order = '1';
+                frontRow.style.order = '2';
+                backRow.style.order = '3';
+
+                if (leftCol && courtContainer) {
+                    leftCol.style.order = '2';
+                    courtContainer.style.order = '1';
+                }
+            }
+        }
+    }
+}
+
+function confirmDetailedStats() {
+    if (!dsState.pattern) {
+        showToast("得点原因を選択してください");
+        return;
+    }
+    
+    // Add point!
+    addPoint(dsState.team, dsState.pattern, dsState.playerId);
+    closeDetailedStatsModal();
+    showToast("詳細スタッツを記録しました");
+}
+
+function simpleDsScore() {
+    addPoint(dsState.team, 'unknown', null);
+    closeDetailedStatsModal();
+    showToast("得点のみを記録しました");
+}
+
+// Bind to window to allow inline onclick handlers in HTML
+window.openDetailedStatsModal = openDetailedStatsModal;
+window.closeDetailedStatsModal = closeDetailedStatsModal;
+window.selectDsPattern = selectDsPattern;
+window.selectDsPlayerByPos = selectDsPlayerByPos;
+window.confirmDetailedStats = confirmDetailedStats;
+window.simpleDsScore = simpleDsScore;
+
