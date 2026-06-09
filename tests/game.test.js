@@ -30,6 +30,30 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
       expect(saved.scoreB).toBe(1);
     });
 
+    it('should allow adding points when only the detailed stats modal is open, but block if other modals are open', () => {
+      // Simulate detailed-stats-modal being open
+      const modal = document.getElementById('detailed-stats-modal');
+      modal.classList.remove('hidden');
+
+      expect(window.isAnyModalOpen()).toBe(true);
+
+      // Try to add a point (should succeed because detailed-stats-modal is bypassed)
+      window.addPoint('A');
+      expect(window.state.scoreA).toBe(1);
+
+      // Open another modal (e.g. settings-modal)
+      const settingsModal = document.getElementById('settings-modal');
+      settingsModal.classList.remove('hidden');
+
+      // Try to add a point (should be blocked now)
+      window.addPoint('A');
+      expect(window.state.scoreA).toBe(1); // Still 1
+
+      // Cleanup
+      modal.classList.add('hidden');
+      settingsModal.classList.add('hidden');
+    });
+
     it('should not add points if match is complete', () => {
       window.state.matchComplete = true;
       window.addPoint('A');

@@ -2,7 +2,12 @@
 
 function addPoint(winningTeam, pattern = 'unknown', playerId = null) {
     if (state.matchComplete) return;
-    if (isAnyModalOpen()) return;
+    if (isAnyModalOpen()) {
+        const openModals = Array.from(document.querySelectorAll('[id$="-modal"]')).filter(m => !m.classList.contains('hidden'));
+        if (openModals.some(m => m.id !== 'detailed-stats-modal')) {
+            return;
+        }
+    }
 
     // Prevent adding points if the current set has already finished
     let maxPoints = state.targetPoints;
