@@ -9,23 +9,32 @@ function selectCourtLibero(index, playerId) {
     const team = currentCourtTeam;
     
     if (team === 'preset') {
-        const liberos = masterEditMembers.filter(m => m.isLibero).map(m => m.id);
         const idx = index - 1;
-        const valToClear = liberos[idx];
+        const valToClear = masterEditMembers.find(m => m.isLibero && m.liberoPos === index)?.id;
         
         if (valToClear) {
             const p = masterEditMembers.find(m => m.id === valToClear);
-            if (p) p.isLibero = false;
+            if (p) {
+                p.isLibero = false;
+                p.liberoPos = undefined;
+            }
         }
         
         if (playerId) {
-            const pOther = masterEditMembers.find(m => m.isLibero && m.id === playerId);
-            if (pOther) pOther.isLibero = false;
+            // 他の選手が同じindexのリベロ位置にいる場合は既に上でクリアしているが、
+            // 選択した選手自身がすでに別のリベロ位置に登録されている可能性があるため解除する
+            const pSelfOther = masterEditMembers.find(m => m.isLibero && m.id === playerId);
+            if (pSelfOther) {
+                pSelfOther.isLibero = false;
+                pSelfOther.liberoPos = undefined;
+            }
             
             const p = masterEditMembers.find(m => m.id === playerId);
             if (p) {
                 p.isLibero = true;
+                p.liberoPos = index;
                 p.isStarter = false; // Cannot be a starter if libero
+                p.starterPos = undefined;
             }
             showToast(`リベロ ${index} を登録しました`);
         } else {
@@ -115,9 +124,19 @@ function renderCourt(team) {
     const select1 = document.getElementById('court-libero-select-1');
     const select2 = document.getElementById('court-libero-select-2');
     if (select1 && select2) {
-        const liberos = isPreset 
-            ? masterEditMembers.filter(m => m.isLibero).map(m => m.id)
-            : (team === 'A' ? (state.liberosA || []) : (state.liberosB || []));
+        let liberos;
+        if (isPreset) {
+            const lib1 = masterEditMembers.find(m => m.isLibero && m.liberoPos === 1)?.id;
+            const lib2 = masterEditMembers.find(m => m.isLibero && m.liberoPos === 2)?.id;
+            if (lib1 || lib2) {
+                liberos = [lib1 || null, lib2 || null];
+            } else {
+                // Fallback for older presets without liberoPos
+                liberos = masterEditMembers.filter(m => m.isLibero).map(m => m.id);
+            }
+        } else {
+            liberos = team === 'A' ? (state.liberosA || []) : (state.liberosB || []);
+        }
         const val1 = liberos[0] || "";
         const val2 = liberos[1] || "";
         
@@ -225,6 +244,23 @@ function renderCourt(team) {
 function handleCourtPosClick(posNum) {
     const idx = posNum - 1;
     if (swapSelectionIdx === null) {
+        // One-tap Libero swap on court (Proposal 4)
+        // If the clicked player is a libero, and the other libero is on the bench, swap them immediately
+        const team = currentCourtTeam;
+        if (team !== 'preset') {
+            const lineup = team === 'A' ? state.lineupA : state.lineupB;
+            const liberos = team === 'A' ? (state.liberosA || []) : (state.liberosB || []);
+            const currentPlayerId = lineup[idx];
+            if (liberos.includes(currentPlayerId)) {
+                const otherLiberoId = liberos.find(id => id && id !== currentPlayerId && !lineup.includes(id));
+                if (otherLiberoId) {
+                    currentSubPosIdx = idx;
+                    substitute(otherLiberoId);
+                    return;
+                }
+            }
+        }
+
         // First click: Select for swap or open sub menu
         swapSelectionIdx = idx;
         renderCourt(currentCourtTeam);

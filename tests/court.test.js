@@ -451,6 +451,61 @@ describe('Volleyball Scorebook - Court & Player Management (court.js)', () => {
       expect(window.showCustomConfirm).toHaveBeenCalledWith(expect.stringContaining('代わりにリベロ'));
       expect(window.state.lineupA[4]).toBe('A5'); // remained unchanged!
     });
+
+    it('should substitute the specific assigned libero (L1 or L2) for the corresponding MB player', () => {
+      // Setup: two liberos A7 (L1) and A8 (L2)
+      window.state.liberosA = ['A7', 'A8'];
+      window.state.membersA.push(
+        { id: 'A8', number: 8, name: 'L2', isStarter: false, isLibero: true }
+      );
+      
+      // Assign L1 (assignedLibero: 1) to A2 (MB1)
+      // Assign L2 (assignedLibero: 2) to A5 (MB2)
+      window.state.membersA.find(m => m.id === 'A2').assignedLibero = 1;
+      window.state.membersA.find(m => m.id === 'A5').assignedLibero = 2;
+
+      // 1. Swap A5 (MB2) who rotates to back row (Index 4).
+      // Since A5 is assigned to L2 (A8), A8 should be substituted.
+      window.checkAutoLiberoSubstitutions('A');
+      expect(window.state.lineupA[4]).toBe('A8'); // L2 (A8) is subbed in for A5
+
+      // Reset lineup
+      window.state.lineupA = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6'];
+
+      // 2. Swap A2 (MB1) who rotates to back row (Index 4).
+      window.state.lineupA = ['A1', 'A3', 'A4', 'A6', 'A2', 'A5']; // A2 at index 4
+      // Now A2 (MB1) is at back row (Index 4). A2 is assigned to L1 (A7).
+      window.checkAutoLiberoSubstitutions('A');
+      expect(window.state.lineupA[4]).toBe('A7'); // L1 (A7) is subbed in for A2
+    });
+
+    it('should swap liberos immediately on court without opening bench modal when clicking a court libero', () => {
+      // Setup currentCourtTeam to 'A' (active match editing)
+      window.currentCourtTeam = 'A';
+      window.swapSelectionIdx = null;
+      window.currentSubPosIdx = null;
+      
+      // Setup two liberos: A7 is on court, A8 is on bench
+      window.state.liberosA = ['A7', 'A8'];
+      window.state.membersA.push(
+        { id: 'A8', number: 8, name: 'L2', isStarter: false, isLibero: true }
+      );
+      window.state.lineupA = ['A1', 'A2', 'A3', 'A4', 'A7', 'A6']; // A7 is at index 4 (Position 5)
+
+      // Spies or mocks for sub modal and substitute
+      const originalOpenSubModal = window.openSubModal;
+      window.openSubModal = vi.fn();
+      
+      // Trigger click on position 5 (index 4) which has court Libero A7
+      window.handleCourtPosClick(5);
+
+      // It should swap immediately and NOT call openSubModal
+      expect(window.openSubModal).not.toHaveBeenCalled();
+      expect(window.state.lineupA[4]).toBe('A8'); // A8 is now subbed in for A7
+
+      // Restore
+      window.openSubModal = originalOpenSubModal;
+    });
   });
 });
 

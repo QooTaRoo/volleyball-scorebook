@@ -62,6 +62,29 @@ describe('Volleyball Scorebook - Teams Preset, Starters & Libero Configuration (
     });
   });
 
+  describe('toggleMasterLiberoTarget()', () => {
+    it('should cycle through 3 states: OFF -> L1 -> L2 -> OFF', () => {
+      // Setup
+      window.masterEditMembers[0].isLiberoTarget = false;
+      window.masterEditMembers[0].assignedLibero = undefined;
+
+      // 1st click: OFF -> L1
+      window.toggleMasterLiberoTarget(0);
+      expect(window.masterEditMembers[0].isLiberoTarget).toBe(true);
+      expect(window.masterEditMembers[0].assignedLibero).toBe(1);
+
+      // 2nd click: L1 -> L2
+      window.toggleMasterLiberoTarget(0);
+      expect(window.masterEditMembers[0].isLiberoTarget).toBe(true);
+      expect(window.masterEditMembers[0].assignedLibero).toBe(2);
+
+      // 3rd click: L2 -> OFF
+      window.toggleMasterLiberoTarget(0);
+      expect(window.masterEditMembers[0].isLiberoTarget).toBe(false);
+      expect(window.masterEditMembers[0].assignedLibero).toBeUndefined();
+    });
+  });
+
   describe('loadPresetToTeam()', () => {
     it('should load preset members, starters, and liberos into active game state', () => {
       const presetTeam = {
@@ -95,6 +118,32 @@ describe('Volleyball Scorebook - Teams Preset, Starters & Libero Configuration (
       // Assert liberos loaded into state.liberosA
       expect(window.state.liberosA[0]).toBe('A6'); // T6's generated ID
       expect(window.state.liberosA[1]).toBe('A7'); // T7's generated ID
+    });
+
+    it('should preserve libero order based on liberoPos even when numbers are out of order', () => {
+      const presetTeam = {
+        name: "TestLibOrder",
+        isMyTeam: true,
+        members: [
+          { number: 10, name: "T1", isStarter: true, isLibero: false },
+          { number: 11, name: "T2", isStarter: true, isLibero: false },
+          { number: 12, name: "T3", isStarter: true, isLibero: false },
+          { number: 13, name: "T4", isStarter: false, isLibero: true, liberoPos: 2 }, // Libero 2 (No.13)
+          { number: 14, name: "T5", isStarter: false, isLibero: true, liberoPos: 1 }, // Libero 1 (No.14)
+          { number: 15, name: "T6", isStarter: true, isLibero: false },
+          { number: 16, name: "T7", isStarter: true, isLibero: false },
+          { number: 17, name: "T8", isStarter: true, isLibero: false },
+        ]
+      };
+
+      localStorage.setItem('vb_preset_teams', JSON.stringify([presetTeam]));
+
+      window.loadPresetToTeam('A', 'TestLibOrder');
+
+      // T5 (No.14) has liberoPos 1 -> A5
+      // T4 (No.13) has liberoPos 2 -> A4
+      expect(window.state.liberosA[0]).toBe('A5');
+      expect(window.state.liberosA[1]).toBe('A4');
     });
   });
 

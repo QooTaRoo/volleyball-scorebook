@@ -74,10 +74,16 @@ async function checkAutoLiberoSubstitutions(team, isMatchStart = false) {
         for (let idx of rearIndices) {
             const playerId = lineup[idx];
             if (targetPlayers.includes(playerId)) {
+                // Determine target Libero for this specific MB
+                const mbPlayer = members.find(m => m.id === playerId);
+                const assignedNum = (mbPlayer && mbPlayer.assignedLibero) ? mbPlayer.assignedLibero : 1;
+                // Get the libero ID corresponding to the assigned number (L1 = index 0, L2 = index 1)
+                const targetLiberoId = liberos[assignedNum - 1] || liberos[0];
+                if (!targetLiberoId) continue;
+
                 // If it is the match start, ask the user via a confirmation dialog first
                 if (isMatchStart && typeof showCustomConfirm === 'function') {
-                    const mbPlayer = members.find(m => m.id === playerId);
-                    const liberoPlayer = members.find(m => m.id === activeLiberoId);
+                    const liberoPlayer = members.find(m => m.id === targetLiberoId);
                     const msg = `【試合開始】No.${mbPlayer ? mbPlayer.number : ''} ${mbPlayer ? mbPlayer.name : ''} の代わりにリベロ（No.${liberoPlayer ? liberoPlayer.number : ''}）を投入しますか？`;
                     
                     const confirmed = await showCustomConfirm(msg);
@@ -87,21 +93,20 @@ async function checkAutoLiberoSubstitutions(team, isMatchStart = false) {
                 }
 
                 // Auto sub Libero in
-                lineup[idx] = activeLiberoId;
+                lineup[idx] = targetLiberoId;
                 
                 state.actionLog.push({
                     type: 'substitution',
                     team: team,
                     posIdx: idx,
                     outPlayerId: playerId,
-                    inPlayerId: activeLiberoId,
+                    inPlayerId: targetLiberoId,
                     isLibero: true,
                     isAuto: true,
                     set: state.currentSet,
                     timestamp: Date.now()
                 });
                 
-                const mbPlayer = members.find(m => m.id === playerId);
                 showToast(`No.${mbPlayer ? mbPlayer.number : ''} の代わりにリベロを投入しました`);
                 saveState();
                 updateUI();
