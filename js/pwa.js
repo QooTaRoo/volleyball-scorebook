@@ -137,16 +137,26 @@ async function shareContainerAsImage(containerId, filename = 'share.png') {
             logging: false,
             onclone: (clonedDoc) => {
                 clonedDoc.querySelectorAll('.color-box').forEach(el => {
-                    el.style.display = 'flex';
-                    el.style.alignItems = 'center';
-                    el.style.justifyContent = 'center';
+                    el.style.display = 'inline-block';
+                    el.style.textAlign = 'center';
                     el.style.padding = '0';
+                    el.style.verticalAlign = 'middle';
+                    el.style.boxSizing = 'border-box';
+                    
+                    if (el.classList.contains('w-12') || el.classList.contains('h-10')) {
+                        el.style.lineHeight = '40px';
+                        el.style.height = '40px';
+                        el.style.width = '48px';
+                    } else {
+                        el.style.lineHeight = '28px';
+                        el.style.height = '28px';
+                        el.style.width = '28px';
+                    }
                 });
                 clonedDoc.querySelectorAll('.box-digit').forEach(el => {
-                    el.style.display = 'inline-block';
-                    el.style.position = 'relative';
-                    el.style.top = '-2px';
-                    el.style.lineHeight = '1';
+                    el.style.display = 'inline';
+                    el.style.position = 'static';
+                    el.style.lineHeight = 'inherit';
                 });
             }
         });
