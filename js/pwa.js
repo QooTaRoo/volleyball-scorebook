@@ -137,26 +137,24 @@ async function shareContainerAsImage(containerId, filename = 'share.png') {
             logging: false,
             onclone: (clonedDoc) => {
                 clonedDoc.querySelectorAll('.color-box').forEach(el => {
-                    el.style.display = 'inline-block';
+                    const isBig = el.classList.contains('w-12') || el.classList.contains('h-10');
+                    el.style.display = 'block';
                     el.style.textAlign = 'center';
-                    el.style.padding = '0';
-                    el.style.verticalAlign = 'middle';
+                    el.style.lineHeight = '1';
                     el.style.boxSizing = 'border-box';
+                    el.style.margin = el.classList.contains('mr-4') ? '0 16px 0 0' : '0 2px';
+                    el.style.verticalAlign = 'middle';
+                    el.innerHTML = el.textContent.trim();
                     
-                    if (el.classList.contains('w-12') || el.classList.contains('h-10')) {
-                        el.style.lineHeight = '40px';
-                        el.style.height = '40px';
+                    if (isBig) {
                         el.style.width = '48px';
+                        el.style.height = '40px';
+                        el.style.paddingTop = '11px';
                     } else {
-                        el.style.lineHeight = '28px';
-                        el.style.height = '28px';
                         el.style.width = '28px';
+                        el.style.height = '28px';
+                        el.style.paddingTop = '7px';
                     }
-                });
-                clonedDoc.querySelectorAll('.box-digit').forEach(el => {
-                    el.style.display = 'inline';
-                    el.style.position = 'static';
-                    el.style.lineHeight = 'inherit';
                 });
             }
         });

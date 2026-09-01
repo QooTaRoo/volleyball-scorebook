@@ -39,8 +39,8 @@ function renderTimeline(setLog, teamA, teamB, colorA, colorB, currentScoreA, cur
     let htmlA = `<div class="flex items-center overflow-visible" style="min-width: max-content;">`;
     let htmlB = `<div class="flex items-center mt-1.5 overflow-visible" style="min-width: max-content;">`;
 
-    htmlA += `<div class="w-12 h-10 flex items-center justify-center font-black text-xl rounded mr-4 color-box shadow-lg border border-white/10 shrink-0 leading-none" style="background: ${colorA}; color: #000;"><span class="box-digit">${finalA}</span></div>`;
-    htmlB += `<div class="w-12 h-10 flex items-center justify-center font-black text-xl rounded mr-4 color-box shadow-lg border border-white/10 shrink-0 leading-none" style="background: ${colorB}; color: #000;"><span class="box-digit">${finalB}</span></div>`;
+    htmlA += `<div class="w-12 h-10 flex items-center justify-center font-black text-xl rounded mr-4 color-box shadow-lg border border-white/10 shrink-0 leading-none" style="background: ${colorA}; color: #000;">${finalA}</div>`;
+    htmlB += `<div class="w-12 h-10 flex items-center justify-center font-black text-xl rounded mr-4 color-box shadow-lg border border-white/10 shrink-0 leading-none" style="background: ${colorB}; color: #000;">${finalB}</div>`;
 
     columns.forEach(col => {
         if (col.type === 'point') {
@@ -50,19 +50,19 @@ function renderTimeline(setLog, teamA, teamB, colorA, colorB, currentScoreA, cur
             const onclickAttr = isClickable ? `onclick="event.stopPropagation(); openEditActionModal(this);" data-action-idx="${actIdx}"` : '';
 
             if (col.team === 'A') {
-                htmlA += `<div ${onclickAttr} class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm shrink-0 leading-none ${cursorClass}" style="background: ${colorA}; color: #000;"><span class="box-digit">${col.val}</span></div>`;
+                htmlA += `<div ${onclickAttr} class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm shrink-0 leading-none ${cursorClass}" style="background: ${colorA}; color: #000;">${col.val}</div>`;
                 htmlB += `<div class="w-7 h-7 mx-0.5 shrink-0"></div>`;
             } else {
                 htmlA += `<div class="w-7 h-7 mx-0.5 shrink-0"></div>`;
-                htmlB += `<div ${onclickAttr} class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm shrink-0 leading-none ${cursorClass}" style="background: ${colorB}; color: #000;"><span class="box-digit">${col.val}</span></div>`;
+                htmlB += `<div ${onclickAttr} class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm shrink-0 leading-none ${cursorClass}" style="background: ${colorB}; color: #000;">${col.val}</div>`;
             }
         } else if (col.type === 'timeout') {
             if (col.team === 'A') {
-                htmlA += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[10px] font-black italic rounded shrink-0 leading-none" style="background: ${colorA}; border: 1.5px solid #000; color: #000;"><span class="box-digit">T${col.val}</span></div>`;
+                htmlA += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[10px] font-black italic rounded shrink-0 leading-none" style="background: ${colorA}; border: 1.5px solid #000; color: #000;">T${col.val}</div>`;
                 htmlB += `<div class="w-7 h-7 mx-0.5 shrink-0"></div>`;
             } else {
                 htmlA += `<div class="w-7 h-7 mx-0.5 shrink-0"></div>`;
-                htmlB += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[10px] font-black italic rounded shrink-0 leading-none" style="background: ${colorB}; border: 1.5px solid #000; color: #000;"><span class="box-digit">T${col.val}</span></div>`;
+                htmlB += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[10px] font-black italic rounded shrink-0 leading-none" style="background: ${colorB}; border: 1.5px solid #000; color: #000;">T${col.val}</div>`;
             }
         }
     });
