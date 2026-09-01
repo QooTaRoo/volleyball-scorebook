@@ -296,7 +296,6 @@ function toggleSettings() {
         if (bgColorEl) bgColorEl.value = state.bgColor || '#1a1a1a';
         const methodEl = document.getElementById('input-advanced-method');
         if (methodEl) methodEl.value = state.advancedInputMethod || 'dialog';
-        if (typeof updateSyncUI === 'function') updateSyncUI();
     }
     modal.classList.toggle('hidden');
     

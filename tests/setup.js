@@ -38,6 +38,18 @@ beforeAll(() => {
   global.html2canvas = vi.fn().mockResolvedValue({
     toDataURL: () => 'data:image/png;base64,mocked_image'
   });
+  global.QRCode = {
+    toCanvas: vi.fn((canvas, text, opts, cb) => {
+      if (typeof cb === 'function') cb(null);
+    })
+  };
+  global.LZString = {
+    compressToEncodedURIComponent: vi.fn(str => encodeURIComponent(str)),
+    decompressFromEncodedURIComponent: vi.fn(str => {
+      try { return decodeURIComponent(str); } catch (e) { return str; }
+    })
+  };
+  global.jsQR = vi.fn();
   
   // Mock window.scrollTo
   window.scrollTo = vi.fn();
@@ -57,6 +69,9 @@ global.loadApp = () => {
   // 4. Set up Lucide & html2canvas mocks on window too
   window.lucide = global.lucide;
   window.html2canvas = global.html2canvas;
+  window.QRCode = global.QRCode;
+  window.LZString = global.LZString;
+  window.jsQR = global.jsQR;
   window.navigator.vibrate = global.navigator.vibrate;
 
   // 5. Read all scripts and concatenate them
@@ -71,6 +86,7 @@ global.loadApp = () => {
     'js/teams.js',
     'js/pwa.js',
     'js/backup.js',
+    'js/qr-share.js',
     'js/init.js'
   ];
 
@@ -91,7 +107,13 @@ global.loadApp = () => {
       .replace(/^let swapSelectionIdx\s*=/m, 'var swapSelectionIdx =')
       .replace(/^let radialState\s*=/m, 'var radialState =')
       .replace(/^let currentEditingActionIdx\s*=/m, 'var currentEditingActionIdx =')
-      .replace(/^let masterEditMembers\s*=/m, 'var masterEditMembers =');
+      .replace(/^let masterEditMembers\s*=/m, 'var masterEditMembers =')
+      .replace(/^let currentShareUrl\s*=/m, 'var currentShareUrl =')
+      .replace(/^let currentShareMatch\s*=/m, 'var currentShareMatch =')
+      .replace(/^let scannerStream\s*=/m, 'var scannerStream =')
+      .replace(/^let scannerAnimFrame\s*=/m, 'var scannerAnimFrame =')
+      .replace(/^let currentCameraFacing\s*=/m, 'var currentCameraFacing =')
+      .replace(/^let pendingImportMatch\s*=/m, 'var pendingImportMatch =');
 
     combinedCode += code + '\n;';
   });

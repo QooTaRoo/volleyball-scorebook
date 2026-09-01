@@ -59,7 +59,6 @@ function importTeams() {
             else localTeams.push(remoteTeam);
         });
         localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(localTeams));
-        if (typeof syncAllData === 'function') syncAllData(true);
         showToast("チーム設定をインポートしました");
         if (typeof renderMasterTeamsList === 'function') renderMasterTeamsList();
     });
@@ -80,7 +79,6 @@ function importHistory() {
         });
         localHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
         localStorage.setItem(HISTORY_KEY, JSON.stringify(localHistory));
-        if (typeof syncAllData === 'function') syncAllData(true);
         
         showToast("試合履歴をインポートしました");
         if (!document.getElementById('history-modal').classList.contains('hidden')) renderHistory();

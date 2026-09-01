@@ -409,7 +409,6 @@ function saveMasterTeam() {
     else presets.push(newPreset);
 
     localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(presets));
-    if (typeof pushTeamToCloud === 'function') pushTeamToCloud(newPreset);
     showToast(`チームマスター「${nameVal}」を保存しました`);
     
     if (state.teamA === masterEditOriginalName || state.teamA === nameVal) {
@@ -435,7 +434,6 @@ async function deleteMasterTeam() {
     let teams = JSON.parse(localStorage.getItem(PRESET_TEAMS_KEY) || '[]');
     teams = teams.filter(t => t.name !== masterEditOriginalName);
     localStorage.setItem(PRESET_TEAMS_KEY, JSON.stringify(teams));
-    if (typeof deleteTeamOnCloud === 'function') deleteTeamOnCloud(masterEditOriginalName);
 
     showToast(`チーム「${masterEditOriginalName}」を削除しました`);
     toggleMembers();

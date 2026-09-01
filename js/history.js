@@ -36,11 +36,11 @@ function renderTimeline(setLog, teamA, teamB, colorA, colorB, currentScoreA, cur
     const finalA = setInProgress ? currentScoreA : aScore;
     const finalB = setInProgress ? currentScoreB : bScore;
 
-    let htmlA = `<div class="flex items-center" style="min-width: max-content;">`;
-    let htmlB = `<div class="flex items-center mt-1.5" style="min-width: max-content;">`;
+    let htmlA = `<div class="flex items-center overflow-visible" style="min-width: max-content;">`;
+    let htmlB = `<div class="flex items-center mt-1.5 overflow-visible" style="min-width: max-content;">`;
 
-    htmlA += `<div class="w-12 h-10 flex items-center justify-center font-bold text-xl rounded mr-4 color-box shadow-lg border border-white/10" style="background: ${colorA}; color: #000;">${finalA}</div>`;
-    htmlB += `<div class="w-12 h-10 flex items-center justify-center font-bold text-xl rounded mr-4 color-box shadow-lg border border-white/10" style="background: ${colorB}; color: #000;">${finalB}</div>`;
+    htmlA += `<div class="w-12 h-10 flex items-center justify-center font-black text-xl rounded mr-4 color-box shadow-lg border border-white/10 shrink-0 leading-none" style="background: ${colorA}; color: #000;"><span class="box-digit">${finalA}</span></div>`;
+    htmlB += `<div class="w-12 h-10 flex items-center justify-center font-black text-xl rounded mr-4 color-box shadow-lg border border-white/10 shrink-0 leading-none" style="background: ${colorB}; color: #000;"><span class="box-digit">${finalB}</span></div>`;
 
     columns.forEach(col => {
         if (col.type === 'point') {
@@ -50,25 +50,25 @@ function renderTimeline(setLog, teamA, teamB, colorA, colorB, currentScoreA, cur
             const onclickAttr = isClickable ? `onclick="event.stopPropagation(); openEditActionModal(this);" data-action-idx="${actIdx}"` : '';
 
             if (col.team === 'A') {
-                htmlA += `<div ${onclickAttr} class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm ${cursorClass}" style="background: ${colorA}; color: #000;">${col.val}</div>`;
-                htmlB += `<div class="w-7 h-7 mx-0.5"></div>`;
+                htmlA += `<div ${onclickAttr} class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm shrink-0 leading-none ${cursorClass}" style="background: ${colorA}; color: #000;"><span class="box-digit">${col.val}</span></div>`;
+                htmlB += `<div class="w-7 h-7 mx-0.5 shrink-0"></div>`;
             } else {
-                htmlA += `<div class="w-7 h-7 mx-0.5"></div>`;
-                htmlB += `<div ${onclickAttr} class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm ${cursorClass}" style="background: ${colorB}; color: #000;">${col.val}</div>`;
+                htmlA += `<div class="w-7 h-7 mx-0.5 shrink-0"></div>`;
+                htmlB += `<div ${onclickAttr} class="w-7 h-7 flex items-center justify-center mx-0.5 rounded color-box text-sm font-bold shadow-sm shrink-0 leading-none ${cursorClass}" style="background: ${colorB}; color: #000;"><span class="box-digit">${col.val}</span></div>`;
             }
         } else if (col.type === 'timeout') {
             if (col.team === 'A') {
-                htmlA += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[10px] font-black italic rounded" style="background: ${colorA}; border: 1.5px solid #000; color: #000;">T${col.val}</div>`;
-                htmlB += `<div class="w-7 h-7 mx-0.5"></div>`;
+                htmlA += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[10px] font-black italic rounded shrink-0 leading-none" style="background: ${colorA}; border: 1.5px solid #000; color: #000;"><span class="box-digit">T${col.val}</span></div>`;
+                htmlB += `<div class="w-7 h-7 mx-0.5 shrink-0"></div>`;
             } else {
-                htmlA += `<div class="w-7 h-7 mx-0.5"></div>`;
-                htmlB += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[10px] font-black italic rounded" style="background: ${colorB}; border: 1.5px solid #000; color: #000;">T${col.val}</div>`;
+                htmlA += `<div class="w-7 h-7 mx-0.5 shrink-0"></div>`;
+                htmlB += `<div class="w-7 h-7 flex items-center justify-center mx-0.5 color-box t-box text-[10px] font-black italic rounded shrink-0 leading-none" style="background: ${colorB}; border: 1.5px solid #000; color: #000;"><span class="box-digit">T${col.val}</span></div>`;
             }
         }
     });
 
     htmlA += `</div>`; htmlB += `</div>`;
-    container.innerHTML = `<div class="overflow-x-auto pb-2 timeline-container">${htmlA}${htmlB}</div>`;
+    container.innerHTML = `<div class="overflow-x-auto pb-4 timeline-container overflow-y-visible">${htmlA}${htmlB}</div>`;
     return container;
 }
 
@@ -85,13 +85,19 @@ function showCurrentTimeline() {
     }
 
     const header = document.createElement('div');
-    header.className = "flex items-center justify-center gap-4 mb-8 text-xl font-bold bg-[#1a1a1a] sticky top-0 py-4 z-10 border-b border-zinc-800";
+    header.className = "flex items-center justify-between gap-4 mb-6 text-xl font-bold bg-[#1a1a1a] sticky top-0 py-3 z-10 border-b border-zinc-800 px-2 overflow-visible";
     header.innerHTML = `
-        <span style="color: ${state.colorA}">${state.teamA}</span>
-        <span class="bg-zinc-800 px-3 py-1 rounded text-white shadow-inner">${state.setsA}</span>
-        <span class="text-zinc-400 font-normal">vs</span>
-        <span class="bg-zinc-800 px-3 py-1 rounded text-white shadow-inner">${state.setsB}</span>
-        <span style="color: ${state.colorB}">${state.teamB}</span>
+        <div class="flex-1 text-left min-w-0 overflow-visible">
+            <span class="text-lg font-black leading-snug break-words" style="color: ${state.colorA}">${state.teamA}</span>
+        </div>
+        <div class="flex items-center gap-3 shrink-0 overflow-visible">
+            <span class="bg-zinc-800 px-3.5 py-1 rounded-xl text-2xl font-black text-white shadow-inner leading-normal">${state.setsA}</span>
+            <span class="text-zinc-400 font-bold text-xs italic">vs</span>
+            <span class="bg-zinc-800 px-3.5 py-1 rounded-xl text-2xl font-black text-white shadow-inner leading-normal">${state.setsB}</span>
+        </div>
+        <div class="flex-1 text-right min-w-0 overflow-visible">
+            <span class="text-lg font-black leading-snug break-words" style="color: ${state.colorB}">${state.teamB}</span>
+        </div>
     `;
     content.appendChild(header);
 
@@ -249,23 +255,23 @@ function renderHistory() {
                     </span>
                     <div class="flex items-center gap-3">
                         <span class="flex items-center gap-1.5"><i data-lucide="layers" class="w-3.5 h-3.5 text-zinc-400"></i> ${m.maxSets}セット</span>
-                        <button onclick="deleteHistoryItem(${idx})" class="text-zinc-400 hover:text-red-400 transition-colors p-1" title="履歴を削除">
+                        <button onclick="deleteHistoryItem(${idx})" class="text-zinc-400 hover:text-red-400 transition-colors p-1" title="履歴を削除" data-html2canvas-ignore>
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
                 </div>
-                <div class="flex justify-between items-center mb-5 px-2">
-                    <div class="flex-1 flex flex-col items-start overflow-hidden">
-                        <div class="text-lg font-black truncate w-full" style="color: ${cA}">${m.teamA}</div>
-                        <div class="text-3xl font-black text-white">${m.setsA}</div>
+                <div class="flex justify-between items-center mb-5 px-3 overflow-visible">
+                    <div class="flex-1 flex flex-col items-start min-w-0 overflow-visible">
+                        <div class="text-lg font-black leading-snug break-words max-w-full" style="color: ${cA}">${m.teamA}</div>
+                        <div class="text-3xl font-black text-white leading-normal pt-1 pb-1">${m.setsA}</div>
                     </div>
-                    <div class="px-4 text-xs font-bold text-zinc-450 italic">VS</div>
-                    <div class="flex-1 flex flex-col items-end overflow-hidden text-right">
-                        <div class="text-lg font-black truncate w-full" style="color: ${cB}">${m.teamB}</div>
-                        <div class="text-3xl font-black text-white">${m.setsB}</div>
+                    <div class="px-4 text-xs font-bold text-zinc-500 italic shrink-0">VS</div>
+                    <div class="flex-1 flex flex-col items-end min-w-0 text-right overflow-visible">
+                        <div class="text-lg font-black leading-snug break-words max-w-full" style="color: ${cB}">${m.teamB}</div>
+                        <div class="text-3xl font-black text-white leading-normal pt-1 pb-1">${m.setsB}</div>
                     </div>
                 </div>
-                <div id="history-timeline-${idx}" class="hidden mt-4 border-t border-zinc-800/85 pt-4 bg-[#1a1a1a] px-2 pb-2 rounded-xl text-left"></div>
+                <div id="history-timeline-${idx}" class="hidden mt-4 border-t border-zinc-800/85 pt-4 bg-[#1a1a1a] px-3 pb-6 rounded-xl text-left overflow-visible"></div>
                 <div class="flex gap-2 mt-2" data-html2canvas-ignore>
                     <button onclick="toggleHistoryTimeline(${idx})" class="flex-1 bg-zinc-800/80 hover:bg-zinc-700 py-2.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-white/5 text-zinc-200">
                         <i data-lucide="activity" class="w-3.5 h-3.5"></i> 詳細
@@ -273,8 +279,11 @@ function renderHistory() {
                     <button onclick="openAnalysis(${idx})" class="flex-1 bg-zinc-800/80 hover:bg-zinc-700 py-2.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-white/5 text-zinc-200">
                         <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> 分析
                     </button>
-                    <button onclick="shareContainerAsImage('history-item-${idx}', 'history.png')" id="share-btn-${idx}" class="hidden bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 text-white shadow-md">
-                        <i data-lucide="share-2" class="w-3.5 h-3.5"></i> 共有
+                    <button onclick="shareHistoryItemViaQR(${idx})" class="bg-yellow-500 hover:bg-yellow-400 text-black px-3 py-2 text-xs font-black rounded-lg flex items-center gap-1.5 shadow-md transition-transform active:scale-95" title="QRコードで共有">
+                        <i data-lucide="qr-code" class="w-3.5 h-3.5"></i> QR共有
+                    </button>
+                    <button onclick="shareContainerAsImage('history-item-${idx}', 'history.png')" id="share-btn-${idx}" class="hidden bg-blue-600 hover:bg-blue-500 px-3 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 text-white shadow-md" title="画像で共有">
+                        <i data-lucide="share-2" class="w-3.5 h-3.5"></i> 画像
                     </button>
                 </div>
             `;
@@ -527,7 +536,6 @@ async function clearAllHistory() {
     if (!confirmed) return;
     
     localStorage.removeItem(HISTORY_KEY);
-    if (typeof clearAllMatchesOnCloud === 'function') clearAllMatchesOnCloud();
     renderHistory();
     showToast("すべての試合履歴を削除しました");
 }
@@ -542,15 +550,6 @@ async function deleteHistoryItem(idx) {
         if (matchToDelete) {
             history.splice(idx, 1);
             localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-            
-            if (typeof deleteMatchOnCloud === 'function') {
-                const matchId = matchToDelete.id || `${matchToDelete.date}_${matchToDelete.teamA}_${matchToDelete.teamB}`.replace(/[\/:\s]/g, '_');
-                try {
-                    deleteMatchOnCloud(matchId);
-                } catch (cloudErr) {
-                    console.error("Cloud delete failed during local delete:", cloudErr);
-                }
-            }
         }
         
         renderHistory();
@@ -558,6 +557,18 @@ async function deleteHistoryItem(idx) {
     } catch (err) {
         console.error("Error during deleteHistoryItem:", err);
         showToast("履歴の削除中にエラーが発生しました");
+    }
+}
+
+function shareHistoryItemViaQR(idx) {
+    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    const match = history[idx];
+    if (!match) {
+        showCustomAlert("試合データが見つかりません。");
+        return;
+    }
+    if (typeof shareMatchViaQR === 'function') {
+        shareMatchViaQR(match, false);
     }
 }
 

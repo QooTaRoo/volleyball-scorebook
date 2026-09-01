@@ -24,7 +24,7 @@ function init() {
     if (typeof keepScreenOn === 'function') keepScreenOn();
     if (typeof startTimer === 'function') startTimer();
     if (typeof initRadialEvents === 'function') initRadialEvents();
-    if (typeof initSync === 'function') initSync();
+    if (typeof initQRShare === 'function') initQRShare();
     
     // Session Check: Show menu if match not started OR long time passed
     const lastAccess = localStorage.getItem('vb_last_access');

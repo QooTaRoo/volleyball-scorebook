@@ -92,33 +92,100 @@ async function shareContainerAsImage(containerId, filename = 'share.png') {
     let maxWidth = container.offsetWidth;
 
     timelineContainers.forEach((tc) => {
-        originalStyles.push({ el: tc, overflowX: tc.style.overflowX, width: tc.style.width });
-        tc.style.overflowX = 'visible'; tc.style.width = 'max-content';
+        originalStyles.push({ 
+            el: tc, 
+            overflowX: tc.style.overflowX, 
+            overflowY: tc.style.overflowY,
+            width: tc.style.width,
+            paddingBottom: tc.style.paddingBottom
+        });
+        tc.style.overflowX = 'visible'; 
+        tc.style.overflowY = 'visible';
+        tc.style.width = 'max-content';
+        tc.style.paddingBottom = '24px';
         if (tc.scrollWidth > maxWidth) maxWidth = tc.scrollWidth;
     });
 
-    const origStyle = { width: container.style.width, overflowY: container.style.overflowY, overflowX: container.style.overflowX, height: container.style.height };
-    container.style.width = maxWidth + 40 + 'px'; container.style.height = 'max-content';
-    container.style.overflowY = 'visible'; container.style.overflowX = 'visible';
+    const origStyle = { 
+        width: container.style.width, 
+        overflowY: container.style.overflowY, 
+        overflowX: container.style.overflowX, 
+        height: container.style.height,
+        paddingBottom: container.style.paddingBottom,
+        boxSizing: container.style.boxSizing
+    };
+    
+    container.style.width = (maxWidth + 48) + 'px'; 
+    container.style.height = 'max-content';
+    container.style.overflowY = 'visible'; 
+    container.style.overflowX = 'visible';
+    container.style.paddingBottom = '36px';
+    container.style.boxSizing = 'border-box';
 
     try {
-        await new Promise(r => setTimeout(r, 100));
-        const canvas = await html2canvas(container, { backgroundColor: '#1a1a1a', scale: 2, windowWidth: maxWidth + 40 });
+        await new Promise(r => setTimeout(r, 150));
+        const canvas = await html2canvas(container, { 
+            backgroundColor: '#1a1a1a', 
+            scale: 2, 
+            width: container.scrollWidth,
+            height: container.scrollHeight,
+            windowWidth: container.scrollWidth + 100,
+            windowHeight: container.scrollHeight + 100,
+            scrollY: 0,
+            scrollX: 0,
+            useCORS: true,
+            logging: false,
+            onclone: (clonedDoc) => {
+                clonedDoc.querySelectorAll('.color-box').forEach(el => {
+                    el.style.display = 'flex';
+                    el.style.alignItems = 'center';
+                    el.style.justifyContent = 'center';
+                    el.style.padding = '0';
+                });
+                clonedDoc.querySelectorAll('.box-digit').forEach(el => {
+                    el.style.display = 'inline-block';
+                    el.style.position = 'relative';
+                    el.style.top = '-2px';
+                    el.style.lineHeight = '1';
+                });
+            }
+        });
         canvas.toBlob(async (blob) => {
+            if (!blob) {
+                showCustomAlert("画像の生成に失敗しました。");
+                return;
+            }
             const file = new File([blob], filename, { type: 'image/png' });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try { await navigator.share({ title: 'バレーボール スコア', files: [file] }); } catch (err) { if (err.name !== 'AbortError') showCustomAlert("共有に失敗しました: " + err.message); }
+                try { 
+                    await navigator.share({ title: 'バレーボール スコア', files: [file] }); 
+                } catch (err) { 
+                    if (err.name !== 'AbortError') showCustomAlert("共有に失敗しました: " + err.message); 
+                }
             } else {
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+                const a = document.createElement('a'); 
+                a.href = url; 
+                a.download = filename; 
+                a.click(); 
+                URL.revokeObjectURL(url);
             }
         });
     } catch (err) {
         showCustomAlert("画像生成失敗: " + err.message);
     } finally {
-        container.style.width = origStyle.width; container.style.height = origStyle.height;
-        container.style.overflowY = origStyle.overflowY; container.style.overflowX = origStyle.overflowX;
-        originalStyles.forEach(orig => { orig.el.style.overflowX = orig.overflowX; orig.el.style.width = orig.width; });
+        container.style.width = origStyle.width; 
+        container.style.height = origStyle.height;
+        container.style.overflowY = origStyle.overflowY; 
+        container.style.overflowX = origStyle.overflowX;
+        container.style.paddingBottom = origStyle.paddingBottom;
+        container.style.boxSizing = origStyle.boxSizing;
+        originalStyles.forEach(orig => { 
+            orig.el.style.overflowX = orig.overflowX; 
+            orig.el.style.overflowY = orig.overflowY;
+            orig.el.style.width = orig.width; 
+            orig.el.style.paddingBottom = orig.paddingBottom;
+        });
     }
 }
 // Screen Wake Lock
