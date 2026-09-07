@@ -36,11 +36,8 @@ function renderTimeline(setLog, teamA, teamB, colorA, colorB, currentScoreA, cur
     const finalA = setInProgress ? currentScoreA : aScore;
     const finalB = setInProgress ? currentScoreB : bScore;
 
-    let htmlA = `<div class="flex items-center overflow-visible" style="min-width: max-content;">`;
-    let htmlB = `<div class="flex items-center mt-1.5 overflow-visible" style="min-width: max-content;">`;
-
-    htmlA += `<div class="w-12 h-10 flex items-center justify-center font-black text-xl rounded mr-4 color-box shadow-lg border border-white/10 shrink-0 leading-none" style="background: ${colorA}; color: #000;">${finalA}</div>`;
-    htmlB += `<div class="w-12 h-10 flex items-center justify-center font-black text-xl rounded mr-4 color-box shadow-lg border border-white/10 shrink-0 leading-none" style="background: ${colorB}; color: #000;">${finalB}</div>`;
+    let htmlA = `<div class="flex items-center h-10 overflow-visible" style="min-width: max-content;">`;
+    let htmlB = `<div class="flex items-center h-10 mt-1.5 overflow-visible" style="min-width: max-content;">`;
 
     columns.forEach(col => {
         if (col.type === 'point') {
@@ -67,8 +64,21 @@ function renderTimeline(setLog, teamA, teamB, colorA, colorB, currentScoreA, cur
         }
     });
 
-    htmlA += `</div>`; htmlB += `</div>`;
-    container.innerHTML = `<div class="overflow-x-auto pb-4 timeline-container overflow-y-visible">${htmlA}${htmlB}</div>`;
+    htmlA += `</div>`;
+    htmlB += `</div>`;
+
+    container.innerHTML = `
+        <div class="flex items-start">
+            <div class="shrink-0 flex flex-col mr-3 z-10 select-none">
+                <div class="w-12 h-10 flex items-center justify-center font-black text-xl rounded color-box shadow-lg border border-white/10 shrink-0 leading-none" style="background: ${colorA}; color: #000;">${finalA}</div>
+                <div class="w-12 h-10 flex items-center justify-center font-black text-xl rounded color-box shadow-lg border border-white/10 shrink-0 leading-none mt-1.5" style="background: ${colorB}; color: #000;">${finalB}</div>
+            </div>
+            <div class="flex-1 min-w-0 overflow-x-auto pb-4 timeline-container overflow-y-visible">
+                ${htmlA}
+                ${htmlB}
+            </div>
+        </div>
+    `;
     return container;
 }
 

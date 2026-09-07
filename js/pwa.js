@@ -78,7 +78,7 @@ function registerPWA() {
     }
 }
 
-async function shareContainerAsImage(containerId, filename = 'share.png') {
+async function shareContainerAsImage(containerId, filename = 'share.png', customTitle = null) {
     if (typeof html2canvas === 'undefined') {
         showCustomAlert("画像化ライブラリの読み込みに失敗しました。");
         return;
@@ -102,7 +102,8 @@ async function shareContainerAsImage(containerId, filename = 'share.png') {
         tc.style.overflowY = 'visible';
         tc.style.width = 'max-content';
         tc.style.paddingBottom = '24px';
-        if (tc.scrollWidth > maxWidth) maxWidth = tc.scrollWidth;
+        const rowWidth = tc.parentElement?.classList?.contains('flex') ? (tc.scrollWidth + 80) : tc.scrollWidth;
+        if (rowWidth > maxWidth) maxWidth = rowWidth;
     });
 
     const origW = container.style.width, origH = container.style.height;
@@ -239,7 +240,7 @@ async function shareContainerAsImage(containerId, filename = 'share.png') {
                     el.style.cssText = `
                         width: ${w}px;
                         height: ${h}px;
-                        margin: ${isMr ? '0 16px 0 0' : '0 2px'};
+                        margin: ${isMr ? '0 16px 0 0' : (isBig ? '0' : '0 2px')};
                         padding: 0;
                         overflow: hidden;
                         flex-shrink: 0;
@@ -258,9 +259,36 @@ async function shareContainerAsImage(containerId, filename = 'share.png') {
                 return;
             }
             const file = new File([blob], filename, { type: 'image/png' });
+            
+            // シェア用タイトル（チームA 得点 - 得点 チームB）の決定
+            let shareTitle = customTitle;
+            if (!shareTitle) {
+                if (containerId.startsWith('history-item-')) {
+                    const idxStr = containerId.replace('history-item-', '');
+                    const idx = parseInt(idxStr, 10);
+                    const historyList = (typeof history !== 'undefined' && Array.isArray(history)) ? history : JSON.parse(localStorage.getItem('volleyball_match_history') || '[]');
+                    const m = historyList[idx];
+                    if (m) {
+                        shareTitle = `${m.teamA} ${m.setsA} - ${m.setsB} ${m.teamB}`;
+                    }
+                } else if (containerId === 'analysis-content') {
+                    if (typeof currentAnalysisIndex !== 'undefined' && currentAnalysisIndex >= 0) {
+                        const historyList = (typeof history !== 'undefined' && Array.isArray(history)) ? history : JSON.parse(localStorage.getItem('volleyball_match_history') || '[]');
+                        const m = historyList[currentAnalysisIndex];
+                        if (m) shareTitle = `${m.teamA} ${m.setsA} - ${m.setsB} ${m.teamB}`;
+                    }
+                }
+                if (!shareTitle && typeof state !== 'undefined' && state) {
+                    const nameA = state.teamA || 'チームA';
+                    const nameB = state.teamB || 'チームB';
+                    shareTitle = `${nameA} ${state.setsA} - ${state.setsB} ${nameB}`;
+                }
+            }
+            if (!shareTitle) shareTitle = 'バレーボール スコア';
+
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
-                    await navigator.share({ title: 'バレーボール スコア', files: [file] });
+                    await navigator.share({ title: shareTitle, text: shareTitle, files: [file] });
                 } catch (err) {
                     if (err.name !== 'AbortError') showCustomAlert("共有に失敗しました: " + err.message);
                 }

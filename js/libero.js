@@ -52,7 +52,7 @@ async function checkAutoLiberoSubstitutions(team, isMatchStart = false) {
                 });
                 
                 const mbPlayer = members.find(m => m.id === benchedTargetPlayer);
-                showToast(`リベロを元の選手（No.${mbPlayer ? mbPlayer.number : ''}）に戻しました`);
+                showToast(`リベロOUT (No.${mbPlayer ? mbPlayer.number : ''})`);
                 saveState();
                 updateUI();
                 if (typeof renderCourt === 'function' && typeof currentCourtTeam !== 'undefined' && currentCourtTeam === team) {
@@ -107,7 +107,7 @@ async function checkAutoLiberoSubstitutions(team, isMatchStart = false) {
                     timestamp: Date.now()
                 });
                 
-                showToast(`No.${mbPlayer ? mbPlayer.number : ''} の代わりにリベロを投入しました`);
+                showToast(`リベロIN (No.${mbPlayer ? mbPlayer.number : ''})`);
                 saveState();
                 updateUI();
                 if (typeof renderCourt === 'function' && typeof currentCourtTeam !== 'undefined' && currentCourtTeam === team) {

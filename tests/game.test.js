@@ -62,7 +62,19 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
   });
 
   describe('Serving and Rotation Rules', () => {
+    it('should NOT rotate lineup if showAdvancedMode is false when score changes serving team', () => {
+      window.state.showAdvancedMode = false;
+      window.state.servingTeam = 'A';
+      const initialLineupB = [...window.state.lineupB];
+
+      window.addPoint('B');
+      
+      expect(window.state.servingTeam).toBe('B');
+      expect(window.state.lineupB).toEqual(initialLineupB);
+    });
+
     it('should NOT rotate Team A if Team A scores when already serving', () => {
+      window.state.showAdvancedMode = true;
       window.state.servingTeam = 'A';
       const initialLineup = [...window.state.lineupA];
 
@@ -72,7 +84,8 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
       expect(window.state.lineupA).toEqual(initialLineup);
     });
 
-    it('should rotate Team B if Team B scores when Team A was serving', () => {
+    it('should rotate Team B if Team B scores when Team A was serving and showAdvancedMode is true', () => {
+      window.state.showAdvancedMode = true;
       window.state.servingTeam = 'A';
       const initialLineupB = [...window.state.lineupB];
 
@@ -201,13 +214,28 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
       expect(window.state.scoreA).toBe(0);
     });
 
-    it('should revert serving team and lineup rotation on serve-break point', () => {
+    it('should revert serving team and lineup rotation on serve-break point when showAdvancedMode is true', () => {
+      window.state.showAdvancedMode = true;
       window.state.servingTeam = 'A';
       const initialLineupB = [...window.state.lineupB];
 
       window.addPoint('B');
       expect(window.state.servingTeam).toBe('B');
       expect(window.state.lineupB).not.toEqual(initialLineupB);
+
+      window.undo();
+      expect(window.state.servingTeam).toBe('A');
+      expect(window.state.lineupB).toEqual(initialLineupB);
+    });
+
+    it('should revert serving team without changing lineup when showAdvancedMode is false', () => {
+      window.state.showAdvancedMode = false;
+      window.state.servingTeam = 'A';
+      const initialLineupB = [...window.state.lineupB];
+
+      window.addPoint('B');
+      expect(window.state.servingTeam).toBe('B');
+      expect(window.state.lineupB).toEqual(initialLineupB);
 
       window.undo();
       expect(window.state.servingTeam).toBe('A');

@@ -126,4 +126,67 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       expect(caret.classList.contains('-rotate-90')).toBe(false);
     });
   });
+
+  describe('renderTimeline() layout', () => {
+    it('should render fixed total scores on the left and scrollable points on the right', () => {
+      const setLog = [
+        { type: 'point', scoringTeam: 'A', team: 'A' },
+        { type: 'point', scoringTeam: 'B', team: 'B' },
+        { type: 'timeout', team: 'A' }
+      ];
+      window.state = {
+        actionLog: [...setLog],
+        matchComplete: false
+      };
+
+      const el = window.renderTimeline(setLog, 'TEAM A', 'TEAM B', '#eab308', '#ffffff', 1, 1, false);
+      expect(el).not.toBeNull();
+
+      // Check left fixed column with total score boxes
+      const leftCol = el.querySelector('.shrink-0.flex.flex-col');
+      expect(leftCol).not.toBeNull();
+      expect(leftCol.textContent).toContain('1'); // Score A and B
+
+      // Check right horizontally scrollable container
+      const scrollContainer = el.querySelector('.timeline-container');
+      expect(scrollContainer).not.toBeNull();
+      expect(scrollContainer.classList.contains('overflow-x-auto')).toBe(true);
+
+      // Verify point boxes are inside the scrollable container
+      const pointBoxes = scrollContainer.querySelectorAll('.color-box');
+      expect(pointBoxes.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('shareContainerAsImage() title formatting', () => {
+    it('should share match score as title via navigator.share', async () => {
+      window.state = {
+        teamA: 'チームA',
+        teamB: 'チームB',
+        setsA: 2,
+        setsB: 1
+      };
+      global.html2canvas = vi.fn().mockResolvedValue({
+        toBlob: (cb) => cb(new Blob(['test'], { type: 'image/png' }))
+      });
+
+      const shareMock = vi.fn().mockResolvedValue(undefined);
+      global.navigator.canShare = vi.fn().mockReturnValue(true);
+      global.navigator.share = shareMock;
+
+      // Dummy DOM container
+      const dummyDiv = document.createElement('div');
+      dummyDiv.id = 'timeline-content';
+      document.body.appendChild(dummyDiv);
+
+      await window.shareContainerAsImage('timeline-content', 'timeline.png');
+
+      expect(shareMock).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'チームA 2 - 1 チームB',
+        text: 'チームA 2 - 1 チームB'
+      }));
+
+      dummyDiv.remove();
+    });
+  });
 });

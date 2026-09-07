@@ -43,7 +43,9 @@ function addPoint(winningTeam, pattern = 'unknown', playerId = null) {
 
         if (rotationOccurred) {
             state.servingTeam = scoringTeam;
-            rotateTeam(scoringTeam);
+            if (state.showAdvancedMode) {
+                rotateTeam(scoringTeam);
+            }
         }
 
         if (scoringTeam === 'A') state.scoreA++;
@@ -286,7 +288,7 @@ function undo() {
         state.scoreB = last.scoreB;
         state.servingTeam = last.servingTeam;
         
-        if (last.rotationOccurred) {
+        if (last.rotationOccurred && state.showAdvancedMode) {
             const lineup = last.scoringTeam === 'A' ? state.lineupA : state.lineupB;
             const end = lineup.pop();
             lineup.unshift(end);

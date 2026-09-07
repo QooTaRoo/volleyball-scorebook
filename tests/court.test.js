@@ -410,6 +410,7 @@ describe('Volleyball Scorebook - Court & Player Management (court.js)', () => {
       expect(lastAction.outPlayerId).toBe('A5');
       expect(lastAction.isLibero).toBe(true);
       expect(lastAction.isAuto).toBe(true);
+      expect(window.showToast).toHaveBeenCalledWith('リベロIN (No.5)');
     });
 
     it('should automatically pull Libero out when Libero rotates to the front row (idx 1, 2, or 3)', () => {
@@ -430,6 +431,7 @@ describe('Volleyball Scorebook - Court & Player Management (court.js)', () => {
       expect(lastAction.outPlayerId).toBe('A7');
       expect(lastAction.isLibero).toBe(true);
       expect(lastAction.isAuto).toBe(true);
+      expect(window.showToast).toHaveBeenCalledWith('リベロOUT (No.5)');
     });
 
     it('should automatically prompt and substitute Libero in at match start when confirmed', async () => {
