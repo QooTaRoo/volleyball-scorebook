@@ -1203,6 +1203,66 @@ function generateAIPrompt(m) {
     const playerLinesA = formatPlayerLines(stats.A.players, m.membersA);
     const playerLinesB = formatPlayerLines(stats.B.players, m.membersB);
 
+    // 5. Timeline per set
+    const formatSetTimeline = (setObj) => {
+        const log = setObj.log || [];
+        if (log.length === 0) return '  (詳細ログなし)';
+
+        let currentScoreA = 0;
+        let currentScoreB = 0;
+        const lines = [];
+
+        log.forEach(action => {
+            if (action.type === 'point') {
+                const scTeam = action.scoringTeam || (action.pattern === 'error' ? (action.team === 'A' ? 'B' : 'A') : action.team);
+                if (action.scoreA !== undefined && action.scoreB !== undefined) {
+                    currentScoreA = action.scoreA;
+                    currentScoreB = action.scoreB;
+                } else {
+                    if (scTeam === 'A') currentScoreA++; else currentScoreB++;
+                }
+
+                const teamName = scTeam === 'A' ? m.teamA : m.teamB;
+                let detail = '';
+
+                if (action.pattern === 'error') {
+                    const errorTeamName = action.team === 'A' ? m.teamA : m.teamB;
+                    detail = `${errorTeamName}のミス`;
+                } else {
+                    const members = scTeam === 'A' ? (m.membersA || []) : (m.membersB || []);
+                    const p = members.find(mem => mem.id === action.playerId);
+                    const pNum = p ? `#${p.number}` : (action.playerId ? action.playerId.replace(/[AB]/, '#') : '');
+                    const pName = p && p.name && p.name !== String(p.number) ? ` ${p.name}` : '';
+                    const patternLabel = action.pattern === 'spike' ? 'スパイク' : action.pattern === 'block' ? 'ブロック' : action.pattern === 'ace' ? 'サービスエース' : (action.pattern || '');
+                    detail = `${pNum}${pName} ${patternLabel}`.trim();
+                }
+
+                const tag = action.rotationOccurred ? ' [SO]' : ' [BR]';
+                lines.push(`  - ${currentScoreA}-${currentScoreB} : 【${teamName}】${detail}${tag}`);
+            } else if (action.type === 'timeout') {
+                const toTeam = action.team === 'A' ? m.teamA : m.teamB;
+                const scoreStr = (action.scoreA !== undefined && action.scoreB !== undefined) 
+                    ? `${action.scoreA}-${action.scoreB}` 
+                    : `${currentScoreA}-${currentScoreB}`;
+                lines.push(`  - [${scoreStr}] ★ ${toTeam} タイムアウト`);
+            } else if (action.type === 'substitution' && !action.isLibero) {
+                const subTeam = action.team === 'A' ? m.teamA : m.teamB;
+                const members = action.team === 'A' ? (m.membersA || []) : (m.membersB || []);
+                const inP = members.find(mem => mem.id === action.inPlayerId);
+                const outP = members.find(mem => mem.id === action.outPlayerId);
+                const inStr = inP ? `#${inP.number}${inP.name && inP.name !== String(inP.number) ? ' ' + inP.name : ''}` : action.inPlayerId;
+                const outStr = outP ? `#${outP.number}${outP.name && outP.name !== String(outP.number) ? ' ' + outP.name : ''}` : action.outPlayerId;
+                lines.push(`  - [${currentScoreA}-${currentScoreB}] ⇄ ${subTeam} 選手交代 (In: ${inStr} / Out: ${outStr})`);
+            }
+        });
+
+        return lines.join('\n');
+    };
+
+    const timelineSections = (m.setHistory || []).map(s => {
+        return `### 第${s.set}セット スコア・ラリー推移\n${formatSetTimeline(s)}`;
+    }).join('\n\n') || '  (タイムライン記録なし)';
+
     const matchDate = m.date ? new Date(m.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '記録なし';
     const matchFmt = m.matchFormat ? (m.matchFormat === '2sets' ? '2セットマッチ' : m.matchFormat === '5sets' ? '5セットマッチ' : '3セットマッチ') : 'セットマッチ';
     const matchStatus = m.isLiveMatch ? '（現在進行中の試合）' : '（試合終了）';
@@ -1210,7 +1270,7 @@ function generateAIPrompt(m) {
     return `# バレーボール試合分析・コーチング依頼
 
 あなたはバレーボールのトップアナリスト兼名コーチです。
-以下の試合スタッツデータを深く読み解き、勝敗の要因、両チームの戦術的強みと課題、および次戦に向けた具体的で実践的な指導・練習アドバイスを日本語で詳しく分析してください。
+以下の試合スタッツデータおよびラリー推移タイムラインを深く読み解き、勝敗の要因、両チームの戦術的強みと課題、および次戦に向けた具体的で実践的な指導・練習アドバイスを日本語で詳しく分析してください。
 
 ---
 
@@ -1251,17 +1311,23 @@ ${playerLinesA}
 ### 【${m.teamB}】
 ${playerLinesB}
 
+## 5. ラリー推移・タイムライン
+※[SO]＝相手サーブを切って得点 (Side-Out)、[BR]＝自チームサーブからの連続得点 (Break)
+${timelineSections}
+
 ---
 
 ## 【回答・分析してほしい項目】
 1. **試合総括・勝敗の分かれ目**:
-   - どのセットのどの局面（連続得点・失点）が試合の流れを決定づけたか。
-2. **両チームの戦術的強み・得点源**:
-   - どのローテーションや選手が最も効果的に機能していたか（高いSO率やBR率を記録した要因）。
-3. **課題・失点の原因**:
-   - サイドアウトが切れずに連続失点したローテーションや、自チームのミス傾向の分析。
-4. **次戦に向けた具体的アドバイス**:
-   - 弱点ローテーションのフォーメーションやレセプションアタックの改善案、取り組むべき練習メニューなど。
+   - タイムラインから読み取れる、試合の流れを決定づけた重要な連続得点[BR]や連続失点、勝負の局面。
+2. **タイムアウト・選手交代の有効性**:
+   - タイムアウトや交代の直後に流れを切れたか／引き寄せられたかの検証。
+3. **両チームの戦術的強み・得点源**:
+   - どのローテーションや選手が連続ブレイクや確実なサイドアウトを生み出していたか。
+4. **課題・失点の原因**:
+   - 相手に連続得点を許してしまった苦手ローテやミスの時間帯の分析。
+5. **次戦に向けた具体的アドバイス**:
+   - 弱点局面の打開策やフォーメーション、練習メニューなどの実践的な助言。
 `;
 }
 

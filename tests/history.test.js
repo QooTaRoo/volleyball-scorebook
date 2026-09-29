@@ -293,6 +293,10 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       expect(prompt).toContain('BR率');
       expect(prompt).toContain('主な個人スタッツ');
       expect(prompt).toContain('#1 山田');
+      expect(prompt).toContain('ラリー推移・タイムライン');
+      expect(prompt).toContain('第1セット スコア・ラリー推移');
+      expect(prompt).toContain('山田 スパイク');
+      expect(prompt).toContain('[SO]');
     });
 
     it('should share AI prompt via navigator.share when available', async () => {
