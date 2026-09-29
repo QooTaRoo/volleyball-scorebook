@@ -223,9 +223,33 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       expect(header.innerHTML).toContain('チームB高校');
       expect(header.innerHTML).toContain('25');
       expect(header.innerHTML).toContain('SET 1');
-      expect(header.innerHTML).toContain('FINAL');
+      // Completed sets do not display unnecessary FINAL badge
+      expect(header.innerHTML).not.toContain('FINAL');
       // Verify VS divider is rendered
       expect(header.innerHTML).toContain('VS');
+    });
+
+    it('should render LIVE badge for ongoing set in live match', () => {
+      window.state = { currentSet: 2 };
+      const liveMatch = {
+        id: 'test_live',
+        teamA: 'チームA高校',
+        teamB: 'チームB高校',
+        colorA: '#3b82f6',
+        colorB: '#ef4444',
+        setsA: 1,
+        setsB: 0,
+        isLiveMatch: true,
+        setHistory: [
+          { set: 1, scoreA: 25, scoreB: 20, log: [] },
+          { set: 2, scoreA: 14, scoreB: 12, log: [] }
+        ]
+      };
+
+      window.renderAnalysisContent(liveMatch);
+
+      const header = document.getElementById('analysis-header');
+      expect(header.innerHTML).toContain('LIVE');
     });
   });
 });

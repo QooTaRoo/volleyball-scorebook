@@ -351,8 +351,9 @@ function renderAnalysisContent(m) {
 
     const setScoresHtml = m.setHistory.map(s => {
         const isLastSet = m.isLiveMatch && s.set === state.currentSet;
-        const statusText = isLastSet ? 'LIVE' : 'FINAL';
-        const statusClass = isLastSet ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25 font-bold' : 'text-zinc-400 bg-zinc-800/40 border-white/5 font-semibold';
+        const statusBadge = isLastSet 
+            ? `<span class="text-[10px] tracking-wider px-1.5 py-0.5 rounded border text-emerald-400 bg-emerald-500/10 border-emerald-500/25 font-bold animate-pulse">LIVE</span>` 
+            : '';
         return `
             <div class="flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl bg-zinc-950/50 border border-white/5 shadow-inner">
                 <span class="text-xs text-zinc-400 font-black tracking-wider w-14">SET ${s.set}</span>
@@ -362,7 +363,7 @@ function renderAnalysisContent(m) {
                     <span style="color: ${m.colorB}">${s.scoreB}</span>
                 </div>
                 <div class="w-14 flex justify-end">
-                    <span class="text-[10px] tracking-wider px-1.5 py-0.5 rounded border ${statusClass}">${statusText}</span>
+                    ${statusBadge}
                 </div>
             </div>
         `;
