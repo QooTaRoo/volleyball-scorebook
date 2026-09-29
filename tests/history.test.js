@@ -295,7 +295,7 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       expect(prompt).toContain('#1 山田');
     });
 
-    it('should copy AI prompt to clipboard and show custom alert', async () => {
+    it('should share AI prompt via navigator.share when available', async () => {
       const match = {
         id: 'test_ai_match',
         teamA: 'チームA',
@@ -306,6 +306,29 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       };
       window.currentAnalysisMatch = match;
 
+      const shareMock = vi.fn().mockResolvedValue(undefined);
+      navigator.share = shareMock;
+
+      await window.shareAnalysisForAI();
+
+      expect(shareMock).toHaveBeenCalledWith(expect.objectContaining({
+        title: expect.stringContaining('チームA vs チームB'),
+        text: expect.stringContaining('チームA')
+      }));
+    });
+
+    it('should fallback to clipboard copy when navigator.share is not available', async () => {
+      const match = {
+        id: 'test_ai_match',
+        teamA: 'チームA',
+        teamB: 'チームB',
+        setsA: 2,
+        setsB: 0,
+        setHistory: []
+      };
+      window.currentAnalysisMatch = match;
+
+      delete navigator.share;
       const clipboardWriteMock = vi.fn().mockResolvedValue(undefined);
       Object.assign(navigator, {
         clipboard: {
@@ -313,7 +336,7 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
         }
       });
 
-      await window.copyAnalysisForAI();
+      await window.shareAnalysisForAI();
 
       expect(clipboardWriteMock).toHaveBeenCalled();
       const copiedText = clipboardWriteMock.mock.calls[0][0];

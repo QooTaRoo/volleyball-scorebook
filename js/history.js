@@ -1265,7 +1265,7 @@ ${playerLinesB}
 `;
 }
 
-async function copyAnalysisForAI() {
+async function shareAnalysisForAI() {
     const m = window.currentAnalysisMatch;
     if (!m) {
         if (typeof showCustomAlert === 'function') {
@@ -1274,6 +1274,23 @@ async function copyAnalysisForAI() {
         return;
     }
     const text = generateAIPrompt(m);
+    const title = `${m.teamA} vs ${m.teamB} 試合分析 (AI用)`;
+
+    // Web Share API (native share sheet on mobile)
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: title,
+                text: text
+            });
+            return;
+        } catch (err) {
+            if (err.name === 'AbortError') return; // Cancelled by user
+            console.warn("navigator.share failed, trying clipboard fallback:", err);
+        }
+    }
+
+    // Fallback: clipboard copy
     try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             await navigator.clipboard.writeText(text);
@@ -1288,14 +1305,16 @@ async function copyAnalysisForAI() {
             document.body.removeChild(ta);
         }
         if (typeof showCustomAlert === 'function') {
-            showCustomAlert("AI分析用テキストをコピーしました！\n\nChatGPTやGemini、Claude等に貼り付けて送信すると、プロ視点の戦術分析やアドバイスが得られます。", "OK");
+            showCustomAlert("AI分析用テキストをコピーしました！\n\nChatGPTやGemini等に貼り付けて送信してください。", "OK");
         }
     } catch (e) {
         console.error("Copy failed:", e);
         if (typeof showCustomAlert === 'function') {
-            showCustomAlert("コピーに失敗しました。お使いの端末の権限をご確認ください。");
+            showCustomAlert("共有・コピーに失敗しました。お使いの端末の権限をご確認ください。");
         }
     }
 }
+const copyAnalysisForAI = shareAnalysisForAI;
+
 
 
