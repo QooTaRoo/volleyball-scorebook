@@ -252,5 +252,77 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       expect(header.innerHTML).toContain('LIVE');
     });
   });
+
+  describe('generateAIPrompt() and copyAnalysisForAI()', () => {
+    it('should generate structured markdown prompt with match overview, breakdown, and rotation stats', () => {
+      const match = {
+        id: 'test_ai_match',
+        date: '2026/05/25 15:00:00',
+        teamA: '深川高校',
+        teamB: '柏高校',
+        colorA: '#3b82f6',
+        colorB: '#ef4444',
+        setsA: 2,
+        setsB: 1,
+        matchFormat: '3sets',
+        setHistory: [
+          {
+            set: 1,
+            scoreA: 25,
+            scoreB: 20,
+            log: [
+              { type: 'point', team: 'A', pattern: 'spike', playerId: 'A1' },
+              { type: 'point', team: 'B', pattern: 'block', playerId: 'B1' },
+              { type: 'point', team: 'A', pattern: 'error' }
+            ]
+          }
+        ],
+        membersA: [{ id: 'A1', number: 1, name: '山田' }],
+        membersB: [{ id: 'B1', number: 4, name: '高橋' }]
+      };
+
+      const prompt = window.generateAIPrompt(match);
+
+      expect(prompt).toContain('バレーボール試合分析・コーチング依頼');
+      expect(prompt).toContain('深川高校');
+      expect(prompt).toContain('柏高校');
+      expect(prompt).toContain('第1セット');
+      expect(prompt).toContain('スパイク得点');
+      expect(prompt).toContain('ローテーション分析');
+      expect(prompt).toContain('SO率');
+      expect(prompt).toContain('BR率');
+      expect(prompt).toContain('主な個人スタッツ');
+      expect(prompt).toContain('#1 山田');
+    });
+
+    it('should copy AI prompt to clipboard and show custom alert', async () => {
+      const match = {
+        id: 'test_ai_match',
+        teamA: 'チームA',
+        teamB: 'チームB',
+        setsA: 2,
+        setsB: 0,
+        setHistory: []
+      };
+      window.currentAnalysisMatch = match;
+
+      const clipboardWriteMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, {
+        clipboard: {
+          writeText: clipboardWriteMock
+        }
+      });
+
+      await window.copyAnalysisForAI();
+
+      expect(clipboardWriteMock).toHaveBeenCalled();
+      const copiedText = clipboardWriteMock.mock.calls[0][0];
+      expect(copiedText).toContain('チームA');
+      expect(window.showCustomAlert).toHaveBeenCalledWith(
+        expect.stringContaining('AI分析用テキストをコピーしました'),
+        expect.anything()
+      );
+    });
+  });
 });
 

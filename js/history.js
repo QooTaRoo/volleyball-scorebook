@@ -345,6 +345,7 @@ function openAnalysis(idx = -1) {
 }
 
 function renderAnalysisContent(m) {
+    window.currentAnalysisMatch = m;
     const header = document.getElementById('analysis-header');
     const teamStats = document.getElementById('analysis-team-stats');
     const playerStats = document.getElementById('analysis-player-stats');
@@ -1132,4 +1133,169 @@ function analyzeRotations(m) {
         startingPlayersB
     };
 }
+
+function generateAIPrompt(m) {
+    if (!m) return '';
+
+    // Calculate score breakdown
+    const stats = { A: { spike: 0, block: 0, ace: 0, error: 0, total: 0, players: {} }, B: { spike: 0, block: 0, ace: 0, error: 0, total: 0, players: {} } };
+    (m.setHistory || []).forEach(set => {
+        (set.log || []).forEach(action => {
+            if (action.type !== 'point') return;
+            const actingTeam = action.team; 
+            const pattern = action.pattern || 'unknown';
+            const pId = action.playerId;
+
+            if (stats[actingTeam]) {
+                if (pattern !== 'unknown') {
+                    stats[actingTeam][pattern]++;
+                    if (pattern !== 'error') stats[actingTeam].total++;
+                }
+                if (pId) {
+                    if (!stats[actingTeam].players[pId]) stats[actingTeam].players[pId] = { spike: 0, block: 0, ace: 0, error: 0 };
+                    if (pattern !== 'unknown') stats[actingTeam].players[pId][pattern]++;
+                }
+            }
+        });
+    });
+
+    const valA_error = stats.B.error;
+    const valB_error = stats.A.error;
+
+    // Set Scores
+    const setScoreLines = (m.setHistory || []).map(s => {
+        const isLive = m.isLiveMatch && typeof state !== 'undefined' && s.set === state.currentSet;
+        const tag = isLive ? ' [進行中]' : '';
+        return `  - 第${s.set}セット: ${m.teamA} ${s.scoreA} - ${s.scoreB} ${m.teamB}${tag}`;
+    }).join('\n') || '  (スコア記録なし)';
+
+    // Rotation stats
+    const rotData = typeof analyzeRotations === 'function' ? analyzeRotations(m) : { statsA: [], statsB: [], startingPlayersA: [], startingPlayersB: [] };
+    const formatRotLines = (teamKey, rotStats, starters, members) => {
+        if (!rotStats || rotStats.length === 0) return '  (データなし)';
+        return rotStats.map((s, idx) => {
+            const starterItem = (starters || [])[idx];
+            const starterId = starterItem && typeof starterItem === 'object' ? starterItem.id : starterItem;
+            const player = (members || []).find(mem => mem.id === starterId) || (starterItem && typeof starterItem === 'object' ? starterItem : null);
+            const num = player ? `#${player.number}` : `#${idx + 1}`;
+            const name = player && player.name && player.name !== String(player.number) ? ` (${player.name})` : '';
+            const soRate = s.receiveRallies > 0 ? Math.round((s.sideoutPoints / s.receiveRallies) * 100) : 0;
+            const brRate = s.serveRallies > 0 ? Math.round((s.breakPoints / s.serveRallies) * 100) : 0;
+            return `- ローテ${idx + 1} [サーバー:${num}${name}]: SO率 ${soRate}% (${s.sideoutPoints}/${s.receiveRallies}), BR率 ${brRate}% (${s.breakPoints}/${s.serveRallies})`;
+        }).join('\n');
+    };
+    const rotLinesA = formatRotLines('A', rotData.statsA, rotData.startingPlayersA, m.membersA);
+    const rotLinesB = formatRotLines('B', rotData.statsB, rotData.startingPlayersB, m.membersB);
+
+    // Player stats
+    const formatPlayerLines = (pData, members) => {
+        const sortedIds = Object.keys(pData || {}).sort((a,b) => (pData[b].spike + pData[b].block + pData[b].ace) - (pData[a].spike + pData[a].block + pData[a].ace));
+        if (sortedIds.length === 0) return '  (記録なし)';
+        return sortedIds.map(pId => {
+            const p = pData[pId];
+            const total = p.spike + p.block + p.ace;
+            const player = (members || []).find(mem => mem.id === pId);
+            const num = player ? `#${player.number}` : pId.replace(/[AB]/, '');
+            const name = player && player.name && player.name !== String(player.number) ? ` ${player.name}` : '';
+            return `  - ${num}${name}: 計${total}点 (スパイク:${p.spike}, ブロック:${p.block}, エース:${p.ace}, ミス:${p.error})`;
+        }).join('\n');
+    };
+    const playerLinesA = formatPlayerLines(stats.A.players, m.membersA);
+    const playerLinesB = formatPlayerLines(stats.B.players, m.membersB);
+
+    const matchDate = m.date ? new Date(m.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '記録なし';
+    const matchFmt = m.matchFormat ? (m.matchFormat === '2sets' ? '2セットマッチ' : m.matchFormat === '5sets' ? '5セットマッチ' : '3セットマッチ') : 'セットマッチ';
+    const matchStatus = m.isLiveMatch ? '（現在進行中の試合）' : '（試合終了）';
+
+    return `# バレーボール試合分析・コーチング依頼
+
+あなたはバレーボールのトップアナリスト兼名コーチです。
+以下の試合スタッツデータを深く読み解き、勝敗の要因、両チームの戦術的強みと課題、および次戦に向けた具体的で実践的な指導・練習アドバイスを日本語で詳しく分析してください。
+
+---
+
+## 1. 試合概要
+- 対戦: ${m.teamA} (${m.setsA}) vs (${m.setsB}) ${m.teamB} ${matchStatus}
+- 日時: ${matchDate}
+- 試合形式: ${matchFmt}
+- 各セットスコア:
+${setScoreLines}
+
+## 2. チーム得点内訳
+### 【${m.teamA}】
+- スパイク得点: ${stats.A.spike}
+- ブロック得点: ${stats.A.block}
+- サービスエース: ${stats.A.ace}
+- 相手のミスによる得点: ${valA_error}
+
+### 【${m.teamB}】
+- スパイク得点: ${stats.B.spike}
+- ブロック得点: ${stats.B.block}
+- サービスエース: ${stats.B.ace}
+- 相手のミスによる得点: ${valB_error}
+
+## 3. ローテーション分析
+※SO率(サイドアウト率)＝相手サーブ時に自チームが得点できた確率 (目安: 60〜70%以上で安定)
+※BR率(ブレイク率)＝自チームサーブ時に自チームが得点できた確率 (目安: 35%以上で優秀)
+
+### 【${m.teamA}】
+${rotLinesA}
+
+### 【${m.teamB}】
+${rotLinesB}
+
+## 4. 主な個人スタッツ
+### 【${m.teamA}】
+${playerLinesA}
+
+### 【${m.teamB}】
+${playerLinesB}
+
+---
+
+## 【回答・分析してほしい項目】
+1. **試合総括・勝敗の分かれ目**:
+   - どのセットのどの局面（連続得点・失点）が試合の流れを決定づけたか。
+2. **両チームの戦術的強み・得点源**:
+   - どのローテーションや選手が最も効果的に機能していたか（高いSO率やBR率を記録した要因）。
+3. **課題・失点の原因**:
+   - サイドアウトが切れずに連続失点したローテーションや、自チームのミス傾向の分析。
+4. **次戦に向けた具体的アドバイス**:
+   - 弱点ローテーションのフォーメーションやレセプションアタックの改善案、取り組むべき練習メニューなど。
+`;
+}
+
+async function copyAnalysisForAI() {
+    const m = window.currentAnalysisMatch;
+    if (!m) {
+        if (typeof showCustomAlert === 'function') {
+            showCustomAlert("分析データが見つかりません。");
+        }
+        return;
+    }
+    const text = generateAIPrompt(m);
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        if (typeof showCustomAlert === 'function') {
+            showCustomAlert("AI分析用テキストをコピーしました！\n\nChatGPTやGemini、Claude等に貼り付けて送信すると、プロ視点の戦術分析やアドバイスが得られます。", "OK");
+        }
+    } catch (e) {
+        console.error("Copy failed:", e);
+        if (typeof showCustomAlert === 'function') {
+            showCustomAlert("コピーに失敗しました。お使いの端末の権限をご確認ください。");
+        }
+    }
+}
+
 
