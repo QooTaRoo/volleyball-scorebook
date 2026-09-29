@@ -2,6 +2,25 @@
 const STORAGE_KEY = 'volleyball_score_state';
 const HISTORY_KEY = 'volleyball_match_history';
 const PRESET_TEAMS_KEY = 'vb_preset_teams';
+const GEMINI_API_KEY_STORAGE = 'vb_gemini_api_key';
+
+const OPPONENT_ACTION_PATTERNS = ['error', 'attack_error', 'blocked', 'reception_error', 'serve_error'];
+function isOpponentActionPattern(pattern) {
+    return OPPONENT_ACTION_PATTERNS.includes(pattern);
+}
+
+const ACTION_PATTERN_NAMES = {
+    spike: 'スパイク',
+    block: 'ブロック',
+    ace: 'サービスエース',
+    attack_error: 'アタックミス',
+    blocked: '被ブロック',
+    reception_error: 'レセプションミス',
+    serve_error: 'サーブミス',
+    error: 'その他ミス',
+    unknown: '得点'
+};
+
 
 // --- State ---
 let state = {
@@ -40,7 +59,8 @@ let state = {
     liberosB: [],
     servingTeam: 'A',
     initialServingTeam: null,
-    rotationLog: []
+    rotationLog: [],
+    editingHistoryDate: null
 };
 
 function saveState() {

@@ -401,8 +401,9 @@ function closeDetailedStatsModal() {
 function selectDsPattern(pattern) {
     dsState.pattern = pattern;
     
-    // If pattern is 'error', we display the opponent team members. Otherwise we display the scoring team members.
-    const teamToPick = pattern === 'error' ? (dsState.team === 'A' ? 'B' : 'A') : dsState.team;
+    // If pattern is an opponent mistake/action, display opponent roster. Otherwise display scoring team roster.
+    const isOpponentActor = typeof isOpponentActionPattern === 'function' ? isOpponentActionPattern(pattern) : (pattern === 'error');
+    const teamToPick = isOpponentActor ? (dsState.team === 'A' ? 'B' : 'A') : dsState.team;
     dsState.displayTeam = teamToPick;
     
     // Reset player selection since the roster changed
@@ -413,22 +414,29 @@ function selectDsPattern(pattern) {
 }
 
 function updateDsPatternUI() {
-    const patterns = ['spike', 'block', 'ace', 'error'];
+    const patterns = ['spike', 'block', 'ace', 'attack_error', 'blocked', 'reception_error', 'serve_error', 'error'];
     patterns.forEach(p => {
         const btn = document.getElementById(`ds-pattern-${p}`);
         if (!btn) return;
         
         const isMatch = dsState.pattern === p;
+        const isOpponent = typeof isOpponentActionPattern === 'function' ? isOpponentActionPattern(p) : (p === 'error');
+        
+        // Remove active styles
+        btn.classList.remove(
+            'bg-yellow-500', 'text-black', 'border-yellow-400', 'shadow-md',
+            'bg-red-500', 'text-white', 'border-red-400',
+            'bg-zinc-800', 'text-zinc-300', 'text-white', 'border-white/5'
+        );
+
         if (isMatch) {
-            btn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-400');
-            btn.classList.remove('bg-zinc-800', 'text-white', 'border-white/5');
-            if (p === 'error') {
-                btn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-400');
-                btn.classList.add('bg-red-500', 'text-black', 'border-red-400');
+            if (isOpponent) {
+                btn.classList.add('bg-red-500', 'text-white', 'border-red-400', 'shadow-md');
+            } else {
+                btn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-400', 'shadow-md');
             }
         } else {
-            btn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-400', 'bg-red-500', 'border-red-400');
-            btn.classList.add('bg-zinc-800', 'text-white', 'border-white/5');
+            btn.classList.add('bg-zinc-800', 'text-zinc-300', 'border-white/5');
         }
     });
 }
@@ -488,7 +496,8 @@ function renderDsCourt() {
     const courtLabel = document.getElementById('detailed-stats-court-label');
     if (courtLabel) {
         const teamName = team === 'A' ? state.teamA : state.teamB;
-        courtLabel.textContent = `スタッツ対象選手 (${teamName})`;
+        const isOpponent = typeof isOpponentActionPattern === 'function' ? isOpponentActionPattern(dsState.pattern) : (dsState.pattern === 'error');
+        courtLabel.textContent = isOpponent ? `ミス・失点選手 (${teamName})` : `得点選手 (${teamName})`;
     }
 
     [1, 2, 3, 4, 5, 6].forEach(p => {

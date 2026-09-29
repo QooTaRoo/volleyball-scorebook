@@ -24,7 +24,8 @@ function addPoint(winningTeam, pattern = 'unknown', playerId = null) {
         
         const scoringTeam = winningTeam;
         const rotationOccurred = state.servingTeam !== scoringTeam;
-        const actor = (pattern === 'error') ? (winningTeam === 'A' ? 'B' : 'A') : winningTeam;
+        const isOpponentActor = typeof isOpponentActionPattern === 'function' ? isOpponentActionPattern(pattern) : (pattern === 'error');
+        const actor = isOpponentActor ? (winningTeam === 'A' ? 'B' : 'A') : winningTeam;
 
         // Record action
         state.actionLog.push({
@@ -216,6 +217,7 @@ async function finishMatch(winnerName, scoreDetail = "") {
             setsA: state.setsA || 0,
             setsB: state.setsB || 0,
             setHistory: JSON.parse(JSON.stringify(state.setHistory || [])),
+            actionLog: JSON.parse(JSON.stringify(state.actionLog || [])),
             maxSets: state.maxSets || 3,
             durationMinutes: state.matchStartTime ? Math.floor((Date.now() - state.matchStartTime) / 60000) : 0,
             membersA: JSON.parse(JSON.stringify(state.membersA || [])),
@@ -262,6 +264,7 @@ function resetMatchState() {
     state.matchComplete = false;
     state.matchStartTime = null;
     state.rotationLog = [];
+    state.editingHistoryDate = null;
     
     // Lineup inheritance: usually new matches reset to default? 
     // But within a session, maybe keep? User said "セット間" (between sets).

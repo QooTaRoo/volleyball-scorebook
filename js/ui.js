@@ -438,6 +438,8 @@ function toggleSettings() {
         if (bgColorEl) bgColorEl.value = state.bgColor || '#1a1a1a';
         const methodEl = document.getElementById('input-advanced-method');
         if (methodEl) methodEl.value = state.advancedInputMethod || 'dialog';
+        const apiKeyEl = document.getElementById('input-gemini-api-key');
+        if (apiKeyEl) apiKeyEl.value = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
     }
     modal.classList.toggle('hidden');
     
@@ -521,6 +523,17 @@ function toggleTimeline() {
     modal.classList.toggle('hidden');
     if (isOpening) {
         if (typeof lucide !== 'undefined') lucide.createIcons();
+    } else {
+        // 履歴編集から開いていた場合は、呼び出し元の試合履歴画面に戻る
+        if (state.editingHistoryDate) {
+            state.editingHistoryDate = null;
+            const historyModal = document.getElementById('history-modal');
+            if (historyModal && historyModal.classList.contains('hidden')) {
+                toggleHistory();
+            } else if (typeof renderHistory === 'function') {
+                renderHistory();
+            }
+        }
     }
 }
 function toggleHistory() { 
@@ -599,6 +612,16 @@ function applySettings(isInit = false) {
     const methodEl = document.getElementById('input-advanced-method');
     if (methodEl) state.advancedInputMethod = methodEl.value;
     
+    const apiKeyEl = document.getElementById('input-gemini-api-key');
+    if (apiKeyEl) {
+        const keyVal = apiKeyEl.value.trim();
+        if (keyVal) {
+            localStorage.setItem(GEMINI_API_KEY_STORAGE, keyVal);
+        } else {
+            localStorage.removeItem(GEMINI_API_KEY_STORAGE);
+        }
+    }
+    
     if (isInit) {
         resetMatchState();
     } else {
@@ -606,6 +629,35 @@ function applySettings(isInit = false) {
     }
     saveState();
     updateUI();
+}
+
+function toggleApiKeyVisibility() {
+    const input = document.getElementById('input-gemini-api-key');
+    const icon = document.getElementById('api-key-eye-icon');
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) icon.setAttribute('data-lucide', 'eye-off');
+    } else {
+        input.type = 'password';
+        if (icon) icon.setAttribute('data-lucide', 'eye');
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function openSettingsModalForApiKey() {
+    if (typeof closeAIReportModal === 'function') closeAIReportModal();
+    const modal = document.getElementById('settings-modal');
+    if (modal && modal.classList.contains('hidden')) {
+        toggleSettings();
+    }
+    setTimeout(() => {
+        const input = document.getElementById('input-gemini-api-key');
+        if (input) {
+            input.focus();
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 200);
 }
 
 async function startNewMatch() {

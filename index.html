@@ -17,9 +17,10 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
     
     <!-- Styles -->
-    <link rel="stylesheet" href="css/style.css?v=2.13">
+    <link rel="stylesheet" href="css/style.css?v=2.18">
 </head>
 <body class="h-screen w-screen flex flex-col">
 
@@ -196,6 +197,26 @@
                             <option value="radial">ラジアルメニュー</option>
                         </select>
                     </div>
+                </div>
+
+                <div class="space-y-3 pt-4 border-t border-zinc-800">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> Gemini API 設定 <span class="text-[10px] text-zinc-500 font-normal">(任意)</span>
+                        </label>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-[10px] text-yellow-400 hover:underline flex items-center gap-0.5">
+                            無料キーを取得 <i data-lucide="external-link" class="w-3 h-3"></i>
+                        </a>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="input-gemini-api-key" placeholder="AIzaSy... (設定するとアプリ内で直接分析可)" class="w-full bg-zinc-800 border border-zinc-700/60 p-2.5 pr-10 text-white rounded-xl text-xs focus:ring-1 focus:ring-yellow-400 font-mono">
+                        <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1" title="表示/非表示">
+                            <i data-lucide="eye" id="api-key-eye-icon" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-zinc-500 leading-relaxed">
+                        ※Google AI Studioで発行したAPIキーを設定すると、アプリ内で直接AIコーチング分析レポートを生成できます（キーはお使いの端末内にのみ安全に保存されます）。
+                    </p>
                 </div>
 
                 <div class="space-y-4 pt-4 border-t border-zinc-800">
@@ -390,17 +411,27 @@
                 <div>
                     <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">得点原因</label>
                     <select id="edit-action-pattern" class="w-full bg-zinc-800 border-none p-3 text-white text-xs font-bold rounded-xl" onchange="onEditPatternChange(this.value)">
-                        <option value="unknown">不明 / 直接入力</option>
-                        <option value="spike">スパイク (SPIKE)</option>
-                        <option value="block">ブロック (BLOCK)</option>
-                        <option value="ace">サービスエース (ACE)</option>
-                        <option value="error">相手のミス (ERROR)</option>
+                        <optgroup label="得点プレー (得点側選手)">
+                            <option value="spike">スパイク (SPIKE)</option>
+                            <option value="block">ブロック (BLOCK)</option>
+                            <option value="ace">サービスエース (ACE)</option>
+                        </optgroup>
+                        <optgroup label="失点・ミス要因 (相手側選手)">
+                            <option value="attack_error">アタックミス (ATTACK ERR)</option>
+                            <option value="blocked">被ブロック (BLOCKED)</option>
+                            <option value="reception_error">レセプションミス (REC ERR)</option>
+                            <option value="serve_error">サーブミス (SERVE ERR)</option>
+                            <option value="error">その他ミス (OTHER ERR)</option>
+                        </optgroup>
+                        <optgroup label="その他">
+                            <option value="unknown">不明 / 直接入力</option>
+                        </optgroup>
                     </select>
                 </div>
                 
                 <!-- Player selection -->
                 <div id="edit-action-player-container">
-                    <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">スタッツ対象選手</label>
+                    <label id="edit-action-player-label" class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">スタッツ対象選手</label>
                     <select id="edit-action-player" class="w-full bg-zinc-800 border-none p-3 text-white text-xs font-bold rounded-xl">
                         <option value="">選手選択なし</option>
                     </select>
@@ -425,27 +456,56 @@
             <div id="detailed-stats-layout" class="flex flex-col md:grid md:grid-cols-2 gap-4 w-full">
                 <!-- Left Column on Large Screen: Pattern & Main Action Buttons -->
                 <div id="detailed-stats-left-col" class="flex flex-col gap-4">
-                    <div class="space-y-2 shrink-0">
-                        <label class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">得点原因</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button id="ds-pattern-spike" onclick="selectDsPattern('spike')" class="flex flex-col items-center justify-center py-3.5 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1.5 transition-all">
-                                <i data-lucide="swords" class="w-4 h-4"></i>
-                                <span>スパイク</span>
-                            </button>
-                            <button id="ds-pattern-block" onclick="selectDsPattern('block')" class="flex flex-col items-center justify-center py-3.5 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1.5 transition-all">
-                                <i data-lucide="shield" class="w-4 h-4"></i>
-                                <span>ブロック</span>
-                            </button>
-                            <button id="ds-pattern-ace" onclick="selectDsPattern('ace')" class="flex flex-col items-center justify-center py-3.5 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1.5 transition-all">
-                                <i data-lucide="zap" class="w-4 h-4"></i>
-                                <span>エース</span>
-                            </button>
-                            <button id="ds-pattern-error" onclick="selectDsPattern('error')" class="flex flex-col items-center justify-center py-3.5 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1.5 transition-all">
-                                <i data-lucide="x-circle" class="w-4 h-4"></i>
-                                <span>相手ミス</span>
-                            </button>
+                    <div class="space-y-3 shrink-0">
+                        <div>
+                            <span class="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                                <i data-lucide="sparkles" class="w-3 h-3"></i> 得点プレー (得点側選手)
+                            </span>
+                            <div class="grid grid-cols-3 gap-1.5">
+                                <button type="button" id="ds-pattern-spike" onclick="selectDsPattern('spike')" class="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1 transition-all">
+                                    <i data-lucide="swords" class="w-4 h-4"></i>
+                                    <span class="text-[11px] leading-tight">スパイク</span>
+                                </button>
+                                <button type="button" id="ds-pattern-block" onclick="selectDsPattern('block')" class="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1 transition-all">
+                                    <i data-lucide="shield" class="w-4 h-4"></i>
+                                    <span class="text-[11px] leading-tight">ブロック</span>
+                                </button>
+                                <button type="button" id="ds-pattern-ace" onclick="selectDsPattern('ace')" class="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1 transition-all">
+                                    <i data-lucide="zap" class="w-4 h-4"></i>
+                                    <span class="text-[11px] leading-tight">エース</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="block text-[10px] font-black text-rose-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-3 h-3"></i> 失点・ミス要因 (相手側選手)
+                            </span>
+                            <div class="grid grid-cols-3 gap-1.5">
+                                <button type="button" id="ds-pattern-attack_error" onclick="selectDsPattern('attack_error')" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1 transition-all">
+                                    <i data-lucide="trending-down" class="w-3.5 h-3.5 text-rose-400"></i>
+                                    <span class="text-[10px] leading-tight">アタックミス</span>
+                                </button>
+                                <button type="button" id="ds-pattern-blocked" onclick="selectDsPattern('blocked')" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1 transition-all">
+                                    <i data-lucide="ban" class="w-3.5 h-3.5 text-rose-400"></i>
+                                    <span class="text-[10px] leading-tight">被ブロック</span>
+                                </button>
+                                <button type="button" id="ds-pattern-reception_error" onclick="selectDsPattern('reception_error')" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1 transition-all">
+                                    <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-rose-400"></i>
+                                    <span class="text-[10px] leading-tight">レセプション</span>
+                                </button>
+                                <button type="button" id="ds-pattern-serve_error" onclick="selectDsPattern('serve_error')" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1 transition-all">
+                                    <i data-lucide="x" class="w-3.5 h-3.5 text-rose-400"></i>
+                                    <span class="text-[10px] leading-tight">サーブミス</span>
+                                </button>
+                                <button type="button" id="ds-pattern-error" onclick="selectDsPattern('error')" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl border border-white/5 bg-zinc-800 text-white font-bold text-xs gap-1 transition-all col-span-2">
+                                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-zinc-400"></i>
+                                    <span class="text-[10px] leading-tight">その他ミス (反則等)</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
+
 
                     <!-- Buttons block (Bottom for left column in md) -->
                     <div class="hidden md:flex flex-col gap-2 shrink-0 w-full mt-auto">
@@ -701,6 +761,120 @@
         </div>
     </div>
 
+    <!-- AI Target Team Select Modal -->
+    <div id="ai-target-team-modal" class="hidden fixed inset-0 bg-black/85 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-zinc-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-zinc-800 flex flex-col gap-4 text-center">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-yellow-400 flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-amber-300"></i> AI分析・コーチング
+                </h3>
+                <button onclick="closeAITargetTeamModal()" class="text-zinc-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-zinc-400 text-left leading-relaxed">
+                分析対象の自チームを選択してください：
+            </p>
+
+            <!-- Team Selection Tabs -->
+            <div class="grid grid-cols-2 gap-2 w-full">
+                <button id="ai-select-team-a" onclick="selectAITargetTeam('A')" class="p-3 rounded-2xl flex flex-col items-center justify-center text-center transition-all border text-left">
+                    <span id="ai-team-name-a" class="text-xs font-bold text-white truncate max-w-full">TEAM A</span>
+                    <span id="ai-team-badge-a" class="text-[9px] mt-0.5 truncate max-w-full"></span>
+                </button>
+                <button id="ai-select-team-b" onclick="selectAITargetTeam('B')" class="p-3 rounded-2xl flex flex-col items-center justify-center text-center transition-all border text-left">
+                    <span id="ai-team-name-b" class="text-xs font-bold text-white truncate max-w-full">TEAM B</span>
+                    <span id="ai-team-badge-b" class="text-[9px] mt-0.5 truncate max-w-full"></span>
+                </button>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-zinc-800 w-full">
+                <!-- Direct Analysis Button -->
+                <button id="ai-action-direct-btn" onclick="startDirectAIAnalysis()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95">
+                    <i data-lucide="zap" class="w-4 h-4 fill-black"></i> アプリ内で直接分析 (Gemini)
+                </button>
+
+                <!-- Copy / Share Button -->
+                <button onclick="copyCurrentAIPrompt()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/5 transition-colors">
+                    <i data-lucide="copy" class="w-3.5 h-3.5 text-zinc-400"></i> プロンプトをコピー (ChatGPT等用)
+                </button>
+            </div>
+
+            <button onclick="closeAITargetTeamModal()" class="w-full text-zinc-500 py-1 text-xs hover:text-zinc-300">
+                キャンセル
+            </button>
+        </div>
+    </div>
+
+    <!-- AI Coaching Report Modal -->
+    <div id="ai-report-modal" class="modal-flex-col fixed inset-0 bg-black z-[120] hidden">
+        <!-- Header: Sticky/Fixed top -->
+        <div class="w-full bg-zinc-950/95 border-b border-zinc-800 backdrop-blur-md z-40 shrink-0" data-html2canvas-ignore>
+            <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-black font-black shrink-0 shadow-lg shadow-yellow-500/20">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <h2 class="text-sm sm:text-base font-black text-white truncate flex items-center gap-1.5">
+                            AIコーチング分析レポート
+                        </h2>
+                        <span id="ai-report-target-team-label" class="text-[10px] text-yellow-400 font-bold truncate"></span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    <button id="ai-report-retry-btn" onclick="retryCurrentAIAnalysis()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 border border-white/5 transition-all" title="再生成">
+                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5 text-yellow-400"></i>
+                        <span class="hidden sm:inline">再生成</span>
+                    </button>
+                    <button id="ai-report-copy-btn" onclick="copyAIReportContent()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 border border-white/5 transition-all" title="レポート本文をコピー">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">コピー</span>
+                    </button>
+                    <button id="ai-report-share-btn" onclick="shareAIReportContent()" class="bg-yellow-500 hover:bg-yellow-400 text-black px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1 shadow transition-transform active:scale-95" title="共有">
+                        <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">共有</span>
+                    </button>
+                    <button onclick="closeAIReportModal()" class="w-8 h-8 flex items-center justify-center text-xl text-zinc-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors leading-none" title="閉じる">✕</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-4 pt-4 pb-20">
+            <div class="max-w-2xl mx-auto">
+                <!-- Loading State -->
+                <div id="ai-report-loading" class="flex flex-col items-center justify-center py-20 text-center gap-4">
+                    <div class="relative w-14 h-14">
+                        <div class="absolute inset-0 rounded-full border-4 border-yellow-500/20 animate-ping"></div>
+                        <div class="w-14 h-14 rounded-full border-4 border-yellow-400 border-t-transparent animate-spin"></div>
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="text-sm font-black text-white">試合データ・ローテーションを分析中...</h4>
+                        <p class="text-xs text-zinc-400">Gemini AI が失点傾向と次戦の練習メニューを立案しています</p>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="ai-report-error" class="hidden bg-red-950/40 border border-red-800/40 p-5 rounded-2xl text-center space-y-3 my-6">
+                    <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+                        <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                    </div>
+                    <p id="ai-report-error-msg" class="text-xs text-red-200 leading-relaxed whitespace-pre-line"></p>
+                    <div class="flex justify-center gap-3 pt-2">
+                        <button onclick="openSettingsModalForApiKey()" class="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-4 py-2 rounded-xl border border-white/10">APIキーを設定する</button>
+                        <button onclick="retryCurrentAIAnalysis()" class="bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-black px-4 py-2 rounded-xl">再試行</button>
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div id="ai-report-content" class="hidden ai-markdown text-zinc-200 text-xs sm:text-sm leading-relaxed space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Match Finish / Result Modal -->
     <div id="match-finish-modal" class="hidden fixed inset-0 bg-black/85 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-zinc-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-zinc-800 flex flex-col items-center text-center">
@@ -876,18 +1050,18 @@
         </div>
     </div>
 
-    <script src="js/state.js?v=2.13"></script>
-    <script src="js/ui.js?v=2.13"></script>
-    <script src="js/libero.js?v=2.13"></script>
-    <script src="js/game.js?v=2.13"></script>
-    <script src="js/radial.js?v=2.13"></script>
-    <script src="js/court.js?v=2.13"></script>
-    <script src="js/history.js?v=2.13"></script>
-    <script src="js/teams.js?v=2.13"></script>
-    <script src="js/pwa.js?v=2.13"></script>
-    <script src="js/backup.js?v=2.13"></script>
-    <script src="js/qr-share.js?v=2.13"></script>
+    <script src="js/state.js?v=2.18"></script>
+    <script src="js/ui.js?v=2.18"></script>
+    <script src="js/libero.js?v=2.18"></script>
+    <script src="js/game.js?v=2.18"></script>
+    <script src="js/radial.js?v=2.18"></script>
+    <script src="js/court.js?v=2.18"></script>
+    <script src="js/history.js?v=2.18"></script>
+    <script src="js/teams.js?v=2.18"></script>
+    <script src="js/pwa.js?v=2.18"></script>
+    <script src="js/backup.js?v=2.18"></script>
+    <script src="js/qr-share.js?v=2.18"></script>
     
-    <script src="js/init.js?v=2.13"></script>
+    <script src="js/init.js?v=2.18"></script>
 </body>
 </html>
