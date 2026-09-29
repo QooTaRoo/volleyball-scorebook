@@ -95,7 +95,7 @@ function showCurrentTimeline() {
     }
 
     const header = document.createElement('div');
-    header.className = "flex items-center justify-between gap-4 mb-6 text-xl font-bold bg-[#1a1a1a] sticky top-0 py-3 z-10 border-b border-zinc-800 px-2 overflow-visible";
+    header.className = "flex items-center justify-between gap-4 mb-6 text-xl font-bold bg-[#1a1a1a] sticky top-0 py-3 z-30 border-b border-zinc-800 px-2 overflow-visible";
     header.innerHTML = `
         <div class="flex-1 text-left min-w-0 overflow-visible">
             <span class="text-lg font-black leading-snug break-words" style="color: ${state.colorA}">${state.teamA}</span>

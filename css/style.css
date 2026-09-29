@@ -111,6 +111,12 @@ body {
     overflow-y: auto;
 }
 
+[id$="-modal"].modal-flex-col:not(.hidden) {
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 * {
     -webkit-tap-highlight-color: transparent;
 }

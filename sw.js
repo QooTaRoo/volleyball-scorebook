@@ -1,4 +1,4 @@
-// Service Worker for Volleyball Scorebook v2.7
+// Service Worker for Volleyball Scorebook v2.8
 self.addEventListener('install', e => {
   self.skipWaiting();
 });
