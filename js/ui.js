@@ -206,6 +206,148 @@ function showCustomAlert(message, okText = "OK") {
     });
 }
 
+function showMatchFinishModal({ winnerName, scoreDetail = "" }) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('match-finish-modal');
+        if (!modal) {
+            const fallbackMsg = `試合を終了して記録しますか？\n勝者: ${winnerName || '未決定'}` + (scoreDetail ? `\n(${scoreDetail})` : '');
+            resolve(typeof showCustomConfirm === 'function' ? showCustomConfirm(fallbackMsg) : true);
+            return;
+        }
+
+        const winnerLabel = document.getElementById('match-finish-winner-label');
+        const winnerNameEl = document.getElementById('match-finish-winner-name');
+        const teamAEl = document.getElementById('match-finish-team-a');
+        const teamBEl = document.getElementById('match-finish-team-b');
+        const scoreAEl = document.getElementById('match-finish-score-a');
+        const scoreBEl = document.getElementById('match-finish-score-b');
+        const scoreLabelEl = document.getElementById('match-finish-score-label');
+        const setListEl = document.getElementById('match-finish-set-list');
+        const scoreDetailEl = document.getElementById('match-finish-score-detail');
+        const confirmBtn = document.getElementById('match-finish-confirm-btn');
+        const cancelBtn = document.getElementById('match-finish-cancel-btn');
+
+        // Winner display
+        if (winnerName === "引き分け") {
+            if (winnerLabel) winnerLabel.textContent = "試合結果";
+            if (winnerNameEl) {
+                winnerNameEl.textContent = "引き分け";
+                winnerNameEl.style.color = "#e4e4e7";
+            }
+        } else {
+            if (winnerLabel) winnerLabel.textContent = "勝者";
+            if (winnerNameEl) {
+                winnerNameEl.textContent = winnerName || "TEAM A";
+                const isWinnerA = winnerName === state.teamA;
+                winnerNameEl.style.color = isWinnerA ? (state.colorA || '#eab308') : (state.colorB || '#ffffff');
+            }
+        }
+
+        // Teams & Colors
+        if (teamAEl) {
+            teamAEl.textContent = state.teamA || "TEAM A";
+            teamAEl.style.color = state.colorA || "#eab308";
+        }
+        if (teamBEl) {
+            teamBEl.textContent = state.teamB || "TEAM B";
+            teamBEl.style.color = state.colorB || "#ffffff";
+        }
+
+        // Sets / Scores
+        const isOneSetMatch = state.maxSets === 1;
+        if (isOneSetMatch) {
+            if (scoreLabelEl) scoreLabelEl.textContent = "SCORE";
+            if (scoreAEl) {
+                scoreAEl.textContent = state.scoreA;
+                scoreAEl.style.color = state.colorA || "#eab308";
+            }
+            if (scoreBEl) {
+                scoreBEl.textContent = state.scoreB;
+                scoreBEl.style.color = state.colorB || "#ffffff";
+            }
+        } else {
+            if (scoreLabelEl) scoreLabelEl.textContent = "SETS";
+            if (scoreAEl) {
+                scoreAEl.textContent = state.setsA;
+                scoreAEl.style.color = state.colorA || "#eab308";
+            }
+            if (scoreBEl) {
+                scoreBEl.textContent = state.setsB;
+                scoreBEl.style.color = state.colorB || "#ffffff";
+            }
+        }
+
+        // Set Breakdown
+        if (setListEl) {
+            setListEl.innerHTML = '';
+            const allSets = [...(state.setHistory || [])];
+            if (state.scoreA > 0 || state.scoreB > 0) {
+                const alreadyRecorded = allSets.some(s => s.set === state.currentSet);
+                if (!alreadyRecorded) {
+                    allSets.push({
+                        set: state.currentSet,
+                        scoreA: state.scoreA,
+                        scoreB: state.scoreB
+                    });
+                }
+            }
+
+            if (allSets.length > 0) {
+                allSets.forEach(s => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center py-1.5 px-3 rounded-lg bg-zinc-900/90 border border-white/5";
+                    row.innerHTML = `
+                        <span class="text-zinc-400 font-bold text-xs">第${s.set}セット</span>
+                        <span class="font-black text-sm tracking-wider tabular-nums"><span style="color: ${state.colorA}">${s.scoreA}</span> <span class="text-zinc-500 font-normal">-</span> <span style="color: ${state.colorB}">${s.scoreB}</span></span>
+                    `;
+                    setListEl.appendChild(row);
+                });
+                setListEl.classList.remove('hidden');
+            } else {
+                setListEl.classList.add('hidden');
+            }
+        }
+
+        // Score Detail (e.g. 2-set match total aggregate score)
+        if (scoreDetailEl) {
+            if (scoreDetail) {
+                scoreDetailEl.textContent = scoreDetail;
+                scoreDetailEl.classList.remove('hidden');
+            } else {
+                scoreDetailEl.classList.add('hidden');
+            }
+        }
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            if (confirmBtn) confirmBtn.onclick = null;
+            if (cancelBtn) cancelBtn.onclick = null;
+        };
+
+        if (confirmBtn) {
+            confirmBtn.onclick = () => {
+                cleanup();
+                resolve(true);
+            };
+        } else {
+            resolve(true);
+        }
+
+        if (cancelBtn) {
+            cancelBtn.onclick = () => {
+                cleanup();
+                resolve(false);
+            };
+        } else {
+            resolve(false);
+        }
+
+        modal.classList.remove('hidden');
+    });
+}
+
 function animateDigit(wrapperId, spanId, newText, isUndo) {
     const wrap = document.getElementById(wrapperId);
     const span = document.getElementById(spanId);

@@ -187,17 +187,23 @@ async function finishMatch(winnerName, scoreDetail = "") {
     try {
         let winner = winnerName;
         if (!winner) {
-            winner = state.scoreA > state.scoreB ? state.teamA : state.teamB;
+            if (state.setsA !== state.setsB) {
+                winner = state.setsA > state.setsB ? state.teamA : state.teamB;
+            } else {
+                winner = state.scoreA >= state.scoreB ? state.teamA : state.teamB;
+            }
         }
 
-        let confirmMsg = `試合を終了して記録しますか？\n(勝者: ${winner}`;
-        if (scoreDetail) {
-            confirmMsg += `, ${scoreDetail})`;
+        let confirmed = false;
+        if (typeof showMatchFinishModal === 'function') {
+            confirmed = await showMatchFinishModal({ winnerName: winner, scoreDetail });
+        } else if (typeof showCustomConfirm === 'function') {
+            let confirmMsg = `試合を終了して記録しますか？\n勝者: ${winner}`;
+            if (scoreDetail) confirmMsg += ` (${scoreDetail})`;
+            confirmed = await showCustomConfirm(confirmMsg);
         } else {
-            confirmMsg += `, 得点: ${state.scoreA} - ${state.scoreB})`;
+            confirmed = true;
         }
-        
-        const confirmed = await showCustomConfirm(confirmMsg);
         if (!confirmed) return;
 
         const matchHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
@@ -218,11 +224,9 @@ async function finishMatch(winnerName, scoreDetail = "") {
         });
         localStorage.setItem(HISTORY_KEY, JSON.stringify(matchHistory));
 
-        let msg = "試合終了！";
-        if (winnerName) msg += ` 勝者: ${winnerName}`;
-        if (scoreDetail) msg += `\n${scoreDetail}`;
-        
-        await showCustomAlert(msg);
+        if (typeof showToast === 'function') {
+            showToast("試合記録を保存しました");
+        }
 
         // Reset for new match and ensure main menu is shown
         resetMatchState();
@@ -239,7 +243,9 @@ async function finishMatch(winnerName, scoreDetail = "") {
         }
     } catch (err) {
         console.error("Error during finishMatch:", err);
-        await showCustomAlert("試合記録の保存中にエラーが発生しました。\n" + err.message);
+        if (typeof showCustomAlert === 'function') {
+            await showCustomAlert("試合記録の保存中にエラーが発生しました。\n" + err.message);
+        }
     }
 }
 

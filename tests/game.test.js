@@ -7,6 +7,8 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
     // Custom window alerts and confirms
     window.showCustomAlert = vi.fn().mockResolvedValue(undefined);
     window.showCustomConfirm = vi.fn().mockResolvedValue(true);
+    window.showMatchFinishModal = vi.fn().mockResolvedValue(true);
+    window.showToast = vi.fn();
     window.startTimeoutTimer = vi.fn();
     window.stopTimeoutTimer = vi.fn();
   });
@@ -168,7 +170,7 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
       window.addPoint('A');
       await tick();
       // Now 16-14, Match should end!
-      expect(window.showCustomAlert).toHaveBeenCalledWith(expect.stringContaining('試合終了！ 勝者: TEAM A'));
+      expect(window.showMatchFinishModal).toHaveBeenCalledWith(expect.objectContaining({ winnerName: 'TEAM A' }));
     });
   });
 
@@ -199,8 +201,10 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
       await tick();
 
       // The match should end and A should be the aggregate winner
-      expect(window.showCustomAlert).toHaveBeenCalledWith(expect.stringContaining('試合終了！ 勝者: TEAM A'));
-      expect(window.showCustomAlert).toHaveBeenCalledWith(expect.stringContaining('合計得点 45 - 40'));
+      expect(window.showMatchFinishModal).toHaveBeenCalledWith(expect.objectContaining({
+        winnerName: 'TEAM A',
+        scoreDetail: expect.stringContaining('合計得点 45 - 40')
+      }));
     });
   });
 
@@ -267,6 +271,7 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
 
     it('should not allow adding more points once the set winning condition is met (match end cancelled)', async () => {
       // Mock match end confirmation to return false (cancel)
+      window.showMatchFinishModal = vi.fn().mockResolvedValue(false);
       window.showCustomConfirm = vi.fn().mockResolvedValue(false);
 
       window.state.maxSets = 3;
@@ -374,6 +379,75 @@ describe('Volleyball Scorebook - Game Logic (game.js)', () => {
       expect(window.state.scoreA).toBe(0);
       expect(window.state.scoreB).toBe(3);
       expect(window.state.servingTeam).toBe('B');
+    });
+  });
+
+  describe('showMatchFinishModal() UI and Lifecycle', () => {
+    beforeEach(() => {
+      global.loadApp();
+    });
+
+    it('should correctly display winner, team names, set scores and resolve true on confirm', async () => {
+      window.state.teamA = "大宮東";
+      window.state.teamB = "春日部共栄";
+      window.state.colorA = "#f43f5e";
+      window.state.colorB = "#3b82f6";
+      window.state.setsA = 2;
+      window.state.setsB = 1;
+      window.state.setHistory = [
+        { set: 1, scoreA: 25, scoreB: 20 },
+        { set: 2, scoreA: 21, scoreB: 25 },
+        { set: 3, scoreA: 15, scoreB: 12 }
+      ];
+
+      const promise = window.showMatchFinishModal({
+        winnerName: "大宮東",
+        scoreDetail: ""
+      });
+
+      const modal = document.getElementById('match-finish-modal');
+      expect(modal.classList.contains('hidden')).toBe(false);
+
+      const winnerEl = document.getElementById('match-finish-winner-name');
+      expect(winnerEl.textContent).toBe("大宮東");
+
+      const teamAEl = document.getElementById('match-finish-team-a');
+      expect(teamAEl.textContent).toBe("大宮東");
+
+      const scoreAEl = document.getElementById('match-finish-score-a');
+      expect(scoreAEl.textContent).toBe("2");
+
+      const setList = document.getElementById('match-finish-set-list');
+      expect(setList.textContent).toContain("第1セット");
+      expect(setList.textContent).toContain("25");
+      expect(setList.textContent).toContain("20");
+
+      // Click confirm button
+      const confirmBtn = document.getElementById('match-finish-confirm-btn');
+      confirmBtn.click();
+
+      const result = await promise;
+      expect(result).toBe(true);
+      expect(modal.classList.contains('hidden')).toBe(true);
+    });
+
+    it('should resolve false and close modal when clicking cancel button', async () => {
+      window.state.teamA = "Team A";
+      window.state.teamB = "Team B";
+
+      const promise = window.showMatchFinishModal({
+        winnerName: "Team A"
+      });
+
+      const modal = document.getElementById('match-finish-modal');
+      expect(modal.classList.contains('hidden')).toBe(false);
+
+      const cancelBtn = document.getElementById('match-finish-cancel-btn');
+      cancelBtn.click();
+
+      const result = await promise;
+      expect(result).toBe(false);
+      expect(modal.classList.contains('hidden')).toBe(true);
     });
   });
 });
