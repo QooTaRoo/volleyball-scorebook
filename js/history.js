@@ -352,32 +352,49 @@ function renderAnalysisContent(m) {
     const setScoresHtml = m.setHistory.map(s => {
         const isLastSet = m.isLiveMatch && s.set === state.currentSet;
         const statusText = isLastSet ? 'LIVE' : 'FINAL';
-        const statusColor = isLastSet ? 'text-emerald-500 font-bold' : 'text-zinc-400';
+        const statusClass = isLastSet ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25 font-bold' : 'text-zinc-400 bg-zinc-800/40 border-white/5 font-semibold';
         return `
-            <div class="flex items-center justify-center gap-3 w-full">
-                <span class="text-xs text-zinc-400 font-black w-10 text-right tracking-wider">SET ${s.set}</span>
-                <div class="flex items-center justify-center gap-2 px-4 py-1.5 rounded-xl ${isLastSet ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800/50 text-zinc-200 border border-white/5'} text-base sm:text-lg font-black min-w-[90px] shadow-inner">
-                    <span>${s.scoreA}</span><span class="text-zinc-400 px-0.5">-</span><span>${s.scoreB}</span>
+            <div class="flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl bg-zinc-950/50 border border-white/5 shadow-inner">
+                <span class="text-xs text-zinc-400 font-black tracking-wider w-14">SET ${s.set}</span>
+                <div class="flex items-center gap-2.5 font-black text-base sm:text-lg">
+                    <span style="color: ${m.colorA}">${s.scoreA}</span>
+                    <span class="text-zinc-600 font-bold">-</span>
+                    <span style="color: ${m.colorB}">${s.scoreB}</span>
                 </div>
-                <div class="w-10 italic text-xs ${statusColor} tracking-widest">${statusText}</div>
+                <div class="w-14 flex justify-end">
+                    <span class="text-[10px] tracking-wider px-1.5 py-0.5 rounded border ${statusClass}">${statusText}</span>
+                </div>
             </div>
         `;
     }).join('');
 
     header.innerHTML = `
-        <div class="bg-zinc-900/50 p-6 rounded-3xl border border-zinc-850 shadow-2xl overflow-hidden relative">
-            <div class="flex items-stretch justify-between gap-2">
-                <div class="flex-1 flex flex-col items-center justify-center py-2">
-                    <div class="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Sets</div>
-                    <div class="text-6xl font-black mb-2" style="color: ${m.colorA}">${m.setsA}</div>
-                    <div class="text-sm font-bold text-center px-1" style="color: ${m.colorA}">${m.teamA}</div>
+        <div class="bg-zinc-900/60 p-4 sm:p-6 rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden relative backdrop-blur-sm">
+            <!-- Scoreboard Top Row -->
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <!-- Team A -->
+                <div class="flex-1 flex flex-col items-center text-center min-w-0">
+                    <div class="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Sets</div>
+                    <div class="text-5xl sm:text-6xl font-black mb-1.5 drop-shadow leading-none" style="color: ${m.colorA}">${m.setsA}</div>
+                    <div class="w-full text-xs sm:text-base font-black truncate px-1" style="color: ${m.colorA}" title="${m.teamA}">${m.teamA}</div>
                 </div>
-                <div class="flex-[1.2] flex flex-col items-center justify-center gap-2 border-x border-zinc-850 px-2">${setScoresHtml}</div>
-                <div class="flex-1 flex flex-col items-center justify-center py-2">
-                    <div class="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Sets</div>
-                    <div class="text-6xl font-black mb-2" style="color: ${m.colorB}">${m.setsB}</div>
-                    <div class="text-sm font-bold text-center px-1" style="color: ${m.colorB}">${m.teamB}</div>
+
+                <!-- Center VS -->
+                <div class="shrink-0 flex flex-col items-center justify-center">
+                    <span class="text-[10px] sm:text-xs font-black text-zinc-400 bg-zinc-800/80 border border-white/10 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-inner tracking-widest">VS</span>
                 </div>
+
+                <!-- Team B -->
+                <div class="flex-1 flex flex-col items-center text-center min-w-0">
+                    <div class="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Sets</div>
+                    <div class="text-5xl sm:text-6xl font-black mb-1.5 drop-shadow leading-none" style="color: ${m.colorB}">${m.setsB}</div>
+                    <div class="w-full text-xs sm:text-base font-black truncate px-1" style="color: ${m.colorB}" title="${m.teamB}">${m.teamB}</div>
+                </div>
+            </div>
+
+            <!-- Set breakdown -->
+            <div class="border-t border-zinc-800/80 pt-3 space-y-1.5">
+                ${setScoresHtml}
             </div>
         </div>
     `;
@@ -525,7 +542,7 @@ function renderAnalysisContent(m) {
                                 </div>
                             </div>
                         </div>
-                        <div class="player-detail hidden pl-12 pr-2 py-3 grid grid-cols-4 gap-2 border border-white/5 mt-2 bg-zinc-950/80 rounded-lg">
+                        <div class="player-detail hidden pl-3 sm:pl-12 pr-2 py-3 grid grid-cols-4 gap-2 border border-white/5 mt-2 bg-zinc-950/80 rounded-lg">
                             <div class="flex flex-col"><span class="text-emerald-400/85 text-[10px] sm:text-xs uppercase tracking-wider mb-1 font-bold">Spike</span><span class="text-emerald-400 text-base sm:text-lg font-black">${p.spike}</span></div>
                             <div class="flex flex-col"><span class="text-blue-400/85 text-[10px] sm:text-xs uppercase tracking-wider mb-1 font-bold">Block</span><span class="text-blue-400 text-base sm:text-lg font-black">${p.block}</span></div>
                             <div class="flex flex-col"><span class="text-yellow-400/85 text-[10px] sm:text-xs uppercase tracking-wider mb-1 font-bold">Ace</span><span class="text-yellow-400 text-base sm:text-lg font-black">${p.ace}</span></div>

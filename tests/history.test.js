@@ -189,4 +189,44 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       dummyDiv.remove();
     });
   });
+
+  describe('renderAnalysisContent() layout', () => {
+    it('should render responsive scoreboard and set breakdown rows', () => {
+      // Setup DOM elements expected by renderAnalysisContent
+      document.body.innerHTML = `
+        <div id="analysis-header"></div>
+        <div id="analysis-team-stats"></div>
+        <div id="analysis-rotation-stats"></div>
+        <div id="analysis-player-stats"></div>
+      `;
+
+      const mockMatch = {
+        id: 'test_match_1',
+        teamA: 'チームA高校',
+        teamB: 'チームB高校',
+        colorA: '#3b82f6',
+        colorB: '#ef4444',
+        setsA: 2,
+        setsB: 1,
+        matchFormat: '3sets',
+        setHistory: [
+          { set: 1, scoreA: 25, scoreB: 20, log: [] },
+          { set: 2, scoreA: 22, scoreB: 25, log: [] },
+          { set: 3, scoreA: 25, scoreB: 18, log: [] }
+        ]
+      };
+
+      window.renderAnalysisContent(mockMatch);
+
+      const header = document.getElementById('analysis-header');
+      expect(header.innerHTML).toContain('チームA高校');
+      expect(header.innerHTML).toContain('チームB高校');
+      expect(header.innerHTML).toContain('25');
+      expect(header.innerHTML).toContain('SET 1');
+      expect(header.innerHTML).toContain('FINAL');
+      // Verify VS divider is rendered
+      expect(header.innerHTML).toContain('VS');
+    });
+  });
 });
+
