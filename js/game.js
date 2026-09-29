@@ -264,6 +264,19 @@ function resetMatchState() {
     state.lineupB = ["B1", "B2", "B3", "B4", "B5", "B6"];
     state.liberosA = [];
     state.liberosB = [];
+
+    if (state.membersA) {
+        state.membersA.forEach(m => {
+            m.isLibero = false;
+            m.liberoPos = undefined;
+        });
+    }
+    if (state.membersB) {
+        state.membersB.forEach(m => {
+            m.isLibero = false;
+            m.liberoPos = undefined;
+        });
+    }
 }
 
 function undo() {

@@ -97,6 +97,18 @@ function loadPresetToTeam(teamCode, presetName) {
             const fallbackLiberos = members.filter(m => m.isLibero).map(m => m.id);
             activeLiberos = [fallbackLiberos[0] || null, fallbackLiberos[1] || null];
         }
+
+        // Ensure members have consistent isLibero and liberoPos strictly matching activeLiberos
+        members.forEach(m => {
+            const lIdx = activeLiberos.indexOf(m.id);
+            if (lIdx !== -1) {
+                m.isLibero = true;
+                m.liberoPos = lIdx + 1;
+            } else {
+                m.isLibero = false;
+                m.liberoPos = undefined;
+            }
+        });
         
         const starters = members.filter(m => m.isStarter);
         starters.sort((a, b) => {
@@ -211,6 +223,7 @@ function toggleMasterStarter(idx) {
                 masterEditMembers[idx].starterPos = 6;
             }
             masterEditMembers[idx].isLibero = false; // スタメンになる場合はリベロは解除
+            masterEditMembers[idx].liberoPos = undefined;
         } else {
             masterEditMembers[idx].starterPos = undefined;
         }

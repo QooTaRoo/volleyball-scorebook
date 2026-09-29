@@ -10,8 +10,15 @@ function selectCourtLibero(index, playerId) {
     
     if (team === 'preset') {
         const idx = index - 1;
-        const valToClear = masterEditMembers.find(m => m.isLibero && m.liberoPos === index)?.id;
+        const lib1 = masterEditMembers.find(m => m.isLibero && m.liberoPos === 1)?.id;
+        const lib2 = masterEditMembers.find(m => m.isLibero && m.liberoPos === 2)?.id;
+        let currentLiberos = [lib1 || null, lib2 || null];
+        if (!lib1 && !lib2) {
+            const fallback = masterEditMembers.filter(m => m.isLibero).map(m => m.id);
+            currentLiberos = [fallback[0] || null, fallback[1] || null];
+        }
         
+        const valToClear = currentLiberos[idx];
         if (valToClear) {
             const p = masterEditMembers.find(m => m.id === valToClear);
             if (p) {
@@ -19,6 +26,12 @@ function selectCourtLibero(index, playerId) {
                 p.liberoPos = undefined;
             }
         }
+        masterEditMembers.forEach(m => {
+            if (m.liberoPos === index && m.id !== playerId) {
+                m.isLibero = false;
+                m.liberoPos = undefined;
+            }
+        });
         
         if (playerId) {
             // 他の選手が同じindexのリベロ位置にいる場合は既に上でクリアしているが、
@@ -65,6 +78,21 @@ function selectCourtLibero(index, playerId) {
     } else {
         liberos[idx] = null;
         showToast(`リベロ ${index} を解除しました`);
+    }
+
+    // state.membersA / membersB の各選手の isLibero / liberoPos も同期して整合性を維持
+    const members = team === 'A' ? state.membersA : state.membersB;
+    if (members) {
+        members.forEach(m => {
+            const lIdx = liberos.indexOf(m.id);
+            if (lIdx !== -1) {
+                m.isLibero = true;
+                m.liberoPos = lIdx + 1;
+            } else {
+                m.isLibero = false;
+                m.liberoPos = undefined;
+            }
+        });
     }
     
     saveState();
@@ -175,7 +203,8 @@ function renderCourt(team) {
         const liberos = isPreset 
             ? masterEditMembers.filter(m => m.isLibero).map(m => m.id)
             : (team === 'A' ? (state.liberosA || []) : (state.liberosB || []));
-        const isLibero = liberos.includes(playerId) || (player && !!player.isLibero);
+        const validLiberos = liberos.filter(Boolean);
+        const isLibero = Boolean(playerId && validLiberos.includes(playerId));
         const isLiberoTarget = player && !!player.isLiberoTarget;
         
         let badge = el.querySelector('.libero-badge');
@@ -249,9 +278,9 @@ function handleCourtPosClick(posNum) {
         const team = currentCourtTeam;
         if (team !== 'preset') {
             const lineup = team === 'A' ? state.lineupA : state.lineupB;
-            const liberos = team === 'A' ? (state.liberosA || []) : (state.liberosB || []);
+            const liberos = (team === 'A' ? (state.liberosA || []) : (state.liberosB || [])).filter(Boolean);
             const currentPlayerId = lineup[idx];
-            if (liberos.includes(currentPlayerId)) {
+            if (currentPlayerId && liberos.includes(currentPlayerId)) {
                 const otherLiberoId = liberos.find(id => id && id !== currentPlayerId && !lineup.includes(id));
                 if (otherLiberoId) {
                     currentSubPosIdx = idx;
@@ -329,10 +358,10 @@ function openSubModal(posIdx) {
         html += `<div class="text-zinc-500 text-center py-4 text-xs">控え選手がいません</div>`;
     } else {
         html += bench.map(m => {
-            const liberos = team === 'preset'
+            const liberos = (team === 'preset'
                 ? masterEditMembers.filter(p => p.isLibero).map(p => p.id)
-                : (team === 'A' ? (state.liberosA || []) : (state.liberosB || []));
-            const isPlayerLibero = liberos.includes(m.id);
+                : (team === 'A' ? (state.liberosA || []) : (state.liberosB || []))).filter(Boolean);
+            const isPlayerLibero = Boolean(m.id && liberos.includes(m.id));
             const badgeHtml = isPlayerLibero ? `<span class="bg-purple-600/90 text-[9px] text-white font-black px-1.5 py-0.5 rounded-sm shadow ml-2 shrink-0">LIBERO</span>` : '';
             return `
                 <button onclick="substitute('${m.id}')" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white p-3 rounded flex justify-between items-center transition-colors mb-2">
@@ -433,8 +462,11 @@ function substitute(benchPlayerId) {
     const lineup = team === 'A' ? state.lineupA : state.lineupB;
     const oldPlayerId = lineup[currentSubPosIdx];
     
-    const liberos = team === 'A' ? (state.liberosA || []) : (state.liberosB || []);
-    const isLiberoReplacement = liberos.includes(oldPlayerId) || liberos.includes(benchPlayerId);
+    const liberos = (team === 'A' ? (state.liberosA || []) : (state.liberosB || [])).filter(Boolean);
+    const isLiberoReplacement = Boolean(
+        (oldPlayerId && liberos.includes(oldPlayerId)) || 
+        (benchPlayerId && liberos.includes(benchPlayerId))
+    );
     
     lineup[currentSubPosIdx] = benchPlayerId;
     state.actionLog.push({

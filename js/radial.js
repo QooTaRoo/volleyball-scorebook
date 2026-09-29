@@ -322,8 +322,8 @@ function enterStage2(option) {
             displayStr = player.name.substring(0, 4);
         }
 
-        const liberos = teamToPick === 'A' ? (state.liberosA || []) : (state.liberosB || []);
-        const isLibero = liberos.includes(playerId) || (player && !!player.isLibero);
+        const liberos = (teamToPick === 'A' ? (state.liberosA || []) : (state.liberosB || [])).filter(Boolean);
+        const isLibero = Boolean(playerId && liberos.includes(playerId));
         const badgeHtml = isLibero ? `<span class="absolute top-0.5 right-1 bg-purple-500 text-[6px] text-white font-black px-1 rounded-sm shadow-md animate-pulse">L</span>` : '';
 
         const opt = document.createElement('div');
@@ -465,8 +465,8 @@ function highlightDsCourtPlayers() {
             // Check if player is Libero
             const members = dsState.displayTeam === 'A' ? state.membersA : state.membersB;
             const player = members.find(m => m.id === playerId);
-            const liberos = dsState.displayTeam === 'A' ? (state.liberosA || []) : (state.liberosB || []);
-            const isLibero = liberos.includes(playerId) || (player && !!player.isLibero);
+            const liberos = (dsState.displayTeam === 'A' ? (state.liberosA || []) : (state.liberosB || [])).filter(Boolean);
+            const isLibero = Boolean(playerId && liberos.includes(playerId));
             
             if (isLibero) {
                 el.classList.add('bg-purple-900/30', 'border-purple-500/50');
@@ -511,7 +511,8 @@ function renderDsCourt() {
         let badge = el.querySelector('.libero-badge');
         if (badge) badge.remove();
         
-        const isLibero = liberos.includes(playerId) || (player && !!player.isLibero);
+        const validLiberos = (liberos || []).filter(Boolean);
+        const isLibero = Boolean(playerId && validLiberos.includes(playerId));
         if (isLibero) {
             badge = document.createElement('span');
             badge.className = 'libero-badge absolute top-1 right-1 bg-purple-500 text-[6px] text-white font-black px-1 rounded-sm shadow-md pointer-events-none select-none animate-pulse';

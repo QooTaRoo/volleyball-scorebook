@@ -528,23 +528,49 @@ async function confirmStartMatch() {
     // (This preserves temporary modifications made in the Match Setup config modal if no preset matches)
     if (!loadedA) {
         if (savedLineupA.length) state.lineupA = savedLineupA;
-        if (savedLiberosA.length && savedLiberosA.some(l => l !== null)) {
+        if (savedLiberosA && savedLiberosA.length > 0) {
             state.liberosA = savedLiberosA;
         } else if (savedMembersA) {
             const presetLiberos = savedMembersA.filter(m => m.isLibero).map(m => m.id);
             state.liberosA = [presetLiberos[0] || null, presetLiberos[1] || null];
         }
         if (savedMembersA) state.membersA = savedMembersA;
+
+        if (state.membersA && state.liberosA) {
+            state.membersA.forEach(m => {
+                const lIdx = state.liberosA.indexOf(m.id);
+                if (lIdx !== -1) {
+                    m.isLibero = true;
+                    m.liberoPos = lIdx + 1;
+                } else {
+                    m.isLibero = false;
+                    m.liberoPos = undefined;
+                }
+            });
+        }
     }
     if (!loadedB) {
         if (savedLineupB.length) state.lineupB = savedLineupB;
-        if (savedLiberosB.length && savedLiberosB.some(l => l !== null)) {
+        if (savedLiberosB && savedLiberosB.length > 0) {
             state.liberosB = savedLiberosB;
         } else if (savedMembersB) {
             const presetLiberos = savedMembersB.filter(m => m.isLibero).map(m => m.id);
             state.liberosB = [presetLiberos[0] || null, presetLiberos[1] || null];
         }
         if (savedMembersB) state.membersB = savedMembersB;
+
+        if (state.membersB && state.liberosB) {
+            state.membersB.forEach(m => {
+                const lIdx = state.liberosB.indexOf(m.id);
+                if (lIdx !== -1) {
+                    m.isLibero = true;
+                    m.liberoPos = lIdx + 1;
+                } else {
+                    m.isLibero = false;
+                    m.liberoPos = undefined;
+                }
+            });
+        }
     }
 
     // レシーブスタート（相手サーブ）の場合にローテーションを1つ戻す自動調整

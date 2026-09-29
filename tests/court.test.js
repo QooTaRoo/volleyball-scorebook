@@ -50,6 +50,68 @@ describe('Volleyball Scorebook - Court & Player Management (court.js)', () => {
 
       expect(window.showToast).toHaveBeenCalledWith("リベロ 1 を登録しました");
     });
+
+    it('should correctly synchronize member isLibero and clear libero flag when de-registered', () => {
+      window.currentCourtTeam = 'A';
+      window.state.liberosA = ['A7', 'A8'];
+      window.state.membersA = [
+        { id: 'A1', number: 1, name: 'P1', isLibero: false },
+        { id: 'A7', number: 7, name: 'L1', isLibero: true, liberoPos: 1 },
+        { id: 'A8', number: 8, name: 'L2', isLibero: true, liberoPos: 2 },
+        { id: 'A9', number: 9, name: 'P9', isLibero: false }
+      ];
+
+      // De-register Libero 1
+      window.selectCourtLibero(1, '');
+      expect(window.state.liberosA[0]).toBeNull();
+      
+      const a7 = window.state.membersA.find(m => m.id === 'A7');
+      expect(a7.isLibero).toBe(false);
+      expect(a7.liberoPos).toBeUndefined();
+
+      // Switch Libero 2 from A8 to A9
+      window.selectCourtLibero(2, 'A9');
+      const a8 = window.state.membersA.find(m => m.id === 'A8');
+      const a9 = window.state.membersA.find(m => m.id === 'A9');
+      expect(a8.isLibero).toBe(false);
+      expect(a9.isLibero).toBe(true);
+      expect(a9.liberoPos).toBe(2);
+    });
+
+    it('should not display libero badge for players not registered as libero on court', () => {
+      window.currentCourtTeam = 'A';
+      window.state.lineupA = ['A1', 'A2', 'A3', 'A4', 'A5', 'A7'];
+      window.state.liberosA = ['A8', null]; // A8 is libero, A7 is NOT in liberosA
+      window.state.membersA = [
+        { id: 'A1', number: 1, name: 'P1' },
+        { id: 'A2', number: 2, name: 'P2' },
+        { id: 'A3', number: 3, name: 'P3' },
+        { id: 'A4', number: 4, name: 'P4' },
+        { id: 'A5', number: 5, name: 'P5' },
+        { id: 'A7', number: 7, name: 'P7', isLibero: true }, // stale flag left on player
+        { id: 'A8', number: 8, name: 'L1', isLibero: true }
+      ];
+
+      // Setup DOM
+      document.body.innerHTML = `
+        <div id="court-team-label"></div>
+        <select id="court-libero-select-1"></select>
+        <select id="court-libero-select-2"></select>
+        <div id="pos-1"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-2"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-3"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-4"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-5"><span class="player-num"></span><span class="player-name"></span></div>
+        <div id="pos-6"><span class="player-num"></span><span class="player-name"></span></div>
+      `;
+
+      window.renderCourt('A');
+
+      // Position 6 has A7. A7 is NOT in liberosA, so it MUST NOT have .libero-badge
+      const pos6 = document.getElementById('pos-6');
+      const badge = pos6.querySelector('.libero-badge');
+      expect(badge).toBeNull();
+    });
   });
 
   describe('substitute()', () => {

@@ -145,6 +145,36 @@ describe('Volleyball Scorebook - Teams Preset, Starters & Libero Configuration (
       expect(window.state.liberosA[0]).toBe('A5');
       expect(window.state.liberosA[1]).toBe('A4');
     });
+
+    it('should ensure non-libero players have isLibero: false even if preset had invalid stale flags', () => {
+      const presetTeam = {
+        name: "TestStaleLibero",
+        isMyTeam: true,
+        members: [
+          { number: 1, name: "P1", isStarter: true, isLibero: true }, // Invalid 3rd libero or stale
+          { number: 2, name: "P2", isStarter: true, isLibero: false },
+          { number: 3, name: "P3", isStarter: true, isLibero: false },
+          { number: 4, name: "P4", isStarter: true, isLibero: false },
+          { number: 5, name: "P5", isStarter: true, isLibero: false },
+          { number: 6, name: "P6", isStarter: true, isLibero: false },
+          { number: 7, name: "P7", isStarter: false, isLibero: true, liberoPos: 1 }, // Libero 1
+          { number: 8, name: "P8", isStarter: false, isLibero: true, liberoPos: 2 }, // Libero 2
+        ]
+      };
+
+      localStorage.setItem('vb_preset_teams', JSON.stringify([presetTeam]));
+
+      window.loadPresetToTeam('A', 'TestStaleLibero');
+
+      // Active liberos should only be A7 and A8
+      expect(window.state.liberosA[0]).toBe('A7');
+      expect(window.state.liberosA[1]).toBe('A8');
+
+      // P1 (A1) was NOT in activeLiberos, so its isLibero must be strictly false!
+      const a1 = window.state.membersA.find(m => m.id === 'A1');
+      expect(a1.isLibero).toBe(false);
+      expect(a1.liberoPos).toBeUndefined();
+    });
   });
 
   describe('Automatic Member Sorting', () => {
