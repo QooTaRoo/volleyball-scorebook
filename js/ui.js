@@ -11,6 +11,9 @@ function updateUI() {
     const bg = state.bgColor || '#1a1a1a';
     document.documentElement.style.setProperty('--bg-color', bg);
     document.documentElement.style.setProperty('--text-color', getContrastColor(bg));
+    if (typeof updateBgColorDisplay === 'function') {
+        updateBgColorDisplay(bg);
+    }
 
     // Serve Indicators
     const indA = document.getElementById('serve-indicator-a');
@@ -435,17 +438,37 @@ function toggleSettings() {
         const durationEl = document.getElementById('input-timeout-duration');
         if (durationEl) durationEl.value = state.timeoutDuration || 30;
         const bgColorEl = document.getElementById('input-bg-color');
-        if (bgColorEl) bgColorEl.value = state.bgColor || '#1a1a1a';
+        if (bgColorEl) {
+            bgColorEl.value = state.bgColor || '#1a1a1a';
+            updateBgColorDisplay(bgColorEl.value);
+        }
         const methodEl = document.getElementById('input-advanced-method');
         if (methodEl) methodEl.value = state.advancedInputMethod || 'dialog';
         const apiKeyEl = document.getElementById('input-gemini-api-key');
         if (apiKeyEl) apiKeyEl.value = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
     modal.classList.toggle('hidden');
     
     // Return to menu if closed and we were in menu hub
     if (!isOpening && isMenuHubActive) {
         toggleMainMenu(true);
+    }
+}
+
+function updateBgColorDisplay(hex) {
+    const val = hex || (document.getElementById('input-bg-color') ? document.getElementById('input-bg-color').value : '#1a1a1a');
+    const previewEl = document.getElementById('bg-color-preview');
+    if (previewEl) previewEl.style.backgroundColor = val;
+    const hexEl = document.getElementById('bg-color-hex');
+    if (hexEl) hexEl.textContent = val.toUpperCase();
+}
+
+function setBgColorPreset(color) {
+    const bgColorEl = document.getElementById('input-bg-color');
+    if (bgColorEl) {
+        bgColorEl.value = color;
+        updateBgColorDisplay(color);
     }
 }
 
