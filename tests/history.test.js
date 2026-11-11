@@ -258,8 +258,8 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       const match = {
         id: 'test_ai_match',
         date: '2026/05/25 15:00:00',
-        teamA: '深川高校',
-        teamB: '柏高校',
+        teamA: 'チームA',
+        teamB: 'チームB',
         colorA: '#3b82f6',
         colorB: '#ef4444',
         setsA: 2,
@@ -271,7 +271,7 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
             scoreA: 25,
             scoreB: 20,
             log: [
-              { type: 'point', team: 'A', pattern: 'spike', playerId: 'A1' },
+              { type: 'point', team: 'A', pattern: 'spike', playerId: 'A1', rotationOccurred: true },
               { type: 'point', team: 'B', pattern: 'block', playerId: 'B1' },
               { type: 'point', team: 'A', pattern: 'error' }
             ]
@@ -284,14 +284,14 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       const prompt = window.generateAIPrompt(match);
 
       expect(prompt).toContain('バレーボール試合分析・コーチング依頼');
-      expect(prompt).toContain('深川高校');
-      expect(prompt).toContain('柏高校');
+      expect(prompt).toContain('チームA');
+      expect(prompt).toContain('チームB');
       expect(prompt).toContain('第1セット');
-      expect(prompt).toContain('スパイク得点');
+      expect(prompt).toContain('スパイク決定数');
       expect(prompt).toContain('ローテーション分析');
       expect(prompt).toContain('SO率');
       expect(prompt).toContain('BR率');
-      expect(prompt).toContain('主な個人スタッツ');
+      expect(prompt).toContain('個人スタッツ');
       expect(prompt).toContain('#1 山田');
       expect(prompt).toContain('ラリー推移・タイムライン');
       expect(prompt).toContain('第1セット スコア・ラリー推移');
@@ -313,10 +313,17 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       const shareMock = vi.fn().mockResolvedValue(undefined);
       navigator.share = shareMock;
 
+      // Current flow: shareAnalysisForAI() opens the team-selection modal first,
+      // then copyCurrentAIPrompt() shares the prompt for the selected team (default: A).
       await window.shareAnalysisForAI();
+      const modal = document.getElementById('ai-target-team-modal');
+      expect(modal.classList.contains('hidden')).toBe(false);
+
+      window.copyCurrentAIPrompt();
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(shareMock).toHaveBeenCalledWith(expect.objectContaining({
-        title: expect.stringContaining('チームA vs チームB'),
+        title: expect.stringContaining('チームA 試合分析・コーチング依頼'),
         text: expect.stringContaining('チームA')
       }));
     });
@@ -341,12 +348,14 @@ describe('Volleyball Scorebook - History Logic (history.js)', () => {
       });
 
       await window.shareAnalysisForAI();
+      window.copyCurrentAIPrompt();
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(clipboardWriteMock).toHaveBeenCalled();
       const copiedText = clipboardWriteMock.mock.calls[0][0];
       expect(copiedText).toContain('チームA');
       expect(window.showCustomAlert).toHaveBeenCalledWith(
-        expect.stringContaining('AI分析用テキストをコピーしました'),
+        expect.stringContaining('AI分析プロンプトをコピーしました'),
         expect.anything()
       );
     });
